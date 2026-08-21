@@ -1,50 +1,49 @@
-<style type="text/css">		
-		#map_canvas_m{mid} {
-		width:{map_width};
-		height:{map_height};
-		}
-		#map_contener_m{mid} {
-		width:{map_width};
-		border:solid 1px #666;
-		background:#CCC
-		}
+<style type="text/css">
+#map_canvas_m{mid} {
+    width: {map_width};
+    height: {map_height};
+}
+#map_contener_m{mid} {
+    width: {map_width};
+    border: solid 1px #666;
+    background: #ccc;
+}
 </style>
 
 {markerclusterer}
 
 <script type="text/javascript">
-	var map{mid}; /* Instance of Google Maps object */
-	var map_height_m{mid} = '{map_height}';
+var map{mid};
 
-	function initialize{mid}() {
-		
-		//Map
-		map{mid} = new google.maps.Map(document.getElementById('map_canvas_m{mid}'), {
-			center: new google.maps.LatLng({lat}, {lng}),
-			zoom: {zoom},
-		    mapTypeId: google.maps.MapTypeId.{map_type}
-		});			
-	
-	    //Marker
-	    {markers}
-	
-	    {ads}
+function initialize{mid}() {
+    var element = document.getElementById('map_canvas_m{mid}');
+    if (!element || typeof google === 'undefined' || !google.maps) {
+        return;
     }
 
+    map{mid} = new google.maps.Map(element, {
+        center: {lat: Number({lat}), lng: Number({lng})},
+        zoom: Number({zoom}),
+        mapTypeId: google.maps.MapTypeId.{map_type}
+    });
 
-	google.maps.event.addDomListener(window, 'load', initialize{mid});
+    {markers}
+}
 
-		
+if (window.addEventListener) {
+    window.addEventListener('load', initialize{mid}, false);
+} else {
+    window.attachEvent('onload', initialize{mid});
+}
 </script>
 
 {header}
 <h2>{name}</h2>
 {description}
- <div id="map_contener_m{mid}">
- <div id="map_canvas_m{mid}"></div>
- </div>
+<div id="map_contener_m{mid}">
+    <div id="map_canvas_m{mid}"></div>
+</div>
 {overlays_checkboxes}
 <small>{date_and_hits}</small>
 {footer}
-
 {edit_button}
