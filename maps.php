@@ -56,6 +56,12 @@ $_MAPS_CONF['max_image_size'] = 4194304;
 /**
  * Return a Google Maps JavaScript API URL suitable for modern browsers.
  *
+ * Maps 1.5 intentionally uses deterministic script loading rather than the
+ * async bootstrap option. The plugin has many legacy inline map initializers,
+ * and deterministic loading keeps Geeklog 2.1.1 themes working while avoiding
+ * race conditions. A future major version can move all rendering to
+ * importLibrary() once the legacy templates are retired.
+ *
  * Kept PHP 5.6 compatible intentionally.
  *
  * @param array $libraries Optional libraries to request
@@ -67,8 +73,7 @@ function MAPS_googleMapsApiUrl($libraries = array())
 
     $params = array(
         'key' => isset($_MAPS_CONF['google_api_key']) ? trim($_MAPS_CONF['google_api_key']) : '',
-        'v' => 'weekly',
-        'loading' => 'async'
+        'v' => 'weekly'
     );
 
     if (!empty($libraries)) {
