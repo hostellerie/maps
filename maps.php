@@ -11,6 +11,11 @@ if (!defined('VERSION')) {
 
 global $_CONF, $_TABLES, $_DB_table_prefix, $_MAPS_CONF;
 
+$modernLanguageFile = $_CONF['path'] . 'plugins/maps/language/modern.php';
+if (file_exists($modernLanguageFile)) {
+    require_once $modernLanguageFile;
+}
+
 if (!isset($_MAPS_CONF) || !is_array($_MAPS_CONF)) {
     $_MAPS_CONF = array();
 }
