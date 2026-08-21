@@ -1,0 +1,28 @@
+name: Build installable archive
+
+on:
+  push:
+    branches:
+      - modernize/maps-1.5
+  pull_request:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Geeklog plugin archive
+        shell: bash
+        run: |
+          set -e
+          mkdir -p dist/maps
+          cp -a admin autoinstall.php functions.inc install_defaults.php language maps.php public_html sql templates README.md dist/maps/
+          cd dist
+          zip -r maps-1.5.0-alpha1.zip maps >/dev/null
+      - name: Upload installable archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: maps-1.5.0-alpha1
+          path: dist/maps-1.5.0-alpha1.zip
+          if-no-files-found: error
+          retention-days: 7
