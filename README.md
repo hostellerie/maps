@@ -11,6 +11,12 @@ Maps is a Geeklog plugin for creating Google Maps, markers, overlays, profile ma
 
 PHP syntax is checked on PHP 5.6, 7.4 and 8.1 with GitHub Actions.
 
+## Modernization roadmap
+
+The current stabilization, UI/UX, security, testing and release plan is maintained in [ROADMAP.md](ROADMAP.md).
+
+The roadmap is the reference for deciding what belongs in the 1.5.x stabilization line and what should be deferred to a future 2.0 architecture.
+
 ## Google Maps Platform setup
 
 Create a Google Cloud project and enable billing for Google Maps Platform. Enable at least:
