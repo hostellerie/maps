@@ -320,8 +320,8 @@ function getMarkerForm($marker = array()) {
 			$datefrom = date("m/d/Y", strtotime($marker['validity_start']));
 			$template->set_var('from', $datefrom);
 		} else {
-			$datefrom = date("m/d/Y");
-			$template->set_var('from', $datefrom);
+		$datefrom = date("m/d/Y");
+		$template->set_var('from', $datefrom);
 		}
 		
 		$template->set_var('to_label', $LANG_MAPS_1['to']);
@@ -329,8 +329,8 @@ function getMarkerForm($marker = array()) {
 			$dateto = date("m/d/Y", strtotime($marker['validity_end']));
 			$template->set_var('to', $dateto);
 		} else {
-			$dateto = date("m/d/Y");
-			$template->set_var('to', $dateto);
+		$dateto = date("m/d/Y");
+		$template->set_var('to', $dateto);
 		}
 		
 		//note
