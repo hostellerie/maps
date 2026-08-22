@@ -45,14 +45,14 @@ $display = '';
 
 // Ensure user even has the rights to access this page
 if (! SEC_hasRights('maps.admin')) {
-    $display .= COM_siteHeader('menu', $MESSAGE[30])
+    $display .= MAPS_compatSiteHeader('menu', $MESSAGE[30])
              . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
-             . COM_siteFooter();
+             . MAPS_compatSiteFooter();
 
     // Log attempt to access.log
     COM_accessLog("User {$_USER['username']} tried to illegally access the Maps plugin import screen.");
 
-    echo $display;
+    MAPS_compatOutput($display);
     exit;
 }
 
@@ -100,13 +100,14 @@ function getImportExportForm() {
 	$template->set_var('separator_options_out', $separator_options);
 	//select map
 	$template->set_var('mid_label', $LANG_MAPS_1['name_label']);
-	$map_options = MAPS_recurseMaps($marker['mid']);
+	$map_options = MAPS_recurseMaps(isset($_REQUEST['mid']) ? $_REQUEST['mid'] : '');
 	$template->set_var('map_options', $map_options);
 	//Fields to import or export
 	$template->set_var('choose_fields_import', $LANG_MAPS_1['choose_fields_import']);
 	$template->set_var('choose_fields_export', $LANG_MAPS_1['choose_fields_export']);
 	$template->set_var('checkall', $LANG_MAPS_1['checkall']);
 	$valid_fieds = MAPS_getFieldsImportExport();
+	$fields_selector = '';
 	foreach ( $valid_fieds as $value ) {
 		$fields_selector .= '<input type="checkbox" name="import_export[]" value="' . $value . '" />' . $value . '<br' . XHTML . '>' . LB;
     } 
@@ -156,7 +157,7 @@ function MAPS_importCSV ($FILES = '', $map_id, $separator=';', $fields, $valid =
 		    $output .= $upload->printErrors (false);
 		    $output .= COM_endBlock (COM_getBlockTemplate ('_msg_block', 'footer'));
 		    $output .= COM_siteFooter ();
-		    echo $output;
+		    MAPS_compatOutput($output);
 		    exit;
 	    }
 
@@ -372,11 +373,11 @@ function MAPS_exportCSV ($map, $separator = ";", $fields=array()) {
 	$rows  = DB_numRows($result);
 	
 	if ($rows < 1 ||  $selected_fields == '') {
-		$display .= COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
+		$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
         $display .= MAPS_admin_menu();
         $display .= MAPS_message($LANG_MAPS_1['no_marker_to_export']);
-		$display .= COM_siteFooter(0);
-        COM_output($display);
+		$display .= MAPS_compatSiteFooter(0);
+        MAPS_compatOutput($display);
 		exit();
 	}
 	$search = array(',','\'',' ','.','!',':');
@@ -415,31 +416,31 @@ switch ($_REQUEST['mode']) {
 	    break;
 		
 	case 'import':
-	    $display .= COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
+	    $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
         $display .= MAPS_admin_menu();
 		$display .= MAPS_importCSV ($_FILES, $_REQUEST['mid'], $_REQUEST['separator_in'], $_REQUEST['import_export']);
-		$display .= COM_siteFooter(0);
-        COM_output($display);
+		$display .= MAPS_compatSiteFooter(0);
+        MAPS_compatOutput($display);
 	    break;
 	
 	case 'valid':
-	    $display .= COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
+	    $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
         $display .= MAPS_admin_menu();
 		if ( $_REQUEST['submit'] == $LANG_MAPS_1['yes']) {
     		$display .= MAPS_importCSV ('', $_REQUEST['mid'], $_REQUEST['separator_in'], $_REQUEST['import_export'], true, $_REQUEST['filename']);
 		} else {
 		    $display .= getImportExportForm();
 		}
-		$display .= COM_siteFooter(0);
-        COM_output($display);
+		$display .= MAPS_compatSiteFooter(0);
+        MAPS_compatOutput($display);
 	    break;
 
     default:
-	    $display .= COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
+	    $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
         $display .= MAPS_admin_menu();
         $display .= getImportExportForm();
-		$display .= COM_siteFooter(0);
-        COM_output($display);
+		$display .= MAPS_compatSiteFooter(0);
+        MAPS_compatOutput($display);
         break;
 }
 
