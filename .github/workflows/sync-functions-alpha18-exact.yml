@@ -1,0 +1,51 @@
+name: Exact alpha18 functions sync
+
+on:
+  push:
+    branches:
+      - modernize/maps-1.5
+    paths:
+      - .github/workflows/sync-functions-alpha18-exact.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modernize/maps-1.5
+          fetch-depth: 0
+      - name: Rebuild exact functions.inc
+        shell: python
+        run: |
+          import base64
+          import gzip
+          import subprocess
+          from pathlib import Path
+
+          payload = ''.join(
+              Path('.sync-alpha18/functions.%02d' % i).read_text(encoding='utf-8').strip()
+              for i in range(3)
+          )
+          data = gzip.decompress(base64.b64decode(payload))
+          Path('functions.inc').write_bytes(data)
+
+          expected = 'c9f1204bd11b0594b24f6efa9992bf67c7e6df2c'
+          actual = subprocess.check_output(
+              ['git', 'hash-object', 'functions.inc'], text=True
+          ).strip()
+          print('functions.inc git blob:', actual)
+          if actual != expected:
+              raise SystemExit('Blob mismatch: expected %s, got %s' % (expected, actual))
+      - name: Commit exact alpha18 file and cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/sync-functions-alpha18-exact.yml
+          git rm .sync-alpha18/functions.00 .sync-alpha18/functions.01 .sync-alpha18/functions.02
+          git add functions.inc
+          git commit -m "Sync functions.inc exactly with Maps 1.5.6 alpha18"
+          git push origin HEAD:modernize/maps-1.5
