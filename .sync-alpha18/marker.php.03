@@ -1,0 +1,240 @@
+		function limitText(limitField, limitCount, limitNum)
+		{
+			if (limitField.value.length > limitNum) {
+				limitField.value = limitField.value.substring(0, limitNum);
+			} else {
+				limitCount.value = limitNum - limitField.value.length;
+			}
+		}
+
+		function copyText()
+		{
+			var t1 = document.getElementById(\'geoaddress\').value;
+			document.getElementById(\'address\').value = t1;
+		}
+
+
+		function updateIconPreview() {
+			var checkedIcon = document.querySelector("input[name=\"mk_icon\"]:checked");
+			var preview = document.getElementById("maps-icon-preview");
+			if (!preview || !checkedIcon) { return; }
+			var allChoices = document.querySelectorAll(".maps-icon-choice");
+			for (var choiceIndex = 0; choiceIndex < allChoices.length; choiceIndex++) {
+				allChoices[choiceIndex].classList.remove("is-selected");
+			}
+			if (checkedIcon.parentNode && checkedIcon.parentNode.classList) {
+				checkedIcon.parentNode.classList.add("is-selected");
+			}
+			var src = checkedIcon.getAttribute("data-icon-src") || "";
+			preview.innerHTML = "";
+			if (src) {
+				var image = document.createElement("img");
+				image.src = src;
+				image.alt = "";
+				preview.appendChild(image);
+			} else {
+				var text = document.createElement("span");
+				text.textContent = ' . MAPS_jsString($LANG_MAPS_1['no_icon']) . ';
+				preview.appendChild(text);
+			}
+		}
+
+		var iconChoices = document.querySelectorAll("input[name=\"mk_icon\"]");
+		for (var iconIndex = 0; iconIndex < iconChoices.length; iconIndex++) {
+			iconChoices[iconIndex].addEventListener("change", updateIconPreview);
+		}
+		updateIconPreview();
+		jQuery(document).on(\'click\', \'.maps-delete-marker\', function (event) {
+			event.preventDefault();
+			if (!window.confirm(' . $deleteConfirmJs . ')) {
+				return;
+			}
+			var form = this.form;
+			if (!form) { return; }
+			var mode = document.createElement(\'input\');
+			mode.type = \'hidden\';
+			mode.name = \'mode\';
+			mode.value = \'delete\';
+			form.appendChild(mode);
+			form.submit();
+		});
+		</script>' . LB. LB;
+		
+	$_SCRIPTS->setJavaScript($js, false);
+	$_SCRIPTS->setJavaScriptFile('ui_core', '/javascript/jquery_ui/jquery.ui.core.min.js');
+	$_SCRIPTS->setJavaScriptFile('datepicker', '/javascript/jquery_ui/jquery.ui.datepicker.min.js');
+
+    return $display;
+}
+
+// MAIN
+$mkid = isset($_REQUEST['mkid']) ? preg_replace('/[^0-9]/', '', (string) $_REQUEST['mkid']) : '';
+$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
+$display .= maps_admin_menu();
+
+$requestMode = isset($_REQUEST['mode']) ? $_REQUEST['mode'] : '';
+switch ($requestMode) {
+    case 'delete':
+        $isSubmission = isset($_REQUEST['submission']) ? (int) $_REQUEST['submission'] : 0;
+	    if ($isSubmission !== 1) {
+			DB_delete($_TABLES['maps_markers'], 'mkid', $mkid);
+			if (DB_affectedRows('') == 1) {
+				$msg = $LANG_MAPS_1['deletion_succes'];
+			} else {
+				$msg = $LANG_MAPS_1['deletion_fail'];
+			}
+			// delete complete, return to map list
+			echo COM_refresh($_CONF['site_url'] . "/admin/plugins/maps/markers.php?msg=$msg");
+		} else {
+		    echo COM_refresh($_CONF['site_url'] . "/admin/moderation.php");
+		}
+        exit();
+        break;
+
+    case 'save':
+        // Normalize all fields used by the save routine. HTML controls such as
+        // unchecked checkboxes are legitimately omitted from the request.
+        $saveDefaults = array(
+            'mkid' => '', 'mid' => '', 'name' => '', 'description' => '', 'address' => '',
+            'lat' => '', 'lng' => '', 'remark' => '', 'street' => '', 'code' => '',
+            'city' => '', 'state' => '', 'country' => '', 'tel' => '', 'fax' => '', 'web' => '',
+            'validity' => 0, 'validity_start' => '', 'validity_end' => '',
+            'active' => 1, 'hidden' => 0, 'payed' => 0,
+            'mk_default' => 1, 'mk_icon' => 0, 'primary_color' => '',
+            'stroke_color' => '', 'label' => '', 'label_color' => 0,
+            'owner_id' => isset($_USER['uid']) ? $_USER['uid'] : 2,
+            'group_id' => isset($_GROUPS['Maps Admin']) ? $_GROUPS['Maps Admin'] : 2,
+            'submission' => 0,
+            'perm_owner' => array(), 'perm_group' => array(),
+            'perm_members' => array(), 'perm_anon' => array(),
+            'item_1' => '', 'item_2' => '', 'item_3' => '', 'item_4' => '', 'item_5' => '',
+            'item_6' => '', 'item_7' => '', 'item_8' => '', 'item_9' => '', 'item_10' => ''
+        );
+        $_REQUEST = array_merge($saveDefaults, $_REQUEST);
+
+        if (empty($_REQUEST['name']) || empty($_REQUEST['address'])) {
+            $display .= COM_startBlock($LANG_MAPS_1['error'],'','blockheader-message.thtml');
+            $display .= $LANG_MAPS_1['missing_field'];
+            $display .= COM_endBlock('blockfooter-message.thtml');
+            $display .= getMarkerForm($_REQUEST);
+            break;
+        }
+        $fromInput = isset($_POST['from']) ? trim($_POST['from']) : '';
+        $toInput = isset($_POST['to']) ? trim($_POST['to']) : '';
+
+		if ($fromInput !== '' && $toInput !== '' && $fromInput > $toInput) {
+            $display .= COM_startBlock($LANG_MAPS_1['error'],'','blockheader-message.thtml');
+            $display .= $LANG_MAPS_1['date_issue'];
+            $display .= COM_endBlock('blockfooter-message.thtml');
+			$_REQUEST['validity_start'] = $fromInput;
+			$_REQUEST['validity_end'] = $toInput;
+            $display .= getMarkerForm($_REQUEST);
+            break;
+        }
+		
+		// prepare strings for insertion
+		$_REQUEST['created'] = date("YmdHis");
+		$_REQUEST['modified'] = date("YmdHis");
+
+        $_REQUEST['from'] = ($fromInput === '') ? date("Ymd") : date("Ymd", strtotime($fromInput));
+        $_REQUEST['to'] = ($toInput === '') ? date("Ymd") : date("Ymd", strtotime($toInput));
+		
+        // lat, lng can only contain numbers and a decimal
+		if (empty($_REQUEST['lat']) || empty($_REQUEST['lng'])) {
+		    $address = $_REQUEST['address'];
+		    $coords = MAPS_getCoords($address, $lat, $lng);
+			if ($lat == 0 && $lng == 0) {
+			    $display .= getMarkerForm($_REQUEST);
+				$display .= MAPS_compatSiteFooter();
+				MAPS_compatOutput($display);
+				exit();
+			}
+			
+		} else {
+		    $lat = strval ($_REQUEST['lat']);
+			$lng = strval ($_REQUEST['lng']);
+		}
+		
+        // Permission checkboxes are omitted by the browser when none are checked.
+        // Normalize all four permission groups before handing them to Geeklog.
+        $permissionKeys = array('perm_owner', 'perm_group', 'perm_members', 'perm_anon');
+        foreach ($permissionKeys as $permissionKey) {
+            if (!isset($_REQUEST[$permissionKey])) {
+                $_REQUEST[$permissionKey] = array();
+            }
+        }
+
+        if (is_array($_REQUEST['perm_owner']) || is_array($_REQUEST['perm_group']) ||
+            is_array($_REQUEST['perm_members']) || is_array($_REQUEST['perm_anon'])) {
+            list(
+                $_REQUEST['perm_owner'],
+                $_REQUEST['perm_group'],
+                $_REQUEST['perm_members'],
+                $_REQUEST['perm_anon']
+            ) = SEC_getPermissionValues(
+                (array) $_REQUEST['perm_owner'],
+                (array) $_REQUEST['perm_group'],
+                (array) $_REQUEST['perm_members'],
+                (array) $_REQUEST['perm_anon']
+            );
+        }
+		
+        // Persist valid HTML color values even when historical rows or
+        // crafted requests contain an empty/malformed value.
+        $_REQUEST['primary_color'] = MAPS_htmlColor(
+            isset($_REQUEST['primary_color']) ? $_REQUEST['primary_color'] : '',
+            MAPS_arrayGet($_MAPS_CONF, 'map_primary_color', '#666666')
+        );
+        $_REQUEST['stroke_color'] = MAPS_htmlColor(
+            isset($_REQUEST['stroke_color']) ? $_REQUEST['stroke_color'] : '',
+            MAPS_arrayGet($_MAPS_CONF, 'map_stroke_color', '#333333')
+        );
+
+        // Escape database strings centrally. Do not use addslashes(): its
+        // behavior is not database-aware and can double-escape legacy data.
+        $stringFields = array(
+            'name', 'description', 'address', 'remark', 'street', 'code', 'city',
+            'state', 'country', 'tel', 'fax', 'web', 'primary_color',
+            'stroke_color', 'label'
+        );
+        for ($itemIndex = 1; $itemIndex <= 10; $itemIndex++) {
+            $stringFields[] = 'item_' . $itemIndex;
+        }
+        foreach ($stringFields as $stringField) {
+            $_REQUEST[$stringField] = MAPS_dbEscape(isset($_REQUEST[$stringField]) ? $_REQUEST[$stringField] : '');
+        }
+
+        // Numeric values are serialized as integers before SQL construction.
+        foreach (array('payed', 'validity', 'active', 'hidden', 'mk_default', 'mk_icon',
+                       'label_color', 'mid', 'owner_id', 'group_id', 'perm_owner',
+                       'perm_group', 'perm_members', 'perm_anon') as $numericField) {
+            $_REQUEST[$numericField] = (int) $_REQUEST[$numericField];
+        }
+        $lat = MAPS_canonicalNumberString($lat, '0');
+        $lng = MAPS_canonicalNumberString($lng, '0');
+
+     
+		if (!empty($_REQUEST['mkid']) && ($_REQUEST['submission'] <> 1)) { //edit mode
+		        $sql = "name = '{$_REQUEST['name']}', "
+             . "description = '{$_REQUEST['description']}', "
+			 . "modified = '{$_REQUEST['modified']}', "
+			 . "payed = '{$_REQUEST['payed']}', "
+             . "validity = '{$_REQUEST['validity']}', "
+			 . "validity_start = '{$_REQUEST['from']}', "
+			 . "validity_end = '{$_REQUEST['to']}', "
+             . "active = '{$_REQUEST['active']}', "
+             . "hidden = '{$_REQUEST['hidden']}', "
+			 . "address = '{$_REQUEST['address']}', "
+			 . "lat = '{$lat}', "
+			 . "lng = '{$lng}', "
+			 . "mk_default = '{$_REQUEST['mk_default']}', "
+			 . "mk_pcolor = '{$_REQUEST['primary_color']}', "
+			 . "mk_scolor = '{$_REQUEST['stroke_color']}', "
+			 . "mk_label = '{$_REQUEST['label']}', "
+			 . "mk_label_color = '{$_REQUEST['label_color']}', "
+			 . "mk_icon = '{$_REQUEST['mk_icon']}', "
+			 . "mid = '{$_REQUEST['mid']}', "
+			 . "remark = '{$_REQUEST['remark']}', "
+			 . "street = '{$_REQUEST['street']}', "
+			 . "city = '{$_REQUEST['city']}', "
+			 . "code = '{$_REQUEST['code']}', "
