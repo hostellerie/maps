@@ -39,7 +39,11 @@ jobs:
               Path(target).write_bytes(gzip.decompress(base64.b64decode(payload)))
               verify(target, expected)
 
-          marker_parts = [Path('.sync-alpha18/marker.php.%02d' % i).read_bytes() for i in range(5)]
+          marker_parts = []
+          marker_parts.append(Path('.sync-alpha18/marker.php.00').read_bytes())
+          marker01_payload = Path('.sync-alpha18/marker01.gz.b64').read_text(encoding='utf-8').strip()
+          marker_parts.append(gzip.decompress(base64.b64decode(marker01_payload)))
+          marker_parts.extend(Path('.sync-alpha18/marker.php.%02d' % i).read_bytes() for i in range(2, 5))
           expected_sizes = [4688, 11593, 10468, 10192, 5528]
           actual_sizes = [len(part) for part in marker_parts]
           print('marker chunks:', actual_sizes)
@@ -60,7 +64,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/sync-alpha18-final-files.yml
           git rm .sync-alpha18/english.gz.b64 .sync-alpha18/french.gz.b64 .sync-alpha18/marker.gz.b64 .sync-alpha18/import.gz.b64
-          git rm .sync-alpha18/marker.php.00 .sync-alpha18/marker.php.01 .sync-alpha18/marker.php.02 .sync-alpha18/marker.php.03 .sync-alpha18/marker.php.04
+          git rm .sync-alpha18/marker.php.00 .sync-alpha18/marker.php.01 .sync-alpha18/marker.php.02 .sync-alpha18/marker.php.03 .sync-alpha18/marker.php.04 .sync-alpha18/marker01.gz.b64
           git add language/english.php language/french_france_utf-8.php admin/marker_edit.php admin/import_export.php
           git commit -m "Sync remaining Maps 1.5.6 alpha18 files exactly"
           git push origin HEAD:modernize/maps-1.5
