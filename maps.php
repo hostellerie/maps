@@ -1,6 +1,6 @@
 <?php
 // +--------------------------------------------------------------------------+
-// | Maps Plugin 1.5.0                                                        |
+// | Maps Plugin 1.5.6                                                        |
 // +--------------------------------------------------------------------------+
 // | Runtime configuration and table definitions                              |
 // +--------------------------------------------------------------------------+
@@ -20,9 +20,15 @@ if (!isset($_MAPS_CONF) || !is_array($_MAPS_CONF)) {
     $_MAPS_CONF = array();
 }
 
-if (!isset($_MAPS_CONF['maps_folder']) || $_MAPS_CONF['maps_folder'] === '') {
-    $_MAPS_CONF['maps_folder'] = 'maps';
-}
+// Maps 1.5.2 uses a fixed public folder. Preserve the configured 1.5.1
+// value for the upgrader before normalizing all runtime URLs to /maps/.
+$legacyMapsFolder = isset($_MAPS_CONF['maps_folder'])
+    ? (string) $_MAPS_CONF['maps_folder']
+    : (isset($_MAPS_CONF['legacy_maps_folder']) ? (string) $_MAPS_CONF['legacy_maps_folder'] : 'maps');
+$_MAPS_CONF['_legacy_maps_folder'] = $legacyMapsFolder;
+$_MAPS_CONF['maps_folder'] = 'maps';
+
+// Legacy-folder configuration cleanup is handled by the 1.5.3 upgrade.
 
 /*
  * Public plugin paths.
@@ -54,18 +60,24 @@ if ($imagesRelativePath !== '') {
 $_MAPS_CONF['images_overlay_url'] = $imagesBaseUrl . '/maps/overlays/';
 $_MAPS_CONF['images_icons_url'] = $imagesBaseUrl . '/maps/icons/';
 
-$_MAPS_CONF['max_image_width'] = 2000;
-$_MAPS_CONF['max_image_height'] = 2000;
-$_MAPS_CONF['max_image_size'] = 4194304;
+if (!isset($_MAPS_CONF['max_image_width'])) {
+    $_MAPS_CONF['max_image_width'] = 2000;
+}
+if (!isset($_MAPS_CONF['max_image_height'])) {
+    $_MAPS_CONF['max_image_height'] = 2000;
+}
+if (!isset($_MAPS_CONF['max_image_size'])) {
+    $_MAPS_CONF['max_image_size'] = 4194304;
+}
 
 /**
  * Return a Google Maps JavaScript API URL suitable for modern browsers.
  *
- * Maps 1.5 intentionally uses deterministic script loading rather than the
- * async bootstrap option. The plugin has many legacy inline map initializers,
- * and deterministic loading keeps Geeklog 2.1.1 themes working while avoiding
- * race conditions. A future major version can move all rendering to
- * importLibrary() once the legacy templates are retired.
+ * Maps keeps deterministic script element ordering for Geeklog 2.1.1
+ * compatibility, while using Google's loading=async URL hint. This removes
+ * the current Google Maps performance warning without making legacy inline
+ * initializers race an asynchronously inserted script element. A future major
+ * version can move all rendering to importLibrary().
  *
  * Kept PHP 5.6 compatible intentionally.
  *
@@ -78,7 +90,8 @@ function MAPS_googleMapsApiUrl($libraries = array())
 
     $params = array(
         'key' => isset($_MAPS_CONF['google_api_key']) ? trim($_MAPS_CONF['google_api_key']) : '',
-        'v' => 'weekly'
+        'v' => 'weekly',
+        'loading' => 'async'
     );
 
     if (!empty($libraries)) {
