@@ -45,13 +45,15 @@ if (!in_array('maps', $_PLUGINS)) {
 
 MAPS_getheadercode();
 
+$display = '';
+
 // Ensure user has the rights to access this page
-if (COM_isAnonUser() && (($_CONF['loginrequired'] == 1) || ($_MAPS_CONF['maps_login_required'] == 1))) {
-	$display .= COM_siteHeader('');
+if (COM_isAnonUser() && (($_CONF['loginrequired'] == 1) || (MAPS_arrayGet($_MAPS_CONF, 'maps_login_required', 0) == 1))) {
+	$display .= MAPS_compatSiteHeader('');
 	$display .= MAPS_user_menu();
     $display .= COM_startBlock ($LANG_LOGIN[1], '',
                                 COM_getBlockTemplate ('_msg_block', 'header'));
-    $login = new Template($_CONF['path'] . 'plugins/maps/templates');
+    $login = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
     $login->set_file (array ('login'=>'submitloginrequired.thtml'));
     $login->set_var ( 'xhtml', XHTML );
     $login->set_var ('login_message', $LANG_LOGIN[2]);
@@ -63,42 +65,43 @@ if (COM_isAnonUser() && (($_CONF['loginrequired'] == 1) || ($_MAPS_CONF['maps_lo
     $login->parse ('output', 'login');
     $display .= $login->finish ($login->get_var('output'));
     $display .= COM_endBlock (COM_getBlockTemplate ('_msg_block', 'footer'));
-    $display .= COM_siteFooter();
-    COM_output($display);
+    $display .= MAPS_compatSiteFooter();
+    MAPS_compatOutput($display);
     exit;
 }
 
 function getUsersMap () {
 
     global $_TABLES, $LANG_MAPS_1, $_MAPS_CONF, $_CONF, $_USER;
+
+    $retval = '';
 		
 	// Ensure user has the rights to access this map
-	if ($_MAPS_CONF['users_map'] == 0) {
+	if (MAPS_arrayGet($_MAPS_CONF, 'users_map', 0) == 0) {
 		echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php');
 		exit ();
 	}
 	
-	$T = new Template($_CONF['path'] . 'plugins/maps/templates');
+	$T = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
 	$T->set_file('page', 'map.thtml');
-	$T->set_var('mid', '0');
+	MAPS_fillMapCommon(
+		$T,
+		0,
+		0,
+		0,
+		MAPS_arrayGet($_MAPS_CONF, 'global_zoom', 2),
+		MAPS_arrayGet($_MAPS_CONF, 'global_type', 'ROADMAP'),
+		MAPS_arrayGet($_MAPS_CONF, 'global_width', '100%'),
+		MAPS_arrayGet($_MAPS_CONF, 'global_height', '600px')
+	);
 	$T->set_var('name', $LANG_MAPS_1['users_map']);
 	$T->set_var('description', '<p>' . $LANG_MAPS_1['info_users_map'] . '</p>');
 	$T->set_var('header', '');
 	$T->set_var('footer', '');
-	
-	//Users maps is set by default on 0,0. Todo make it configurable 
 	$T->set_var('address', '');
-	$T->set_var('lat', 0);
-	$T->set_var('lng', 0);
-	$T->set_var('zoom', $_MAPS_CONF['global_zoom']);
-	$T->set_var('goog_api_key', $_MAPS_CONF['google_api_key']);
-	$T->set_var('map_type', $_MAPS_CONF['global_type']);
-	$T->set_var('map_width', $_MAPS_CONF['global_width']);
-	$T->set_var('map_height', $_MAPS_CONF['global_height']);
-	
 	$T->set_var('primaryColor', '');
 	$T->set_var('stroke_color', '');
-	if ($_MAPS_CONF['label_color'] == 1) {
+	if (MAPS_arrayGet($_MAPS_CONF, 'label_color', 0) == 1) {
 		$label_color = '#FFFFFF';
 	} else {
 		$label_color = '#000000';
@@ -106,9 +109,14 @@ function getUsersMap () {
 	$T->set_var('label_color', $label_color);
 	$T->set_var('label', '');
 
+    $userAttributesTable = MAPS_userAttributesTable();
+    if ($userAttributesTable === '') {
+        return '<p>' . htmlspecialchars($LANG_MAPS_1['no_marker'], ENT_QUOTES, 'UTF-8') . '</p>';
+    }
+
 	$sql = "
 	    SELECT info.uid, info.location, info.about, geo.lat, geo.lng, user.username, user.fullname, user.photo, user.regdate 
-	    FROM {$_TABLES['userinfo']} AS info 
+	    FROM {$userAttributesTable} AS info 
 		INNER JOIN {$_TABLES['maps_geo']} AS geo 
 		ON geo.geo = info.location 
 		INNER JOIN {$_TABLES['users']} AS user 
@@ -123,11 +131,11 @@ function getUsersMap () {
 	
 	$markers = 'var markers = [];';	
 	
-	if ( $_MAPS_CONF['use_cluster'] == 0 ) {
-	    $T->set_var('markerclusterer', "<script src=\"{$_MAPS_CONF['site_url']}/js/markerclusterer.js\" type=\"text/javascript\"></script>");
-	} else {
-	    $T->set_var('markerclusterer', '');
-	}
+    if ((int) MAPS_arrayGet($_MAPS_CONF, 'use_cluster', 0) === 1) {
+        $T->set_var('markerclusterer', MAPS_clusterScriptTag());
+    } else {
+        $T->set_var('markerclusterer', '');
+    }
 	
     for ( $i=0; $i < $nRows; $i++ ) {
         
@@ -135,43 +143,22 @@ function getUsersMap () {
 		
 	    $marker['mkid'] = $marker['uid'];
 
-		//icon
-		$markers .= LB . '';
-		
-		if ( $marker['photo'] != '' && file_exists($_CONF['path_images'] . 'userphotos/' . $marker['photo']) ) {
-		
-		    $markers .= LB . 'var image' . $marker['mkid'] . ' = {
-				url: "' . $_MAPS_CONF['site_url'] . '/timthumb.php?src='
-				. $_CONF['site_url'] . '/' . substr($_CONF['path_images'], strlen($_CONF['path_html']), -1) . '/userphotos/' . $marker['photo'] . '&w=30&h=30&q=90",
-				size: new google.maps.Size(30,30),
-				// The origin for this image
-				origin: new google.maps.Point(0,0),
-				// The anchor for this image
-				anchor: new google.maps.Point(15, 30)
-			};';
-		} else {
-     		$markers .= LB . 'var image' . $marker['mkid'] . ' = {
-				url: "' . $_MAPS_CONF['site_url'] . '/images/usermarker.png",
-				size: new google.maps.Size(37, 37),
-				// The origin for this image
-				origin: new google.maps.Point(0,0),
-				// The anchor for this image
-				anchor: new google.maps.Point(17,37)
-			};';
-		}
-		
-		$markers .= LB . '				var marker' . $marker['mkid'] .' = new google.maps.Marker({
-		 position: new google.maps.LatLng('. $marker['lat']. ', '. $marker['lng'] .'),
-		 map:map0,
-		 title: "' .  $marker['username'] . '",
-		 animation: google.maps.Animation.DROP,
-		 icon: image' . $marker['mkid'] . '
-		 });' . LB ;
-		 
+		$markers .= LB
+			. '                var marker' . (int) $marker['mkid'] . ' = new google.maps.Marker({' . LB
+			. '                    position: {lat: Number(' . MAPS_jsNumber(MAPS_arrayGet($marker, 'lat', 0), 0)
+			. '), lng: Number(' . MAPS_jsNumber(MAPS_arrayGet($marker, 'lng', 0), 0) . ')},' . LB
+			. '                    map: map0,' . LB
+			. '                    title: ' . MAPS_jsString(MAPS_arrayGet($marker, 'username', '')) . ',' . LB
+			. '                    animation: google.maps.Animation.DROP' . LB
+			. '                });' . LB;
+
+
 		//Infowindow link to user profile
 		$bio = '';
 		if ($marker['about'] != '') $bio = preg_replace( "/\r|\n/", "", nl2br(substr ( $marker['about'] ,0, 150 ))) . '...<br' .  XHTML . '>';
-		$presentation = '<div style="overflow:auto;width:250px;height:150px"><p><strong><span style="text-transform:uppercase;">' . $marker['username'] . '</span></strong></p>' . $bio;
+		$popupWidth = MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'popup_width', '250px'), '250px');
+        $popupHeight = MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'popup_height', '150px'), '150px');
+        $presentation = '<div style="overflow:auto;width:' . $popupWidth . ';height:' . $popupHeight . '"><p><strong><span style="text-transform:uppercase;">' . htmlspecialchars($marker['username'], ENT_QUOTES, 'UTF-8') . '</span></strong></p>' . $bio;
 		$presentation .= '<a href="'. $_CONF['site_url'] .'/users.php?mode=profile&uid=' . $marker['uid'] . '">' . $LANG_MAPS_1['read_more'] . '</a>';
 		$presentation .= '</div>';
 		
@@ -185,13 +172,15 @@ function getUsersMap () {
 		  });' . LB;
 
 		// Add marker to map
-		if ( $_MAPS_CONF['use_cluster'] == 1 ) {
+		if ( MAPS_arrayGet($_MAPS_CONF, 'use_cluster', 0) == 1 ) {
 		    $markers .= '				    markers.push(marker' . $marker['mkid'] .');' . LB;
 		}
 		
 	}
 	
-	$markers .= LB . '				var markerCluster = new MarkerClusterer(map0, markers);' . LB; 
+    if ((int) MAPS_arrayGet($_MAPS_CONF, 'use_cluster', 0) === 1) {
+        $markers .= LB . MAPS_clusterInitJs('map0') . LB;
+    }
 	
 	//Ads	
 	$ads = MAPS_getAds (0);
@@ -211,18 +200,18 @@ function getUsersMap () {
 
 $display = '';
 
-$display .= COM_siteHeader('menu', $LANG_MAPS_1['users_map']);
+$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['users_map']);
 $display .= MAPS_user_menu();
 
-if ($_MAPS_CONF['users_map'] == 1) {
+if (MAPS_arrayGet($_MAPS_CONF, 'users_map', 0) == 1) {
     //Display the Users Map 
 	$display .= getUsersMap();
 } else {
     echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php');
 }
 
-$display .= COM_siteFooter();
+$display .= MAPS_compatSiteFooter();
 
-echo $display;
+MAPS_compatOutput($display);
 
 ?>

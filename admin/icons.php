@@ -40,14 +40,14 @@ $display = '';
 
 // Ensure user even has the rights to access this page
 if (! SEC_hasRights('maps.admin')) {
-    $display .= COM_siteHeader('menu', $MESSAGE[30])
+    $display .= MAPS_compatSiteHeader('menu', $MESSAGE[30])
              . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
-             . COM_siteFooter();
+             . MAPS_compatSiteFooter();
 
     // Log attempt to access.log
     COM_accessLog("User {$_USER['username']} tried to illegally access the Maps plugin administration screen.");
 
-    echo $display;
+    MAPS_compatOutput($display);
     exit;
 }
 
@@ -158,6 +158,10 @@ function MAPS_geticonForm($icon = array()) {
 
     global $_CONF, $_TABLES, $_MAPS_CONF, $LANG_MAPS_1, $LANG_configselects, $LANG_ACCESS, $_USER, $_GROUPS, $_SCRIPTS;
     
+    $iconDefaults = array('icon_id' => 0, 'icon_name' => '', 'icon_image' => '');
+    $icon = array_merge($iconDefaults, is_array($icon) ? $icon : array());
+
+    
 	$display = COM_startBlock('<h1>' . $LANG_MAPS_1['icon_edit'] . '</h1>');
 	
 	$template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
@@ -210,13 +214,13 @@ function MAPS_saveIconImage ($icon, $FILES, $id) {
 	
     $args = &$icon;
 
-    // Handle Magic GPC Garbage:
-    while (list($key, $value) = each($args)) {
+    // Handle legacy slashes without using each(), removed in PHP 8.
+    foreach ($args as $key => $value) {
         if (!is_array($value)) {
             $args[$key] = COM_stripslashes($value);
         } else {
-            while (list($subkey, $subvalue) = each($value)) {
-                $value[$subkey] = COM_stripslashes($subvalue);
+            foreach ($value as $subkey => $subvalue) {
+                $args[$key][$subkey] = COM_stripslashes($subvalue);
             }
         }
     }
@@ -263,7 +267,7 @@ function MAPS_saveIconImage ($icon, $FILES, $id) {
 		$output .= $upload->printErrors (false);
 		$output .= COM_endBlock (COM_getBlockTemplate ('_msg_block', 'footer'));
 		$output .= COM_siteFooter ();
-		echo $output;
+		MAPS_compatOutput($output);
 		exit;
 	}
 
@@ -289,13 +293,13 @@ function MAPS_saveIconImage ($icon, $FILES, $id) {
 		$upload->uploadFiles();
 
 		if ($upload->areErrors()) {
-			$retval = COM_siteHeader('menu', $LANG24[30]);
+			$retval = MAPS_compatSiteHeader('menu', $LANG24[30]);
 			$retval .= COM_startBlock ($LANG24[30], '',
 						COM_getBlockTemplate ('_msg_block', 'header'));
 			$retval .= $upload->printErrors(false);
 			$retval .= COM_endBlock(COM_getBlockTemplate ('_msg_block', 'footer'));
-			$retval .= COM_siteFooter();
-			echo $retval;
+			$retval .= MAPS_compatSiteFooter();
+			MAPS_compatOutput($retval);
 			exit;
 		}
 		
@@ -322,7 +326,7 @@ function MAPS_deleteIconImage ($image)
 }
 
 // MAIN
-$display .= COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
+$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
 $display .= maps_admin_menu();
 
 if (!empty($_REQUEST['msg'])) {
@@ -408,8 +412,8 @@ if ( !file_exists($_MAPS_CONF['path_icons_images']) || !is_writable($_MAPS_CONF[
 	}
 }
 
-$display .= COM_siteFooter(0);
+$display .= MAPS_compatSiteFooter(0);
 
-COM_output($display);
+MAPS_compatOutput($display);
 
 ?>
