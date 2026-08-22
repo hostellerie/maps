@@ -38,29 +38,35 @@
 require_once '../../../lib-common.php';
 require_once '../../auth.inc.php';
 
+/*
+ * Configuration and public-folder migrations are executed by
+ * plugin_upgrade_maps(). Run the normal Geeklog plugin upgrade from
+ * /admin/plugins.php before opening this page after installing new files.
+ */
+
 MAPS_getheadercode();
 
 $display = '';
 
 // Ensure user even has the rights to access this page
 if (! SEC_hasRights('maps.admin')) {
-    $display .= COM_siteHeader('menu', $MESSAGE[30])
+    $display .= MAPS_compatSiteHeader('menu', $MESSAGE[30])
              . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
-             . COM_siteFooter();
+             . MAPS_compatSiteFooter();
 
     // Log attempt to access.log
     COM_accessLog("User {$_USER['username']} tried to illegally access the Maps plugin administration screen.");
 
-    echo $display;
+    MAPS_compatOutput($display);
     exit;
 }
 
 // Incoming variable filter
 $vars = array('mode' => 'alpha',
                'cid' => 'number',
-			   'id'  => 'number',
-			   'msg' => 'text'
-			  );
+               'id'  => 'number',
+               'msg' => 'text'
+              );
 
 MAPS_filterVars($vars, $_REQUEST);
 
@@ -77,15 +83,16 @@ function MAPS_listmaps()
     require_once $_CONF['path_system'] . 'lib-admin.php';
 
     $retval = '';
-	
-	if (DB_count($_TABLES['maps_maps']) == 0){
-	return $retval = '';
-	}
 
-    $header_arr = array(      // display 'text' and use table field 'field'
+    if (DB_count($_TABLES['maps_maps']) == 0){
+        return $retval = '';
+    }
+
+    $header_arr = array(
         array('text' => $LANG_ADMIN['edit'], 'field' => 'edit', 'sort' => false),
         array('text' => $LANG_MAPS_1['id'], 'field' => 'mid', 'sort' => true),
         array('text' => $LANG_MAPS_1['name'], 'field' => 'name', 'sort' => true),
+        array('text' => $LANG_MAPS_1['marker_count'], 'field' => 'marker_count', 'sort' => true),
         array('text' => $LANG_MAPS_1['active_field'], 'field' => 'active', 'sort' => true),
         array('text' => $LANG_MAPS_1['hidden_field'], 'field' => 'hidden', 'sort' => true)
     );
@@ -95,11 +102,11 @@ function MAPS_listmaps()
         'has_extras' => true,
         'form_url' => $_CONF['site_admin_url'] . '/plugins/maps/index.php'
     );
-	
-	$sql = "SELECT
-	            *
-            FROM {$_TABLES['maps_maps']}
-			WHERE 1=1";
+
+    $sql = "SELECT m.*,
+                   (SELECT COUNT(*) FROM {$_TABLES['maps_markers']} AS mm WHERE mm.mid = m.mid) AS marker_count
+            FROM {$_TABLES['maps_maps']} AS m
+            WHERE 1=1";
 
     $query_arr = array(
         'table'          => 'maps_maps',
@@ -114,53 +121,43 @@ function MAPS_listmaps()
     return $retval;
 }
 
-/**
-*   Get an individual field for the maps screen.
-*
-*   @param  string  $fieldname  Name of field (from the array, not the db)
-*   @param  mixed   $fieldvalue Value of the field
-*   @param  array   $A          Array of all fields from the database
-*   @param  array   $icon_arr   System icon array
-*   @param  object  $EntryList  This entry list object
-*   @return string              HTML for field display in the table
-*/
 function plugin_getListField_maps($fieldname, $fieldvalue, $A, $icon_arr)
 {
-    global $_CONF, $LANG_ADMIN, $LANG_STATIC, $_TABLES, $_MAPS_CONF;
+    global $_CONF, $LANG_ADMIN, $LANG_STATIC, $LANG_MAPS_1, $_TABLES, $_MAPS_CONF;
 
     switch($fieldname) {
         case "edit":
             $retval = COM_createLink($icon_arr['edit'],
-                "{$_CONF['site_admin_url']}/plugins/maps/map_edit.php?mode=edit&amp;mid={$A['mid']}");
+                "{$_CONF['site_admin_url']}/plugins/maps/map_edit.php?mode=edit&mid={$A['mid']}");
             break;
         case "name":
-            $map_title = stripslashes ($A['name']);
-            $url = $_MAPS_CONF['site_url'] .
-                                 '/index.php?mode=map&amp;mid=' . $A['mid'];
+            $map_title = MAPS_decodeStoredText($A['name']);
+            $url = $_MAPS_CONF['site_url'] . '/index.php?mode=map&mid=' . $A['mid'];
             $link = COM_createLink($map_title, $url, array('title'=>$LANG_MAPS_1['title_display']));
-
-			if ($A['description'] != '') {
-			    $retval = COM_getTooltip($A['name'], $A['description'], $url, $A['name'], 'help');
-			} else {
-			    $retval = $link;
-			}
+            if ($A['description'] != '') {
+                $retval = COM_getTooltip($map_title, MAPS_decodeStoredText($A['description']), $url, $map_title, 'help');
+            } else {
+                $retval = $link;
+            }
             break;
         case "id":
             $retval = $A['mid'];
             break;
-		case "active":
-            if ($fieldvalue == 1) {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/green_dot.gif" alt="" valign="center">';
-			} else {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/red_dot.gif" alt="">';
-			}
+        case "active":
+            $retval = MAPS_adminStatusBadge(
+                $fieldvalue,
+                $LANG_MAPS_1['status_active'],
+                $LANG_MAPS_1['status_inactive']
+            );
             break;
-		case "hidden":
-            if ($fieldvalue == 0) {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/green_dot.gif" alt="">';
-			} else {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/red_dot.gif" alt="">';
-			}
+        case "hidden":
+            $retval = MAPS_adminStatusBadge(
+                $fieldvalue,
+                $LANG_MAPS_1['status_hidden'],
+                $LANG_MAPS_1['status_visible'],
+                'is-warning',
+                'is-positive'
+            );
             break;
         default:
             $retval = stripslashes($fieldvalue);
@@ -169,69 +166,213 @@ function plugin_getListField_maps($fieldname, $fieldvalue, $A, $icon_arr)
     return $retval;
 }
 
-// MAIN
+function MAPS_adminGoogleApiStatus()
+{
+    global $_MAPS_CONF, $_SCRIPTS, $LANG_MAPS_1;
 
-if ($_MAPS_CONF['google_api_key'] == '') {
-	$display = COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
-	$display .= '<p><img src="' . $_CONF['site_admin_url'] . '/plugins/maps/images/maps.png" alt="" align="left" hspace="5">' 
-		 . $LANG_MAPS_1['plugin_doc'] . ' <a href="http://geeklog.fr/wiki/plugins:maps" target="_blank">'. $LANG_MAPS_1['online']
-		 . '</a>.</p>'
-		 . '<p> ' . $LANG_MAPS_1['plugin_conf'] . ' <a href="' . $_CONF['site_admin_url'] . '/configuration.php">'. $LANG_MAPS_1['online']
-		 . '</a>.</p>';
-	$display .= $LANG_MAPS_1['need_google_api'];
-	$display .= COM_siteFooter(0);
-	COM_output($display);
-	exit ();
-}
-	
-$mode = '';
-if (isset($_REQUEST['mode'])) {
-    $mode = $_REQUEST['mode'];
-}
+    $key = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_api_key', ''));
+    $title = isset($LANG_MAPS_1['api_status_title']) ? $LANG_MAPS_1['api_status_title'] : 'Google Maps API status';
 
-switch ($mode) {
-		
-	//Create a new marker for admin
-    case 'edit' :
-	    echo COM_refresh($_CONF['site_url'] . "/admin/plugins/maps/marker_edit.php");
-        exit();
-        break;
-		
-	//Edit marker sumission
-    case 'editsubmission' :
-        $id = $_REQUEST['id'];
-	    echo COM_refresh($_CONF['site_url'] . "/admin/plugins/maps/marker_edit.php?mode=editsubmission&amp;mkid=$id");
-        exit();
-        break;
-
-    case 'setgeolocation' :
-	    MAPS_setGeoLocation();
-	    echo COM_refresh($_CONF['site_url'] . "/admin/plugins/maps/index.php?msg=" . urlencode($LANG_MAPS_1['set_geo_location']));
-        exit();
-        break;
-
-    default :	
-        $display = COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
-        $display .= MAPS_admin_menu();
-
-    if (!empty($_REQUEST['msg'])) {
-        $display .= COM_startBlock($LANG_MAPS_1['message'],'','blockheader-message.thtml');
-        $display .= $_REQUEST['msg'];
-        $display .= COM_endBlock('blockfooter-message.thtml');
+    $html = COM_startBlock($title);
+    if ($key === '') {
+        $message = isset($LANG_MAPS_1['api_status_missing'])
+            ? $LANG_MAPS_1['api_status_missing']
+            : 'No Google Maps browser API key is configured.';
+        $html .= '<p><strong>' . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</strong></p>';
+        $html .= COM_endBlock();
+        return $html;
     }
 
-    $display .= '<img src="' . $_CONF['site_admin_url'] . '/plugins/maps/images/maps.png" alt="" align="left" hspace="5">' 
-		     . '<p>' .$LANG_MAPS_1['plugin_doc'] . ' <a href="http://geeklog.fr/downloads/index.php/maps" target="_blank">'. $LANG_MAPS_1['online']
-		     . '</a>.</p>';
+    $masked = strlen($key) > 10
+        ? substr($key, 0, 6) . str_repeat('&bull;', 6) . substr($key, -4)
+        : str_repeat('&bull;', max(4, strlen($key)));
 
-    $display .= '<br /><h1>' . $LANG_MAPS_1['maps_list'] . '</h1>';
-    $display .= '<p>' . $LANG_MAPS_1['you_can'] . '<a href="' . $_CONF['site_url'] . '/admin/plugins/maps/map_edit.php">' . $LANG_MAPS_1['create_map'] . '</a>.</p><p>&nbsp;</p>';
+    $testing = isset($LANG_MAPS_1['api_status_testing']) ? $LANG_MAPS_1['api_status_testing'] : 'Testing the Google Maps JavaScript API...';
+    $html .= '<p id="maps-google-api-status"><strong>'
+        . htmlspecialchars($testing, ENT_QUOTES, 'UTF-8')
+        . '</strong></p>';
+    $html .= '<p><small>'
+        . (isset($LANG_MAPS_1['api_status_key']) ? htmlspecialchars($LANG_MAPS_1['api_status_key'], ENT_QUOTES, 'UTF-8') : 'Browser key')
+        . ': <code>' . $masked . '</code></small></p>';
+    $html .= COM_endBlock();
 
-   $display .= MAPS_listmaps();
+    $apiUrl = MAPS_googleMapsApiUrl();
+    $apiUrl .= (strpos($apiUrl, '?') === false ? '?' : '&') . 'callback=MAPS_googleApiReady';
 
-   $display .= COM_siteFooter(0);
+    $messages = array(
+        'ok' => isset($LANG_MAPS_1['api_status_ok']) ? $LANG_MAPS_1['api_status_ok'] : 'Google Maps JavaScript API loaded successfully.',
+        'auth' => isset($LANG_MAPS_1['api_status_auth']) ? $LANG_MAPS_1['api_status_auth'] : 'Google Maps rejected the browser API key or its configuration. Check the browser console for the exact Google error code.',
+        'load' => isset($LANG_MAPS_1['api_status_load']) ? $LANG_MAPS_1['api_status_load'] : 'The Google Maps JavaScript API script could not be loaded. Check the network, CSP/content blocker and browser console.',
+        'timeout' => isset($LANG_MAPS_1['api_status_timeout']) ? $LANG_MAPS_1['api_status_timeout'] : 'The Google Maps JavaScript API did not answer. Check the browser console and network requests.',
+    );
+
+    $js = "(function () {\n"
+        . "    var mapsApiFinished = false;\n"
+        . "    var mapsApiAuthFailed = false;\n"
+        . "    function mapsSetApiStatus(message, ok) {\n"
+        . "        var el = document.getElementById('maps-google-api-status');\n"
+        . "        if (!el) { return; }\n"
+        . "        el.innerHTML = '<strong>' + message + '</strong>';\n"
+        . "        el.style.borderLeft = '4px solid ' + (ok ? '#3c763d' : '#a94442');\n"
+        . "        el.style.paddingLeft = '10px';\n"
+        . "    }\n"
+        . "    window.gm_authFailure = function () {\n"
+        . "        mapsApiFinished = true;\n"
+        . "        mapsApiAuthFailed = true;\n"
+        . "        mapsSetApiStatus(" . MAPS_jsString($messages['auth']) . ", false);\n"
+        . "    };\n"
+        . "    window.MAPS_googleApiReady = function () {\n"
+        . "        if (mapsApiAuthFailed) { return; }\n"
+        . "        mapsApiFinished = true;\n"
+        . "        if (window.google && google.maps && google.maps.Map) {\n"
+        . "            mapsSetApiStatus(" . MAPS_jsString($messages['ok']) . ", true);\n"
+        . "        } else {\n"
+        . "            mapsSetApiStatus(" . MAPS_jsString($messages['load']) . ", false);\n"
+        . "        }\n"
+        . "    };\n"
+        . "    var script = document.createElement('script');\n"
+        . "    script.src = " . MAPS_jsString($apiUrl) . ";\n"
+        . "    script.async = true;\n"
+        . "    script.defer = true;\n"
+        . "    script.onerror = function () {\n"
+        . "        mapsApiFinished = true;\n"
+        . "        mapsSetApiStatus(" . MAPS_jsString($messages['load']) . ", false);\n"
+        . "    };\n"
+        . "    document.head.appendChild(script);\n"
+        . "    window.setTimeout(function () {\n"
+        . "        if (!mapsApiFinished) {\n"
+        . "            mapsSetApiStatus(" . MAPS_jsString($messages['timeout']) . ", false);\n"
+        . "        }\n"
+        . "    }, 10000);\n"
+        . "}());";
+
+    $_SCRIPTS->setJavaScript($js, true, true);
+
+    return $html;
 }
 
-COM_output($display);
+function MAPS_adminDocumentation($collapsible = false)
+{
+    global $_CONF, $_MAPS_CONF, $LANG_MAPS_1;
 
-?>
+    $browserKey = isset($_MAPS_CONF['google_api_key']) ? trim((string) $_MAPS_CONF['google_api_key']) : '';
+    $serverKey = isset($_MAPS_CONF['google_server_api_key']) ? trim((string) $_MAPS_CONF['google_server_api_key']) : '';
+    $configUrl = $_CONF['site_admin_url'] . '/configuration.php?conf_group=maps';
+    $createMapUrl = $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php';
+
+    if ($collapsible) {
+        $html = '<details class="maps-admin-help" style="margin-top:20px">';
+        $html .= '<summary style="cursor:pointer;font-weight:bold">'
+            . htmlspecialchars($LANG_MAPS_1['admin_help_title'], ENT_QUOTES, 'UTF-8') . '</summary>';
+        $html .= '<div style="margin-top:12px">';
+    } else {
+        $html = COM_startBlock($LANG_MAPS_1['admin_help_title']);
+    }
+
+    $html .= '<p>' . $LANG_MAPS_1['admin_help_intro'] . '</p>';
+
+    if ($browserKey === '') {
+        $html .= '<p><strong>' . $LANG_MAPS_1['need_google_api'] . '</strong></p>';
+    }
+
+    $html .= '<h3>' . $LANG_MAPS_1['admin_help_google'] . '</h3>';
+    $html .= '<ol>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_google_1'] . '</li>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_google_2'] . '</li>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_google_3'] . '</li>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_google_4'] . '</li>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_google_5'] . '</li>';
+    $html .= '</ol>';
+    $html .= '<p><strong>' . $LANG_MAPS_1['admin_help_security'] . '</strong></p>';
+    $html .= '<p><a href="' . htmlspecialchars($configUrl, ENT_QUOTES, 'UTF-8') . '">' . $LANG_MAPS_1['plugin_conf'] . '</a>';
+    $html .= ' &middot; <a href="https://console.cloud.google.com/google/maps-apis/credentials" target="_blank" rel="noopener noreferrer">Google Cloud Console</a>';
+    $html .= ' &middot; <a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank" rel="noopener noreferrer">' . $LANG_MAPS_1['admin_help_official'] . '</a></p>';
+
+    $html .= '<h3>' . $LANG_MAPS_1['admin_help_create'] . '</h3>';
+    $html .= '<ol>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_create_1'] . '</li>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_create_2'] . '</li>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_create_3'] . '</li>';
+    $html .= '</ol>';
+    $html .= '<p><a href="' . htmlspecialchars($createMapUrl, ENT_QUOTES, 'UTF-8') . '"><strong>' . ucfirst($LANG_MAPS_1['create_map']) . '</strong></a></p>';
+
+    $html .= '<h3>' . $LANG_MAPS_1['admin_help_geo_title'] . '</h3>';
+    $html .= '<p>' . $LANG_MAPS_1['admin_help_geo_intro'] . '</p>';
+    $html .= '<ul>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_geo_1'] . '</li>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_geo_2'] . '</li>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_geo_3'] . '</li>';
+    $html .= '</ul>';
+    $html .= '<p><a href="' . $_CONF['site_admin_url'] . '/plugins/maps/index.php?mode=setgeolocation"><strong>' . $LANG_MAPS_1['set_user_geo'] . '</strong></a></p>';
+
+    $html .= '<h3>' . $LANG_MAPS_1['admin_help_overlays_title'] . '</h3>';
+    $html .= '<p>' . $LANG_MAPS_1['admin_help_overlays_intro'] . '</p>';
+    $html .= '<ul>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_overlays_1'] . '</li>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_overlays_2'] . '</li>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_overlays_3'] . '</li>';
+    $html .= '<li>' . $LANG_MAPS_1['admin_help_overlays_4'] . '</li>';
+    $html .= '</ul>';
+    $html .= '<p>' . $LANG_MAPS_1['admin_help_overlays_how'] . '</p>';
+
+    $html .= '<h3>' . $LANG_MAPS_1['admin_help_concepts_title'] . '</h3>';
+    $html .= '<dl>';
+    $html .= '<dt><strong>' . $LANG_MAPS_1['admin_help_concept_map'] . '</strong></dt><dd>' . $LANG_MAPS_1['admin_help_concept_map_text'] . '</dd>';
+    $html .= '<dt><strong>' . $LANG_MAPS_1['admin_help_concept_marker'] . '</strong></dt><dd>' . $LANG_MAPS_1['admin_help_concept_marker_text'] . '</dd>';
+    $html .= '<dt><strong>' . $LANG_MAPS_1['admin_help_concept_icon'] . '</strong></dt><dd>' . $LANG_MAPS_1['admin_help_concept_icon_text'] . '</dd>';
+    $html .= '<dt><strong>' . $LANG_MAPS_1['admin_help_concept_users'] . '</strong></dt><dd>' . $LANG_MAPS_1['admin_help_concept_users_text'] . '</dd>';
+    $html .= '</dl>';
+
+    $html .= '<h3>' . $LANG_MAPS_1['admin_help_trouble_title'] . '</h3>';
+    $html .= '<p>' . $LANG_MAPS_1['admin_help_trouble'] . '</p>';
+
+    if ($browserKey !== '' && $serverKey === '') {
+        $html .= '<p><small>Geocoding: Google Maps server API key is not configured; Maps will fall back to the browser key for compatibility.</small></p>';
+    }
+
+    if ($collapsible) {
+        $html .= '</div></details>';
+    } else {
+        $html .= COM_endBlock();
+    }
+
+    return $html;
+}
+
+$mode = isset($_REQUEST['mode']) ? $_REQUEST['mode'] : '';
+
+switch ($mode) {
+    case 'edit':
+        echo COM_refresh($_CONF['site_admin_url'] . '/plugins/maps/marker_edit.php');
+        exit;
+
+    case 'editsubmission':
+        $id = isset($_REQUEST['id']) ? (int) $_REQUEST['id'] : 0;
+        echo COM_refresh($_CONF['site_admin_url'] . '/plugins/maps/marker_edit.php?mode=editsubmission&amp;mkid=' . $id);
+        exit;
+
+    case 'setgeolocation':
+        MAPS_setGeoLocation();
+        echo COM_refresh($_CONF['site_admin_url'] . '/plugins/maps/index.php?msg=' . urlencode($LANG_MAPS_1['set_geo_location']));
+        exit;
+
+    default:
+        $display = MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
+        $display .= MAPS_admin_menu();
+
+        if (!empty($_REQUEST['msg'])) {
+            $display .= COM_startBlock($LANG_MAPS_1['message'], '', 'blockheader-message.thtml');
+            $display .= htmlspecialchars((string) $_REQUEST['msg'], ENT_QUOTES, 'UTF-8');
+            $display .= COM_endBlock('blockfooter-message.thtml');
+        }
+
+        $display .= MAPS_adminGoogleApiStatus();
+        $display .= '<h1>' . $LANG_MAPS_1['maps_list'] . '</h1>';
+        $display .= '<p>' . $LANG_MAPS_1['you_can'] . '<a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php">' . $LANG_MAPS_1['create_map'] . '</a>.</p>';
+        $display .= MAPS_listmaps();
+        $display .= MAPS_adminDocumentation(true);
+        $display .= MAPS_compatSiteFooter(0);
+        break;
+}
+
+MAPS_compatOutput($display);
