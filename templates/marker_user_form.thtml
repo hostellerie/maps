@@ -4,7 +4,7 @@
 	</p>
 
 	<div id="map_contener_submission">
-	<div id="map_canvas" style="width: 100%; height: 400px"></div>
+	<div id="map_canvas" style="width: {marker_editor_width}; height: {marker_editor_height}"></div>
 
 	</div>
 
@@ -13,7 +13,7 @@
 <div id="marker_form">
 	<form name="marker_edit" action="{site_url}/markers.php" method="POST">
 		<fieldset style="margin-top: 10px;padding:10px;">
-		<legend>{arrow}<a style="text-decoration: none;" onClick="elementToggle('informations'); return false;" href="#"><b>{informations}</b></a></legend>
+		<legend><a class="maps-section-toggle" onClick="elementToggle('informations'); return false;" href="#"><b>{informations}</b></a></legend>
 			<div id="informations">
 				<p><b>{name_label}</b><font color="red">*</font> <input type="text" name="name" value="{name}" size="80" maxlength="255"></p>
 				<p><b>{address_label}</b><font color="red">*</font> <input type="text" id="address" name="address" value="{address}" size="80" maxlength="255"></p>
@@ -26,7 +26,7 @@
 		</fieldset>			
 
 		<fieldset style="margin-top: 10px;">
-		<legend>{arrow}<b><a style="text-decoration: none;" onClick="elementToggle('presentation_tab'); return false;" href="#">{presentation_tab}</a></b></legend>
+		<legend><b><a class="maps-section-toggle" onClick="elementToggle('presentation_tab'); return false;" href="#">{presentation_tab}</a></b></legend>
 			<div id="presentation_tab" style="display:block;">
 				<p><b>{description_label}</b><br{xhtml}><textarea rows="4" id="description" name="description" cols="51" style="width:99%">{description}</textarea>
 				</p>
