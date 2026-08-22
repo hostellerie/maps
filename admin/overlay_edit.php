@@ -42,14 +42,14 @@ $display = '';
 
 // Ensure user even has the rights to access this page
 if (! SEC_hasRights('maps.admin')) {
-    $display .= COM_siteHeader('menu', $MESSAGE[30])
+    $display .= MAPS_compatSiteHeader('menu', $MESSAGE[30])
              . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
-             . COM_siteFooter();
+             . MAPS_compatSiteFooter();
 
     // Log attempt to access.log
     COM_accessLog("User {$_USER['username']} tried to illegally access the Maps plugin administration screen.");
 
-    echo $display;
+    MAPS_compatOutput($display);
     exit;
 }
 
@@ -84,6 +84,14 @@ MAPS_filterVars($vars, $_REQUEST);
 function MAPS_getOverlayForm($overlay = array()) {
 
     global $_CONF, $_TABLES, $_MAPS_CONF, $LANG_MAPS_1, $LANG_configselects, $LANG_ACCESS, $_USER, $_GROUPS, $_SCRIPTS;
+    
+    $overlayDefaults = array(
+        'oid' => 0, 'mid' => 0, 'name' => '', 'o_name' => '', 'o_group' => 0,
+        'o_image' => '', 'o_sw_lat' => '', 'o_sw_lng' => '', 'o_ne_lat' => '',
+        'o_ne_lng' => '', 'o_active' => 1, 'o_zoom_min' => 0, 'o_zoom_max' => 21
+    );
+    $overlay = array_merge($overlayDefaults, is_array($overlay) ? $overlay : array());
+
     
 	$display = COM_startBlock('<h1>' . $LANG_MAPS_1['overlay_edit'] . ' ' . $overlay['name']. '</h1>');
 	
@@ -142,8 +150,9 @@ function MAPS_getOverlayForm($overlay = array()) {
 		$template->set_var('image_message', $LANG_MAPS_1['image_message']);
 		$overlay_image = $_MAPS_CONF['path_overlay_images'] . $overlay['o_image'];
 		if (is_file($overlay_image)) {
-			$template->set_var('overlay_image','<p>' . $LANG_MAPS_1['image_replace'] . '<p><p><img src="' . $_MAPS_CONF['site_url'] . '/timthumb.php?src='
-			. $_MAPS_CONF['images_overlay_url'] . $overlay['o_image'] . '&amp;w=350&amp;q=70&amp;zc=1" alt="" /></p>');
+			$overlayUrl = $_MAPS_CONF['images_overlay_url'] . rawurlencode($overlay['o_image']);
+			$template->set_var('overlay_image', '<p>' . $LANG_MAPS_1['image_replace'] . '</p><p><img src="'
+			    . htmlspecialchars($overlayUrl, ENT_QUOTES, 'UTF-8') . '" alt="" style="max-width:350px;height:auto" /></p>');
 		} else {
 			$template->set_var('overlay_image', '');
 		}
@@ -176,13 +185,13 @@ function MAPS_saveOverlayImage ($overlay, $FILES, $oid) {
 	
     $args = &$overlay;
 
-    // Handle Magic GPC Garbage:
-    while (list($key, $value) = each($args)) {
+    // Handle legacy slashes without using each(), removed in PHP 8.
+    foreach ($args as $key => $value) {
         if (!is_array($value)) {
             $args[$key] = COM_stripslashes($value);
         } else {
-            while (list($subkey, $subvalue) = each($value)) {
-                $value[$subkey] = COM_stripslashes($subvalue);
+            foreach ($value as $subkey => $subvalue) {
+                $args[$key][$subkey] = COM_stripslashes($subvalue);
             }
         }
     }
@@ -229,7 +238,7 @@ function MAPS_saveOverlayImage ($overlay, $FILES, $oid) {
 		$output .= $upload->printErrors (false);
 		$output .= COM_endBlock (COM_getBlockTemplate ('_msg_block', 'footer'));
 		$output .= COM_siteFooter ();
-		echo $output;
+		MAPS_compatOutput($output);
 		exit;
 	}
 
@@ -255,13 +264,13 @@ function MAPS_saveOverlayImage ($overlay, $FILES, $oid) {
 		$upload->uploadFiles();
 
 		if ($upload->areErrors()) {
-			$retval = COM_siteHeader('menu', $LANG24[30]);
+			$retval = MAPS_compatSiteHeader('menu', $LANG24[30]);
 			$retval .= COM_startBlock ($LANG24[30], '',
 						COM_getBlockTemplate ('_msg_block', 'header'));
 			$retval .= $upload->printErrors(false);
 			$retval .= COM_endBlock(COM_getBlockTemplate ('_msg_block', 'footer'));
-			$retval .= COM_siteFooter();
-			echo $retval;
+			$retval .= MAPS_compatSiteFooter();
+			MAPS_compatOutput($retval);
 			exit;
 		}
 		
@@ -301,7 +310,7 @@ function MAPS_selectGroupOverlays ($selected)
 
 // MAIN
 $oid = $_REQUEST['oid'];
-$display .= COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
+$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
 $display .= maps_admin_menu();
 
 switch ($_REQUEST['mode']) {
@@ -389,9 +398,9 @@ switch ($_REQUEST['mode']) {
         break;
 }
 
-$display .= COM_siteFooter(0);
+$display .= MAPS_compatSiteFooter(0);
 
 
-COM_output($display);
+MAPS_compatOutput($display);
 
 ?>
