@@ -197,35 +197,68 @@ function plugin_searchtypes_maps()
 
 function plugin_dopluginsearch_maps($query, $datestart, $dateend, $topic, $type, $author, $keyType, $page, $perpage)
 {
-    global $_TABLES, $LANG_MAPS_1, $_MAPS_CONF;
+    global $_TABLES, $LANG_MAPS_1;
 
-    $query = trim(MAPS_dbEscape($query));
-    $sql = "SELECT mkid AS id, name AS title, description, UNIX_TIMESTAMP(created) AS date, owner_id AS uid, mid, "
-         . "CONCAT('/" . MAPS_dbEscape($_MAPS_CONF['maps_folder']) . "/markers.php?mode=show&mkid=', mkid, '&mid=', mid) AS url "
-         . "FROM {$_TABLES['maps_markers']} WHERE 1=1 "
-         . COM_getPermSQL('AND') . ' ';
+    // Follow the same SearchCriteria contract used by Geeklog core plugins:
+    // id, title, description, date, uid, hits and url.
+    $query = trim(DB_escapeString($query));
 
-    if (!empty($datestart) && !empty($dateend)) {
-        $delim = substr($datestart, 4, 1);
-        if ($delim !== '') {
-            $ds = explode($delim, $datestart);
-            $de = explode($delim, $dateend);
-            if (count($ds) >= 3 && count($de) >= 3) {
-                $startdate = mktime(0, 0, 0, $ds[1], $ds[2], $ds[0]);
-                $enddate = mktime(23, 59, 59, $de[1], $de[2], $de[0]);
-                $sql .= "AND UNIX_TIMESTAMP(created) BETWEEN " . (int) $startdate . " AND " . (int) $enddate . ' ';
-            }
-        }
-    }
+    $markerAlias = 'maps_marker';
+    $mapAlias = 'maps_parent';
+    $markerOwnerAlias = 'maps_marker_owner';
+    $mapOwnerAlias = 'maps_map_owner';
+    // Historical Maps rows can keep an owner_id after the corresponding Geeklog
+    // user has been deleted. Only expose an owner when the user still exists;
+    // otherwise fall back to the parent map owner, then Anonymous (uid 1).
+    $ownerSql = "CASE "
+    . "WHEN {$markerAlias}.owner_id > 1 AND {$markerOwnerAlias}.uid IS NOT NULL THEN {$markerAlias}.owner_id "
+    . "WHEN {$mapAlias}.owner_id > 1 AND {$mapOwnerAlias}.uid IS NOT NULL THEN {$mapAlias}.owner_id "
+    . "ELSE 1 END";
+
+    // COM_getPermSQL() emits unqualified permission fields. Qualify them because
+    // both joined Maps tables expose the same permission column names.
+    $permSql = COM_getPermSQL('AND');
+    $permSql = preg_replace(
+        '/\\b(owner_id|group_id|perm_owner|perm_group|perm_members|perm_anon)\\b/',
+        $markerAlias . '.$1',
+        $permSql
+    );
+
+    $sql = "SELECT {$markerAlias}.mkid AS id, {$markerAlias}.name AS title, "
+         . "CASE WHEN TRIM({$markerAlias}.description) <> '' THEN {$markerAlias}.description "
+         . "WHEN TRIM({$markerAlias}.address) <> '' THEN {$markerAlias}.address "
+         . "ELSE {$markerAlias}.name END AS description, "
+         . "UNIX_TIMESTAMP({$markerAlias}.created) AS date, "
+         . $ownerSql . " AS uid, {$markerAlias}.hits AS hits, "
+         . "CONCAT('/maps/markers.php?mode=show&amp;mkid=', {$markerAlias}.mkid, '&amp;mid=', {$markerAlias}.mid) AS url "
+         . "FROM {$_TABLES['maps_markers']} AS {$markerAlias} "
+         . "LEFT JOIN {$_TABLES['maps_maps']} AS {$mapAlias} ON {$mapAlias}.mid = {$markerAlias}.mid "
+         . "LEFT JOIN {$_TABLES['users']} AS {$markerOwnerAlias} ON {$markerOwnerAlias}.uid = {$markerAlias}.owner_id "
+         . "LEFT JOIN {$_TABLES['users']} AS {$mapOwnerAlias} ON {$mapOwnerAlias}.uid = {$mapAlias}.owner_id "
+         . "WHERE {$markerAlias}.active = 1 AND {$markerAlias}.hidden = 0 "
+         . $permSql . ' ';
+
     if (!empty($author)) {
-        $sql .= 'AND owner_id=' . (int) $author . ' ';
+        $sql .= 'AND (' . $ownerSql . ') = ' . (int) $author . ' ';
     }
 
     $search = new SearchCriteria('maps', $LANG_MAPS_1['plugin_name']);
-    list($sql, $ftsql) = $search->buildSearchSQL($keyType, $query, array('name', 'description'), $sql);
+    $columns = array(
+        'title' => $markerAlias . '.name',
+        $markerAlias . '.description',
+        $markerAlias . '.address'
+    );
+
+    $sql .= $search->getDateRangeSQL('AND', $markerAlias . '.created', $datestart, $dateend);
+    list($sql, $ftsql) = $search->buildSearchSQL($keyType, $query, $columns, $sql);
+
     $search->setSQL($sql);
-    $search->setFTSQL($ftsql);
+    $search->setFtSQL($ftsql);
     $search->setRank(3);
+    $search->setAppendQuery(false);
+    // Maps does not define a rewritten /markers.php/show/... route.
+    $search->setURLRewrite(false);
+
     return $search;
 }
 
