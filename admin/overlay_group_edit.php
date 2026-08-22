@@ -42,14 +42,14 @@ $display = '';
 
 // Ensure user even has the rights to access this page
 if (! SEC_hasRights('maps.admin')) {
-    $display .= COM_siteHeader('menu', $MESSAGE[30])
+    $display .= MAPS_compatSiteHeader('menu', $MESSAGE[30])
              . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
-             . COM_siteFooter();
+             . MAPS_compatSiteFooter();
 
     // Log attempt to access.log
     COM_accessLog("User {$_USER['username']} tried to illegally access the Maps plugin administration screen.");
 
-    echo $display;
+    MAPS_compatOutput($display);
     exit;
 }
 
@@ -73,6 +73,10 @@ MAPS_filterVars($vars, $_REQUEST);
 function MAPS_getGroupOverlayForm($group = array()) {
 
     global $_CONF, $_TABLES, $_MAPS_CONF, $LANG_MAPS_1, $LANG_configselects, $LANG_ACCESS, $_USER, $_GROUPS, $_SCRIPTS;
+    
+    $groupDefaults = array('o_group_id' => 0, 'o_group_name' => '');
+    $group = array_merge($groupDefaults, is_array($group) ? $group : array());
+
     
 	$display = COM_startBlock('<h1>' . $LANG_MAPS_1['group_edit'] . ' ' . $group['o_group_name']. '</h1>');
 
@@ -116,7 +120,7 @@ function MAPS_getGroupOverlayForm($group = array()) {
 
 // MAIN
 $o_group_id = $_REQUEST['o_group_id'];
-$display .= COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
+$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
 $display .= maps_admin_menu();
 
 switch ($_REQUEST['mode']) {
@@ -187,9 +191,9 @@ switch ($_REQUEST['mode']) {
         break;
 }
 
-$display .= COM_siteFooter(0);
+$display .= MAPS_compatSiteFooter(0);
 
 
-COM_output($display);
+MAPS_compatOutput($display);
 
 ?>
