@@ -1,0 +1,146 @@
+			 . "state = '{$_REQUEST['state']}', "
+			 . "country = '{$_REQUEST['country']}', "
+			 . "tel = '{$_REQUEST['tel']}', "
+			 . "fax = '{$_REQUEST['fax']}', "
+			 . "web = '{$_REQUEST['web']}', "
+			 . "item_1 = '{$_REQUEST['item_1']}', "
+			 . "item_2 = '{$_REQUEST['item_2']}', "
+			 . "item_3 = '{$_REQUEST['item_3']}', "
+			 . "item_4 = '{$_REQUEST['item_4']}', "
+			 . "item_5 = '{$_REQUEST['item_5']}', "
+			 . "item_6 = '{$_REQUEST['item_6']}', "
+			 . "item_7 = '{$_REQUEST['item_7']}', "
+			 . "item_8 = '{$_REQUEST['item_8']}', "
+			 . "item_9 = '{$_REQUEST['item_9']}', "
+			 . "item_10 = '{$_REQUEST['item_10']}', "
+			 . "owner_id = '{$_REQUEST['owner_id']}', "
+			 . "group_id = '{$_REQUEST['group_id']}', "
+			 . "perm_owner = '{$_REQUEST['perm_owner']}', "
+			 . "perm_group = '{$_REQUEST['perm_group']}', "
+			 . "perm_members = '{$_REQUEST['perm_members']}', "
+			 . "perm_anon = '{$_REQUEST['perm_anon']}', "
+			 . "submission = '0'";
+            $sql = "UPDATE {$_TABLES['maps_markers']} SET $sql "
+                 . "WHERE mkid = '{$mkid}'";
+        } else { // create mode
+		    if ($_REQUEST['submission'] <> 1) {
+		        $newmkid = MAPS_dbEscape(COM_makeSid());
+			} else {
+			    $newmkid = $mkid;
+			}
+		      $sql = "mkid = '{$newmkid}', "
+			 . "name = '{$_REQUEST['name']}', "
+             . "description = '{$_REQUEST['description']}', "
+             . "created = '{$_REQUEST['created']}', "
+			 . "modified = '{$_REQUEST['modified']}', "
+			 . "payed = '{$_REQUEST['payed']}', "
+             . "validity = '{$_REQUEST['validity']}', "	
+			 . "validity_start = '{$_REQUEST['from']}', "
+			 . "validity_end = '{$_REQUEST['to']}', "			 
+             . "active = '{$_REQUEST['active']}', "
+             . "hidden = '{$_REQUEST['hidden']}', "
+			 . "address = '{$_REQUEST['address']}', "
+			 . "lat = '{$lat}', "
+			 . "lng = '{$lng}', "
+			 . "mk_default = '{$_REQUEST['mk_default']}', "
+			 . "mk_pcolor = '{$_REQUEST['primary_color']}', "
+			 . "mk_scolor = '{$_REQUEST['stroke_color']}', "
+			 . "mk_label = '{$_REQUEST['label']}', "
+			 . "mk_label_color = '{$_REQUEST['label_color']}', "
+			 . "mk_icon = '{$_REQUEST['mk_icon']}', "
+			 . "mid = '{$_REQUEST['mid']}', "
+			 . "remark = '{$_REQUEST['remark']}', "
+			 . "street = '{$_REQUEST['street']}', "
+			 . "city = '{$_REQUEST['city']}', "
+			 . "code = '{$_REQUEST['code']}', "
+			 . "state = '{$_REQUEST['state']}', "
+			 . "country = '{$_REQUEST['country']}', "
+			 . "tel = '{$_REQUEST['tel']}', "
+			 . "fax = '{$_REQUEST['fax']}', "
+			 . "web = '{$_REQUEST['web']}', "
+			 . "item_1 = '{$_REQUEST['item_1']}', "
+			 . "item_2 = '{$_REQUEST['item_2']}', "
+			 . "item_3 = '{$_REQUEST['item_3']}', "
+			 . "item_4 = '{$_REQUEST['item_4']}', "
+			 . "item_5 = '{$_REQUEST['item_5']}', "
+			 . "item_6 = '{$_REQUEST['item_6']}', "
+			 . "item_7 = '{$_REQUEST['item_7']}', "
+			 . "item_8 = '{$_REQUEST['item_8']}', "
+			 . "item_9 = '{$_REQUEST['item_9']}', "
+			 . "item_10 = '{$_REQUEST['item_10']}', "
+			 . "owner_id = '{$_REQUEST['owner_id']}', "
+			 . "group_id = '{$_REQUEST['group_id']}', "
+			 . "perm_owner = '{$_REQUEST['perm_owner']}', "
+			 . "perm_group = '{$_REQUEST['perm_group']}', "
+			 . "perm_members = '{$_REQUEST['perm_members']}', "
+			 . "perm_anon = '{$_REQUEST['perm_anon']}', "
+			 . "submission = 0";
+            $sql = "INSERT INTO {$_TABLES['maps_markers']} SET $sql ";
+        }
+        DB_query($sql);
+		updateMap($_REQUEST['mid']);
+		if ($_REQUEST['submission'] == 0 ) {
+		    DB_delete($_TABLES['maps_submission'], 'mkid', $mkid);
+		}
+        if (DB_error()) {
+            $msg = $LANG_MAPS_1['save_fail'];
+        } else {
+            $msg = $LANG_MAPS_1['save_success'];
+			//Delete marker submission
+			DB_delete($_TABLES['maps_submission'], 'mkid', $mkid);
+        }
+        // save complete, return to markers list
+        echo COM_refresh($_CONF['site_admin_url'] . "/plugins/maps/markers.php?msg=" . urlencode($msg));
+        exit();
+        break;
+
+    /* this case is currently not used... future expansion? */
+    case 'preview':
+        $display = getMapForm($_REQUEST);
+        break;
+
+    case 'edit':
+        // Get the marker to edit and display the form
+        if (isset($_GET['mkid'])) {
+            $sql = "SELECT * FROM {$_TABLES['maps_markers']} WHERE mkid = '" . MAPS_dbEscape(preg_replace('/[^0-9]/', '', (string) $_REQUEST['mkid'])) . "' LIMIT 1";
+            $res = DB_query($sql, 0);
+            $A = DB_fetchArray($res);
+            $display .= getMarkerForm($A);
+        } else {
+            echo COM_refresh($_CONF['site_url']);
+        }
+        break;
+	
+	case 'editsubmission':
+        // Get the marker to edit and display the form
+        if (isset($_GET['mkid'])) {
+            $sql = "SELECT * FROM {$_TABLES['maps_submission']} WHERE mkid = '" . MAPS_dbEscape(preg_replace('/[^0-9]/', '', (string) $_GET['mkid'])) . "' LIMIT 1";
+            $res = DB_query($sql);
+			
+			$nRows  = DB_numRows($res);
+		    if ($nRows < 1) {
+			    //echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php');
+			    //exit ();
+		    }
+			
+            $A = DB_fetchArray($res);
+            $display .= getMarkerForm($A);
+        } else {
+            echo COM_refresh($_CONF['site_url']);
+        }
+        break;
+
+    case 'new':
+    default:
+	    $marker['mk_default'] = 1;
+		$marker['lat'] = '37.4217913';
+		$marker['lng'] = '-122.08371390000002';
+        $display .= getMarkerForm($marker);
+        break;
+}
+
+$display .= MAPS_compatSiteFooter(0);
+
+MAPS_compatOutput($display);
+
+?>
