@@ -42,14 +42,14 @@ $display = '';
 
 // Ensure user even has the rights to access this page
 if (! SEC_hasRights('maps.admin')) {
-    $display .= COM_siteHeader('menu', $MESSAGE[30])
+    $display .= MAPS_compatSiteHeader('menu', $MESSAGE[30])
              . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
-             . COM_siteFooter();
+             . MAPS_compatSiteFooter();
 
     // Log attempt to access.log
     COM_accessLog("User {$_USER['username']} tried to illegally access the Maps plugin administration screen.");
 
-    echo $display;
+    MAPS_compatOutput($display);
     exit;
 }
 
@@ -121,7 +121,7 @@ function MAPS_listOverlays()
 */
 function MAPS_getListField_overlays($fieldname, $fieldvalue, $A, $icon_arr)
 {
-    global $_CONF, $_MAPS_CONF, $LANG_ADMIN, $LANG_STATIC, $_TABLES;
+    global $_CONF, $_MAPS_CONF, $LANG_ADMIN, $LANG_STATIC, $LANG_MAPS_1, $_TABLES;
 	
 	$token = SEC_createToken();
 
@@ -134,14 +134,18 @@ function MAPS_getListField_overlays($fieldname, $fieldvalue, $A, $icon_arr)
 		case "o_name":
 		    $overlay_image = $_MAPS_CONF['path_overlay_images'] . $A['o_image'];
 		    if (is_file($overlay_image)) {
-			    $retval = COM_getTooltip($A['o_name'], '<img src="' . $_MAPS_CONF['site_url'] . '/timthumb.php?src='
-				. $_MAPS_CONF['images_overlay_url'] . $A['o_image'] . '&amp;w=200&amp;q=70&amp;zc=1" alt="" />', '', $A['o_name'], $template = 'help');
-				
-			} else {
-				$retval = $A['o_name'];
-			}
-		    
-			break;
+		        $overlayUrl = $_MAPS_CONF['images_overlay_url'] . rawurlencode($A['o_image']);
+		        $retval = COM_getTooltip(
+		            $A['o_name'],
+		            '<img src="' . htmlspecialchars($overlayUrl, ENT_QUOTES, 'UTF-8') . '" alt="" style="max-width:200px;height:auto" />',
+		            '',
+		            $A['o_name'],
+		            'help'
+		        );
+		    } else {
+		        $retval = $A['o_name'];
+		    }
+		    break;
 			
 		case 'move':
 			$csrftoken = '&amp;' . CSRF_TOKEN . '=' . $token;
@@ -152,12 +156,12 @@ function MAPS_getListField_overlays($fieldname, $fieldvalue, $A, $icon_arr)
 					."</a>";
             break;
 
-		case "o_active":
-            if ($fieldvalue == 1) {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/green_dot.gif" alt="" valign="center">';
-			} else {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/red_dot.gif" alt="">';
-			}
+        case "o_active":
+            $retval = MAPS_adminStatusBadge(
+                $fieldvalue,
+                $LANG_MAPS_1['status_active'],
+                $LANG_MAPS_1['status_inactive']
+            );
             break;
 
         default:
@@ -267,7 +271,7 @@ function MAPS_getListField_overlaysGroups($fieldname, $fieldvalue, $A, $icon_arr
 }
 
 // MAIN
-$display .= COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
+$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
 $display .= maps_admin_menu();
 
 if (!empty($_REQUEST['msg'])) {
@@ -313,8 +317,8 @@ if ( !file_exists($_MAPS_CONF['path_overlay_images']) || !is_writable($_MAPS_CON
 	}
 }
 
-$display .= COM_siteFooter(0);
+$display .= MAPS_compatSiteFooter(0);
 
-COM_output($display);
+MAPS_compatOutput($display);
 
 ?>

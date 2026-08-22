@@ -186,7 +186,7 @@ function getMapForm($map = array())
         . 'var type=(typeInput&&typeInput.value)?typeInput.value:"ROADMAP";'
         . 'var editorMap=new google.maps.Map(canvas,{center:{lat:lat,lng:lng},zoom:zoom,mapTypeId:google.maps.MapTypeId[type]||google.maps.MapTypeId.ROADMAP});'
         . 'var centerMarker=new google.maps.Marker({position:{lat:lat,lng:lng},map:editorMap,draggable:true,title:' . MAPS_jsString(isset($LANG_MAPS_1['map_center_marker']) ? $LANG_MAPS_1['map_center_marker'] : 'Map center') . '});'
-        . 'function numberString(v){return Number(v).toFixed(6).replace(/\\.?0+$/,"\");}'
+        . 'function numberString(v){return Number(v).toFixed(6).replace(/\\.?0+$/,"");}'
         . 'function sync(position,moveMap){if(!position){return;}var la=position.lat(),ln=position.lng();if(latInput){latInput.value=numberString(la);}if(lngInput){lngInput.value=numberString(ln);}centerMarker.setPosition(position);if(moveMap){editorMap.panTo(position);}}'
         . 'centerMarker.addListener("dragend",function(e){sync(e.latLng,true);});editorMap.addListener("click",function(e){sync(e.latLng,true);});editorMap.addListener("zoom_changed",function(){if(zoomInput){zoomInput.value=editorMap.getZoom();}});'
         . 'if(typeInput){typeInput.addEventListener("change",function(){editorMap.setMapTypeId(google.maps.MapTypeId[this.value]||google.maps.MapTypeId.ROADMAP);});}'
