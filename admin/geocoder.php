@@ -2,7 +2,7 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.5.0                                                         |
+// | Maps Plugin 1.5.6                                                         |
 // +---------------------------------------------------------------------------+
 // | geocoder.php                                                              |
 // +---------------------------------------------------------------------------+
@@ -18,13 +18,6 @@ if (!SEC_hasRights('maps.admin')) {
     COM_output(COM_createHTMLDocument($content, array('pagetitle' => $MESSAGE[30])));
     exit;
 }
-
-$apiUrl = MAPS_googleMapsApiUrl();
-$_SCRIPTS->setJavaScript(
-    '<script src="' . htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8') . '"></script>',
-    false,
-    false
-);
 
 $js = "
 var mapsGeocoder;
