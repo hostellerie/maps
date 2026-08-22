@@ -48,3 +48,5 @@ jobs:
           git add language/english.php language/french_france_utf-8.php admin/marker_edit.php admin/import_export.php
           git commit -m "Sync remaining Maps 1.5.6 alpha18 files exactly"
           git push origin HEAD:modernize/maps-1.5
+
+# retrigger: workflow already present before this push
