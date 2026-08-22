@@ -2,7 +2,7 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.5.0                                                         |
+// | Maps Plugin 1.5.6                                                         |
 // +---------------------------------------------------------------------------+
 // | functions.inc                                                             |
 // |                                                                           |
@@ -32,6 +32,85 @@ if (!is_array($_MAPS_CONF)) {
 }
 require_once $_CONF['path'] . 'plugins/maps/maps.php';
 
+
+/**
+ * Return true when the current Geeklog installation provides the document API.
+ *
+ * @return bool
+ */
+function MAPS_usesModernDocument()
+{
+    return function_exists('COM_createHTMLDocument');
+}
+
+/**
+ * Compatibility wrapper for page start.
+ *
+ * Geeklog 2.1.1 and later provide COM_createHTMLDocument(). The legacy
+ * renderer is kept only as a defensive fallback for environments where that
+ * function is genuinely unavailable.
+ *
+ * @return string
+ */
+function MAPS_compatSiteHeader()
+{
+    global $_MAPS_RENDER_TITLE, $_MAPS_RENDER_WHAT;
+
+    $args = func_get_args();
+    $_MAPS_RENDER_WHAT = isset($args[0]) ? $args[0] : 'menu';
+    if (isset($args[1]) && $args[1] !== '') {
+        $_MAPS_RENDER_TITLE = $args[1];
+    }
+
+    if (MAPS_usesModernDocument()) {
+        return '';
+    }
+
+    return call_user_func_array('COM_' . 'siteHeader', $args);
+}
+
+/**
+ * Compatibility wrapper for page end.
+ *
+ * @return string
+ */
+function MAPS_compatSiteFooter()
+{
+    if (MAPS_usesModernDocument()) {
+        return '';
+    }
+
+    return call_user_func_array('COM_' . 'siteFooter', func_get_args());
+}
+
+/**
+ * Output a complete Geeklog page on both supported Geeklog generations.
+ *
+ * @param string $content
+ * @param string $title
+ * @return void
+ */
+function MAPS_compatOutput($content, $title = '')
+{
+    global $_MAPS_RENDER_TITLE, $_MAPS_RENDER_WHAT;
+
+    if (MAPS_usesModernDocument()) {
+        if ($title === '' && isset($_MAPS_RENDER_TITLE)) {
+            $title = $_MAPS_RENDER_TITLE;
+        }
+        $options = array();
+        if ($title !== '') {
+            $options['pagetitle'] = $title;
+        }
+        if (isset($_MAPS_RENDER_WHAT) && $_MAPS_RENDER_WHAT !== '') {
+            $options['what'] = $_MAPS_RENDER_WHAT;
+        }
+        $content = COM_createHTMLDocument($content, $options);
+    }
+
+    COM_output($content);
+}
+
 /**
  * Escape a value for SQL while keeping compatibility with older Geeklog.
  *
@@ -47,6 +126,38 @@ function MAPS_dbEscape($value)
 }
 
 /**
+ * Decode HTML entities that may have been stored by historical input filters.
+ * Output contexts must still apply their own escaping afterwards.
+ *
+ * @param mixed $value
+ * @return string
+ */
+function MAPS_decodeStoredText($value)
+{
+    return html_entity_decode(stripslashes((string) $value), ENT_QUOTES, 'UTF-8');
+}
+
+/**
+ * Render a compact accessible status badge for administration lists.
+ *
+ * @param mixed  $state
+ * @param string $trueLabel
+ * @param string $falseLabel
+ * @param string $trueClass
+ * @param string $falseClass
+ * @return string
+ */
+function MAPS_adminStatusBadge($state, $trueLabel, $falseLabel, $trueClass = 'is-positive', $falseClass = 'is-muted')
+{
+    $enabled = ((int) $state === 1);
+    $label = $enabled ? $trueLabel : $falseLabel;
+    $class = $enabled ? $trueClass : $falseClass;
+
+    return '<span class="maps-status-badge ' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8') . '">'
+        . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>';
+}
+
+/**
  * Return a JavaScript-safe quoted string.
  *
  * @param mixed $value
@@ -56,6 +167,116 @@ function MAPS_jsString($value)
 {
     $json = json_encode((string) $value);
     return ($json === false) ? '""' : $json;
+}
+
+/**
+ * Serialize a numeric value as a quoted JavaScript value.
+ * Number() in the generated script then performs the conversion without
+ * exposing locale-dependent or malformed legacy numeric strings to the parser.
+ *
+ * @param mixed $value
+ * @param mixed $default
+ * @return string
+ */
+function MAPS_normalizeNumber($value, $default = 0)
+{
+    if (is_string($value)) {
+        $value = trim($value);
+        // Legacy Maps installations may contain locale-formatted coordinates
+        // such as "48,364407". JavaScript requires a decimal point.
+        $value = str_replace(array("\xc2\xa0", ' '), '', $value);
+        if (strpos($value, ',') !== false && strpos($value, '.') === false) {
+            $value = str_replace(',', '.', $value);
+        }
+    }
+
+    if (!is_numeric($value)) {
+        $value = $default;
+    }
+
+    return $value;
+}
+
+function MAPS_coordinate($value, $minimum, $maximum, $default = 0)
+{
+    $value = MAPS_normalizeNumber($value, $default);
+    $number = (float) $value;
+    if ($number < (float) $minimum || $number > (float) $maximum) {
+        $number = (float) $default;
+    }
+
+    return $number;
+}
+
+function MAPS_latitude($value, $default = 0)
+{
+    return MAPS_coordinate($value, -90, 90, $default);
+}
+
+function MAPS_longitude($value, $default = 0)
+{
+    return MAPS_coordinate($value, -180, 180, $default);
+}
+
+function MAPS_isValidCoordinatePair($lat, $lng)
+{
+    $latValue = MAPS_normalizeNumber($lat, null);
+    $lngValue = MAPS_normalizeNumber($lng, null);
+    if ($latValue === null || $lngValue === null) {
+        return false;
+    }
+
+    $latValue = (float) $latValue;
+    $lngValue = (float) $lngValue;
+    return $latValue >= -90 && $latValue <= 90 && $lngValue >= -180 && $lngValue <= 180;
+}
+
+function MAPS_zoom($value, $default = 2)
+{
+    $value = (int) MAPS_normalizeNumber($value, $default);
+    if ($value < 0 || $value > 22) {
+        $value = (int) $default;
+    }
+    return $value;
+}
+
+/**
+ * Return a locale-independent decimal representation for JavaScript.
+ *
+ * PHP 5.x may format a float with the active locale when it is converted
+ * back to a string (for example 46.227638 can become 46,227638 under a
+ * French locale). JavaScript Number() does not accept that representation.
+ * Upper-case F in sprintf() is deliberately locale-independent.
+ *
+ * @param mixed $value
+ * @param mixed $default
+ * @return string
+ */
+function MAPS_canonicalNumberString($value, $default = 0)
+{
+    $value = MAPS_normalizeNumber($value, $default);
+    if (!is_numeric($value)) {
+        $value = MAPS_normalizeNumber($default, 0);
+    }
+
+    $number = (float) $value;
+    if (is_nan($number) || is_infinite($number)) {
+        $number = (float) MAPS_normalizeNumber($default, 0);
+    }
+
+    $text = sprintf('%.14F', $number);
+    $text = rtrim(rtrim($text, '0'), '.');
+
+    if ($text === '' || $text === '-0') {
+        $text = '0';
+    }
+
+    return $text;
+}
+
+function MAPS_jsNumber($value, $default = 0)
+{
+    return MAPS_jsString(MAPS_canonicalNumberString($value, $default));
 }
 
 /**
@@ -69,6 +290,89 @@ function MAPS_jsString($value)
 function MAPS_arrayGet($array, $key, $default = '')
 {
     return (is_array($array) && isset($array[$key])) ? $array[$key] : $default;
+}
+
+/**
+ * Normalize a configurable CSS size (for example 250px, 40em or 100%).
+ *
+ * @param mixed  $value
+ * @param string $default
+ * @return string
+ */
+function MAPS_cssSize($value, $default)
+{
+    $value = trim((string) $value);
+    // Maps <= 1.4 sometimes stored dimensions as bare numbers. CSS requires
+    // a unit, so preserve those historical values by treating them as pixels.
+    if (preg_match('/^[0-9]+(?:\.[0-9]+)?$/', $value)) {
+        return $value . 'px';
+    }
+    if (preg_match('/^[0-9]+(?:\.[0-9]+)?(?:px|%|em|rem|vh|vw)$/i', $value)) {
+        return $value;
+    }
+
+    return $default;
+}
+
+/**
+ * Return a validated Google map type constant name.
+ *
+ * @param mixed  $value
+ * @param string $default
+ * @return string
+ */
+function MAPS_mapType($value, $default = 'ROADMAP')
+{
+    $value = preg_replace('/[^A-Z_]/', '', strtoupper((string) $value));
+    if (!in_array($value, array('ROADMAP', 'SATELLITE', 'HYBRID', 'TERRAIN'), true)) {
+        $value = $default;
+    }
+
+    return $value;
+}
+
+/**
+ * Return the Geeklog table that stores extended user profile attributes.
+ * Geeklog 2.2.2 merged the legacy userinfo table into user_attributes.
+ *
+ * @return string
+ */
+function MAPS_userAttributesTable()
+{
+    global $_TABLES;
+
+    if (isset($_TABLES['user_attributes']) && $_TABLES['user_attributes'] !== '') {
+        return $_TABLES['user_attributes'];
+    }
+    if (isset($_TABLES['userinfo']) && $_TABLES['userinfo'] !== '') {
+        return $_TABLES['userinfo'];
+    }
+
+    return '';
+}
+
+/**
+ * Normalize a value for an HTML <input type="color">.
+ * Historical rows may contain an empty or malformed color, which modern
+ * browsers reject and report in the console.
+ *
+ * @param string $value
+ * @param string $fallback
+ * @return string
+ */
+function MAPS_htmlColor($value, $fallback = '#666666')
+{
+    $value = trim((string) $value);
+    $fallback = trim((string) $fallback);
+
+    if (!preg_match('/^#[0-9a-f]{6}$/i', $fallback)) {
+        $fallback = '#666666';
+    }
+    if (!preg_match('/^#[0-9a-f]{6}$/i', $value)) {
+        return $fallback;
+    }
+
+    return strtolower($value);
 }
 
 /**
@@ -124,23 +428,64 @@ function MAPS_clusterInitJs($mapVariable)
 }
 
 /**
+ * Register the Google Maps JavaScript API using the same mechanism that is
+ * known to work on Geeklog 2.1.1 (historically used by geocoder.php).
+ *
+ * $_SCRIPTS->setJavaScriptFile() does not reliably emit remote Google API
+ * URLs on every supported Geeklog/theme combination.  Registering the full
+ * script element through setJavaScript() works on both the tested 2.1.1
+ * renderer and current Geeklog releases.
+ *
+ * @return bool True when the API was registered (or had already been).
+ */
+function MAPS_loadGoogleMapsApi()
+{
+    global $_MAPS_CONF, $_SCRIPTS;
+
+    static $registered = false;
+
+    if ($registered) {
+        return true;
+    }
+
+    $key = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_api_key', ''));
+    if ($key === '') {
+        return false;
+    }
+
+    $apiUrl = MAPS_googleMapsApiUrl();
+    $_SCRIPTS->setJavaScript(
+        '<script src="' . htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8') . '"></script>',
+        false,
+        false
+    );
+
+    $registered = true;
+    return true;
+}
+
+/**
  * Load Google Maps once and inject Calendar integration where requested.
  */
 function plugin_getheadercode_maps()
 {
     global $_MAPS_CONF, $_SCRIPTS, $_PLUGINS;
 
-    $key = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_api_key', ''));
-    if ($key === '') {
+    /*
+     * The Maps administration dashboard performs its own Google Maps API
+     * health check. Do not preload the API there, otherwise gm_authFailure
+     * would be registered too late to reliably diagnose authentication errors.
+     */
+    $scriptName = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\', '/', (string) $_SERVER['SCRIPT_NAME']) : '';
+    if (preg_match('#/admin/plugins/maps/index\.php$#', $scriptName)) {
+        return;
+    }
+
+    if (!MAPS_loadGoogleMapsApi()) {
         return;
     }
 
     $_SCRIPTS->setJavaScriptLibrary('jquery');
-    $_SCRIPTS->setJavaScript(
-        '<script src="' . htmlspecialchars(MAPS_googleMapsApiUrl(), ENT_QUOTES, 'UTF-8') . '"></script>',
-        false,
-        false
-    );
 
     $str = '';
     $url = COM_getCurrentURL();
@@ -166,11 +511,31 @@ function MAPS_getheadercode()
 {
     global $_CONF, $_MAPS_CONF, $_SCRIPTS;
 
-    $_SCRIPTS->setCSSFile('maps_css', '/' . MAPS_arrayGet($_MAPS_CONF, 'maps_folder', 'maps') . '/maps.css');
+    $_SCRIPTS->setCSSFile('maps_css', '/maps/maps.css');
     if (isset($_CONF['theme'])) {
         $_SCRIPTS->setCSSFile('datepicker_ui', '/layout/' . $_CONF['theme'] . '/jquery_ui/jquery.ui.datepicker.css');
     }
-    $_SCRIPTS->setJavaScriptFile('maps_iconmaker', '/' . MAPS_arrayGet($_MAPS_CONF, 'maps_folder', 'maps') . '/js/mapiconmaker.js', false);
+    $_SCRIPTS->setJavaScriptFile('maps_iconmaker', '/maps/js/mapiconmaker.js', false);
+
+    /*
+     * Public/admin Maps pages call this function explicitly before Geeklog
+     * renders the document header. Load the Google Maps API here instead of
+     * relying only on plugin_getheadercode_maps(). This is important on older
+     * Geeklog versions/themes where the plugin header hook may run before the
+     * Maps configuration is fully available or may not re-render a script
+     * registered later in the request.
+     *
+     * The Maps admin dashboard is the one exception: it intentionally loads
+     * the API itself after installing gm_authFailure() so authentication
+     * failures can be diagnosed reliably.
+     */
+    $scriptName = isset($_SERVER['SCRIPT_NAME'])
+        ? str_replace('\\', '/', (string) $_SERVER['SCRIPT_NAME'])
+        : '';
+    $isAdminDashboard = (bool) preg_match('#/admin/plugins/maps/index\.php$#', $scriptName);
+    if (!$isAdminDashboard) {
+        MAPS_loadGoogleMapsApi();
+    }
 }
 
 function plugin_getdocumentationurl_maps()
@@ -211,9 +576,9 @@ function plugin_dopluginsearch_maps($query, $datestart, $dateend, $topic, $type,
     // user has been deleted. Only expose an owner when the user still exists;
     // otherwise fall back to the parent map owner, then Anonymous (uid 1).
     $ownerSql = "CASE "
-    . "WHEN {$markerAlias}.owner_id > 1 AND {$markerOwnerAlias}.uid IS NOT NULL THEN {$markerAlias}.owner_id "
-    . "WHEN {$mapAlias}.owner_id > 1 AND {$mapOwnerAlias}.uid IS NOT NULL THEN {$mapAlias}.owner_id "
-    . "ELSE 1 END";
+              . "WHEN {$markerAlias}.owner_id > 1 AND {$markerOwnerAlias}.uid IS NOT NULL THEN {$markerAlias}.owner_id "
+              . "WHEN {$mapAlias}.owner_id > 1 AND {$mapOwnerAlias}.uid IS NOT NULL THEN {$mapAlias}.owner_id "
+              . "ELSE 1 END";
 
     // COM_getPermSQL() emits unqualified permission fields. Qualify them because
     // both joined Maps tables expose the same permission column names.
@@ -314,16 +679,27 @@ function plugin_autotags_maps($op, $content = '', $autotag = '')
                 $rid = mt_rand(1000, 999999);
                 $t->set_var('gid', $rid);
                 $t->set_var('address', htmlspecialchars($address, ENT_QUOTES, 'UTF-8'));
+                $t->set_var('address_js', MAPS_jsString($address));
+                $geoZoom = is_numeric($zoom) ? (int) $zoom : (int) MAPS_arrayGet($_MAPS_CONF, 'map_zoom_geotag', 10);
+                $t->set_var('lat_js', MAPS_jsNumber($lat, 0));
+                $t->set_var('lng_js', MAPS_jsNumber($lng, 0));
+                $t->set_var('zoom_js', MAPS_jsNumber($geoZoom, 10));
                 $t->set_var('lat', (float) $lat);
                 $t->set_var('lng', (float) $lng);
-                $t->set_var('map_type', MAPS_arrayGet($_MAPS_CONF, 'map_type_geotag', 'ROADMAP'));
+                $geoMapType = preg_replace('/[^A-Z_]/', '', strtoupper((string) MAPS_arrayGet($_MAPS_CONF, 'map_type_geotag', 'ROADMAP')));
+                if (!in_array($geoMapType, array('ROADMAP', 'SATELLITE', 'HYBRID', 'TERRAIN'), true)) {
+                    $geoMapType = 'ROADMAP';
+                }
+                $t->set_var('map_type', $geoMapType);
                 $t->set_var('map_width_geotag', $width !== '' ? $width : MAPS_arrayGet($_MAPS_CONF, 'map_width_geotag', '100%'));
                 $t->set_var('map_height_geotag', $height !== '' ? $height : MAPS_arrayGet($_MAPS_CONF, 'map_height_geotag', '400px'));
-                $t->set_var('zoom', is_numeric($zoom) ? (int) $zoom : (int) MAPS_arrayGet($_MAPS_CONF, 'map_zoom_geotag', 10));
+                $t->set_var('zoom', $geoZoom);
                 $t->set_var('show_directions_geo', (int) MAPS_arrayGet($_MAPS_CONF, 'show_directions_geo', 0) ? 'block' : 'none');
                 $t->set_var('error_address_empty', $LANG_MAPS_1['error_address_empty']);
+                $t->set_var('error_address_empty_js', MAPS_jsString($LANG_MAPS_1['error_address_empty']));
                 $t->set_var('error_invalid_address', $LANG_MAPS_1['error_invalid_address']);
                 $t->set_var('error_google_error', $LANG_MAPS_1['error_google_error']);
+                $t->set_var('error_google_error_js', MAPS_jsString($LANG_MAPS_1['error_google_error']));
                 $t->set_var('error_no_map_info', $LANG_MAPS_1['error_no_map_info']);
                 $t->set_var('need_directions', $LANG_MAPS_1['need_directions']);
                 $t->set_var('get_directions', $LANG_MAPS_1['get_directions']);
@@ -376,10 +752,14 @@ function plugin_profileblocksdisplay_maps($uid)
     }
 
     $_SCRIPTS->setJavaScriptLibrary('jquery');
-    $_SCRIPTS->setJavaScript('<script src="' . htmlspecialchars(MAPS_googleMapsApiUrl(), ENT_QUOTES, 'UTF-8') . '"></script>', false, false);
+    MAPS_loadGoogleMapsApi();
 
     $uid = (int) $uid;
-    $address = DB_getItem($_TABLES['userinfo'], 'location', 'uid=' . $uid);
+    $userAttributesTable = MAPS_userAttributesTable();
+    if ($userAttributesTable === '') {
+        return '';
+    }
+    $address = DB_getItem($userAttributesTable, 'location', 'uid=' . $uid);
     if ($address === '') {
         return '';
     }
@@ -408,8 +788,8 @@ function plugin_profileblocksdisplay_maps($uid)
     $zoom = (int) MAPS_arrayGet($_MAPS_CONF, 'zoom_profile', 10);
     $js = "jQuery(function(){\n"
         . "var el=document.getElementById('map_canvas{$gid}'); if(!el||!window.google){return;}\n"
-        . "var m=new google.maps.Map(el,{center:{lat:" . (float) $lat . ",lng:" . (float) $lng . "},zoom:{$zoom},mapTypeId:google.maps.MapTypeId.{$mapType}});\n"
-        . "new google.maps.Marker({position:{lat:" . (float) $lat . ",lng:" . (float) $lng . "},map:m,title:{$safeAddress}});\n"
+        . "var m=new google.maps.Map(el,{center:{lat:Number(" . MAPS_jsNumber($lat, 0) . "),lng:Number(" . MAPS_jsNumber($lng, 0) . ")},zoom:{$zoom},mapTypeId:google.maps.MapTypeId.{$mapType}});\n"
+        . "new google.maps.Marker({position:{lat:Number(" . MAPS_jsNumber($lat, 0) . "),lng:Number(" . MAPS_jsNumber($lng, 0) . ")},map:m,title:{$safeAddress}});\n"
         . "var renderer=new google.maps.DirectionsRenderer({map:m,panel:document.getElementById('directions{$gid}')});\n"
         . "window.get_directions{$gid}=function(){var i=document.getElementById('from_address{$gid}');if(!i||!i.value){return;}new google.maps.DirectionsService().route({origin:i.value,destination:{$safeAddress},travelMode:google.maps.TravelMode.DRIVING},function(r,s){if(s==='OK'||s===google.maps.DirectionsStatus.OK){renderer.setDirections(r);}else{alert(" . MAPS_jsString($LANG_MAPS_1['error_google_error']) . "+' ('+s+')');}});};\n"
         . "});";
@@ -453,48 +833,723 @@ function plugin_chkVersion_maps()
 }
 
 /**
- * Upgrade Maps 1.4.x to 1.5.0 without destructive data migration.
+ * Upgrade Maps configuration to 1.5.1 without destructive data migration.
+ *
+ * The 1.5.0 -> 1.5.1 step normalizes configuration rows left by Maps 1.4,
+ * removes obsolete Google Ads settings and creates/repositions the current
+ * Google Maps Platform and marker-field settings.
  */
-function plugin_upgrade_maps()
+/**
+ * Repair and normalize the Maps 1.5.2 configuration layout.
+ *
+ * Maps 1.4 stored Google Ads options and used a different set of fieldset
+ * numbers. Upgrading used to add the new Google options without removing or
+ * relocating the legacy rows, which produced a mixed 1.4/1.5 configuration
+ * screen. This repair is intentionally idempotent and also runs when the
+ * migration is also safe to run more than once.
+ */
+function MAPS_repairConfig151()
 {
-    global $_CONF, $_TABLES, $_MAPS_CONF;
+    global $_CONF, $_TABLES, $_MAPS_CONF, $_MAPS_DEFAULT;
 
-    $installed = DB_getItem($_TABLES['plugins'], 'pi_version', "pi_name='maps'");
-    $code = plugin_chkVersion_maps();
-    if ($installed === $code) {
+    require_once $_CONF['path_system'] . 'classes/config.class.php';
+    require_once $_CONF['path'] . 'plugins/maps/install_defaults.php';
+
+    $group = 'maps';
+    $groupSql = MAPS_dbEscape($group);
+    $config = config::get_instance();
+
+    // Google Maps AdSense integration was removed from Maps 1.5.
+    $obsolete = array(
+        'monetize', 'fs_ads', 'AdsOnMap', 'publisher_id', 'channel_id',
+        'maxAdsOnMap', 'fs_map_default', 'fs_marker_default'
+    );
+    foreach ($obsolete as $name) {
+        DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='" . $groupSql
+            . "' AND name='" . MAPS_dbEscape($name) . "'");
+    }
+
+    // Complete description of the 1.5 configuration. Existing values are kept;
+    // only missing rows are added and their presentation metadata is normalized.
+    $rows = array(
+        'sg_main' => array(null, 'subgroup', 0, 0, null, 0),
+        'fs_main' => array(null, 'fieldset', 0, 0, null, 0),
+        'maps_login_required' => array($_MAPS_DEFAULT['maps_login_required'], 'select', 0, 0, 3, 20),
+        'hide_maps_menu' => array($_MAPS_DEFAULT['hide_maps_menu'], 'select', 0, 0, 3, 30),
+        'marker_submission' => array($_MAPS_DEFAULT['marker_submission'], 'select', 0, 0, 3, 40),
+        'submit_login_required' => array($_MAPS_DEFAULT['submit_login_required'], 'select', 0, 0, 3, 50),
+        'marker_edition' => array($_MAPS_DEFAULT['marker_edition'], 'select', 0, 0, 3, 60),
+
+        'fs_google' => array(null, 'fieldset', 0, 1, null, 0),
+        'autofill_coord' => array($_MAPS_DEFAULT['autofill_coord'], 'select', 0, 1, 3, 100),
+        'google_api_key' => array($_MAPS_DEFAULT['google_api_key'], 'text', 0, 1, 0, 110),
+        'google_server_api_key' => array($_MAPS_DEFAULT['google_server_api_key'], 'text', 0, 1, 0, 120),
+        'google_map_id' => array($_MAPS_DEFAULT['google_map_id'], 'text', 0, 1, 0, 130),
+        'google_language' => array($_MAPS_DEFAULT['google_language'], 'text', 0, 1, 0, 140),
+        'google_region' => array($_MAPS_DEFAULT['google_region'], 'text', 0, 1, 0, 150),
+        'url_geocode' => array($_MAPS_DEFAULT['url_geocode'], 'text', 0, 1, 0, 160),
+
+        'fs_permissions' => array(null, 'fieldset', 0, 2, null, 0),
+        'default_permissions' => array($_MAPS_DEFAULT['default_permissions'], '@select', 0, 2, 12, 200),
+
+        'sg_display' => array(null, 'subgroup', 1, 0, null, 0),
+        'fs_display' => array(null, 'fieldset', 1, 0, null, 0),
+        'map_main_header' => array($_MAPS_DEFAULT['map_main_header'], 'text', 1, 0, 0, 10),
+        'map_main_footer' => array($_MAPS_DEFAULT['map_main_footer'], 'text', 1, 0, 0, 20),
+        'use_cluster' => array($_MAPS_DEFAULT['use_cluster'], 'select', 1, 0, 3, 30),
+        'display_events_map' => array($_MAPS_DEFAULT['display_events_map'], 'select', 1, 0, 3, 40),
+
+        'fs_global_map' => array(null, 'fieldset', 1, 1, null, 0),
+        'users_map' => array($_MAPS_DEFAULT['users_map'], 'select', 1, 1, 3, 10),
+        'global_map' => array($_MAPS_DEFAULT['global_map'], 'select', 1, 1, 3, 20),
+        'global_type' => array($_MAPS_DEFAULT['global_type'], 'select', 1, 1, 20, 30),
+        'global_width' => array($_MAPS_DEFAULT['global_width'], 'text', 1, 1, 0, 40),
+        'global_height' => array($_MAPS_DEFAULT['global_height'], 'text', 1, 1, 0, 50),
+        'global_zoom' => array($_MAPS_DEFAULT['global_zoom'], 'text', 1, 1, 0, 60),
+
+        'fs_display_profile' => array(null, 'fieldset', 1, 2, null, 0),
+        'display_geo_profile' => array($_MAPS_DEFAULT['display_geo_profile'], 'select', 1, 2, 3, 10),
+        'map_type_profile' => array($_MAPS_DEFAULT['map_type_profile'], 'select', 1, 2, 20, 20),
+        'map_width_profile' => array($_MAPS_DEFAULT['map_width_profile'], 'text', 1, 2, 0, 30),
+        'map_height_profile' => array($_MAPS_DEFAULT['map_height_profile'], 'text', 1, 2, 0, 40),
+        'zoom_profile' => array($_MAPS_DEFAULT['zoom_profile'], 'text', 1, 2, 0, 50),
+        'show_directions_profile' => array($_MAPS_DEFAULT['show_directions_profile'], 'select', 1, 2, 3, 60),
+
+        'fs_display_geo' => array(null, 'fieldset', 1, 3, null, 0),
+        'map_type_geotag' => array($_MAPS_DEFAULT['map_type_geotag'], 'select', 1, 3, 20, 10),
+        'map_width_geotag' => array($_MAPS_DEFAULT['map_width_geotag'], 'text', 1, 3, 0, 20),
+        'map_height_geotag' => array($_MAPS_DEFAULT['map_height_geotag'], 'text', 1, 3, 0, 30),
+        'map_zoom_geotag' => array($_MAPS_DEFAULT['map_zoom_geotag'], 'text', 1, 3, 0, 40),
+        'show_directions_geo' => array($_MAPS_DEFAULT['show_directions_geo'], 'select', 1, 3, 3, 50),
+
+        'fs_map_defaults' => array(null, 'fieldset', 1, 4, null, 0),
+        'map_type' => array($_MAPS_DEFAULT['map_type'], 'select', 1, 4, 20, 10),
+        'map_width' => array($_MAPS_DEFAULT['map_width'], 'text', 1, 4, 0, 20),
+        'map_height' => array($_MAPS_DEFAULT['map_height'], 'text', 1, 4, 0, 30),
+        'map_zoom' => array($_MAPS_DEFAULT['map_zoom'], 'text', 1, 4, 0, 40),
+        'map_active' => array($_MAPS_DEFAULT['map_active'], 'select', 1, 4, 3, 50),
+        'map_hidden' => array($_MAPS_DEFAULT['map_hidden'], 'select', 1, 4, 3, 60),
+        'free_markers' => array($_MAPS_DEFAULT['free_markers'], 'select', 1, 4, 3, 70),
+        'paid_markers' => array($_MAPS_DEFAULT['paid_markers'], 'select', 1, 4, 3, 80),
+
+        'fs_marker_defaults' => array(null, 'fieldset', 1, 5, null, 0),
+        'marker_active' => array($_MAPS_DEFAULT['marker_active'], 'select', 1, 5, 3, 10),
+        'marker_hidden' => array($_MAPS_DEFAULT['marker_hidden'], 'select', 1, 5, 3, 20),
+        'marker_payed' => array($_MAPS_DEFAULT['marker_payed'], 'select', 1, 5, 3, 30),
+        'marker_validity' => array($_MAPS_DEFAULT['marker_validity'], 'select', 1, 5, 3, 40),
+        'star_primary_color' => array($_MAPS_DEFAULT['star_primary_color'], 'text', 1, 5, 0, 50),
+        'star_stroke_color' => array($_MAPS_DEFAULT['star_stroke_color'], 'text', 1, 5, 0, 60),
+        'label_color' => array($_MAPS_DEFAULT['label_color'], 'select', 1, 5, 0, 70),
+        'detail_zoom' => array($_MAPS_DEFAULT['detail_zoom'], 'text', 1, 5, 0, 80),
+
+        'fs_marker_fields' => array(null, 'fieldset', 1, 6, null, 0)
+    );
+
+    $fieldOrder = 10;
+    foreach (array('street', 'code', 'city', 'state', 'country', 'tel', 'fax', 'web') as $name) {
+        $rows[$name] = array($_MAPS_DEFAULT[$name], 'select', 1, 6, 3, $fieldOrder);
+        $fieldOrder += 10;
+    }
+    for ($i = 1; $i <= 10; $i++) {
+        $name = 'item_' . $i;
+        $rows[$name] = array($_MAPS_DEFAULT[$name], 'text', 1, 6, 0, $fieldOrder);
+        $fieldOrder += 10;
+    }
+    $rows['infos_label'] = array($_MAPS_DEFAULT['infos_label'], 'text', 1, 6, 0, $fieldOrder);
+
+    foreach ($rows as $name => $def) {
+        $nameSql = MAPS_dbEscape($name);
+        $exists = (int) DB_getItem(
+            $_TABLES['conf_values'],
+            'COUNT(*)',
+            "group_name='" . $groupSql . "' AND name='" . $nameSql . "'"
+        );
+        if ($exists === 0) {
+            $config->add($name, $def[0], $def[1], $def[2], $def[3], $def[4], $def[5], true, $group);
+        }
+
+        $selection = ($def[4] === null) ? -1 : (int) $def[4];
+        DB_query("UPDATE {$_TABLES['conf_values']} SET type='" . MAPS_dbEscape($def[1])
+            . "', subgroup=" . (int) $def[2]
+            . ", fieldset=" . (int) $def[3]
+            . ", selectionArray=" . $selection
+            . ", sort_order=" . (int) $def[5]
+            . " WHERE group_name='" . $groupSql . "' AND name='" . $nameSql . "'");
+    }
+
+    // Convert the 1.4 geocoding URL template to the current endpoint while
+    // preserving a custom endpoint if an administrator intentionally changed it.
+    $legacyGeocode = isset($_MAPS_CONF['url_geocode']) ? (string) $_MAPS_CONF['url_geocode'] : '';
+    if ($legacyGeocode === '' || strpos($legacyGeocode, '%address%') !== false || strpos($legacyGeocode, 'sensor=') !== false) {
+        $config->set('url_geocode', $_MAPS_DEFAULT['url_geocode'], $group);
+    }
+
+    return true;
+}
+
+
+/**
+ * Validate a legacy public folder configured by Maps <= 1.5.1.
+ *
+ * Nested relative folders are accepted, but traversal and absolute paths are
+ * rejected. The returned value never has leading/trailing slashes.
+ *
+ * @param string $folder
+ * @return string
+ */
+function MAPS_normalizeLegacyPublicFolder152($folder)
+{
+    $folder = trim(str_replace('\\', '/', (string) $folder));
+    $folder = trim($folder, '/');
+
+    if ($folder === '' || $folder === 'maps' || strpos($folder, "\0") !== false) {
+        return '';
+    }
+
+    $parts = explode('/', $folder);
+    foreach ($parts as $part) {
+        if ($part === '' || $part === '.' || $part === '..') {
+            return '';
+        }
+    }
+
+    // Drive letters, URL schemes and query fragments are not filesystem slugs.
+    if (strpos($folder, ':') !== false || strpos($folder, '?') !== false || strpos($folder, '#') !== false) {
+        return '';
+    }
+
+    return $folder;
+}
+
+/**
+ * Verify the canonical public folder installed by Geeklog.
+ *
+ * Geeklog's native plugin uploader extracts the package and moves the package
+ * public_html directory to $_CONF['path_html'] . 'maps' before calling the
+ * plugin upgrade callback. Maps must therefore never reconstruct a source
+ * path or copy files out of the installed plugin directory here.
+ *
+ * @return bool
+ */
+function MAPS_deployCanonicalPublicFolder152()
+{
+    global $_CONF;
+
+    if (!isset($_CONF['path_html']) || trim((string) $_CONF['path_html']) === '') {
+        COM_errorLog('Maps 1.5.2 upgrade: Geeklog path_html is not configured.');
+        return false;
+    }
+
+    $target = rtrim((string) $_CONF['path_html'], '/\\')
+        . DIRECTORY_SEPARATOR . 'maps';
+
+    COM_errorLog('Maps 1.5.2 upgrade: canonical public folder from Geeklog path_html: ' . $target);
+
+    if (!is_dir($target)) {
+        COM_errorLog('Maps 1.5.2 upgrade: canonical public folder installed by Geeklog is missing: ' . $target);
+        return false;
+    }
+
+    // index.php and markers.php are core Maps public entry points. Their
+    // presence confirms that Geeklog deployed the public part of this package.
+    foreach (array('index.php', 'markers.php') as $entry) {
+        $path = $target . DIRECTORY_SEPARATOR . $entry;
+        if (!is_file($path)) {
+            COM_errorLog('Maps 1.5.2 upgrade: expected canonical public file is missing: ' . $path);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Return true when an existing legacy PHP entry point belongs to Maps (or is
+ * one of the 1.5.2 redirect stubs). This prevents overwriting unrelated files.
+ *
+ * @param string $path
+ * @return bool
+ */
+function MAPS_isLegacyMapsEntryPoint152($path)
+{
+    if (!file_exists($path)) {
+        return true;
+    }
+    if (!is_file($path) || !is_readable($path)) {
+        return false;
+    }
+
+    $sample = @file_get_contents($path, false, null, 0, 16384);
+    if ($sample === false) {
+        return false;
+    }
+    $sampleLower = strtolower($sample);
+
+    return strpos($sample, 'MAPS_') !== false
+        || strpos($sampleLower, 'plugins/maps') !== false
+        || strpos($sampleLower, 'maps plugin') !== false
+        || strpos($sampleLower, 'maps 1.5.2 permanent seo redirect') !== false;
+}
+
+/**
+ * Install permanent redirect entry points in a legacy Maps public folder.
+ * Query strings are preserved exactly (minus CR/LF header characters).
+ *
+ * @param string $legacyFolder Relative folder under path_html
+ * @return bool
+ */
+function MAPS_installLegacyRedirects152($legacyFolder)
+{
+    global $_CONF;
+
+    $legacyFolder = MAPS_normalizeLegacyPublicFolder152($legacyFolder);
+    if ($legacyFolder === '') {
         return true;
     }
 
-    require_once $_CONF['path'] . 'plugins/maps/autoinstall.php';
+    $legacyPath = rtrim($_CONF['path_html'], '/\\') . DIRECTORY_SEPARATOR
+        . str_replace('/', DIRECTORY_SEPARATOR, $legacyFolder);
+
+    if (!is_dir($legacyPath) && !@mkdir($legacyPath, 0755, true)) {
+        COM_errorLog('Maps 1.5.2 upgrade: unable to create legacy redirect folder: ' . $legacyPath);
+        return false;
+    }
+
+    // On case-insensitive filesystems, a legacy slug such as "Maps" may resolve
+    // to the canonical "maps" directory. Never replace canonical files with
+    // redirect stubs in that situation.
+    $canonicalPath = rtrim($_CONF['path_html'], '/\\') . DIRECTORY_SEPARATOR . 'maps';
+    $legacyReal = realpath($legacyPath);
+    $canonicalReal = realpath($canonicalPath);
+    if ($legacyReal !== false && $canonicalReal !== false && $legacyReal === $canonicalReal) {
+        return true;
+    }
+
+    $depth = count(explode('/', $legacyFolder));
+    $prefix = str_repeat('../', $depth) . 'maps/';
+    $entries = array('index.php', 'markers.php', 'map_detail.php', 'users_map.php');
+
+    foreach ($entries as $entry) {
+        $path = $legacyPath . DIRECTORY_SEPARATOR . $entry;
+        if (!MAPS_isLegacyMapsEntryPoint152($path)) {
+            COM_errorLog('Maps 1.5.2 upgrade: refusing to overwrite non-Maps legacy file: ' . $path);
+            return false;
+        }
+
+        $target = $prefix . $entry;
+        $stub = "<?php\n"
+            . "// Maps 1.5.2 permanent SEO redirect. Keep this file for old links.\n"
+            . "\$target = " . var_export($target, true) . ";\n"
+            . "\$query = isset(\$_SERVER['QUERY_STRING']) ? str_replace(array(\"\\r\", \"\\n\"), '', (string) \$_SERVER['QUERY_STRING']) : '';\n"
+            . "if (\$query !== '') {\$target .= '?' . \$query;}\n"
+            . "header('Location: ' . \$target, true, 301);\n"
+            . "exit;\n";
+
+        if (@file_put_contents($path, $stub, LOCK_EX) === false) {
+            COM_errorLog('Maps 1.5.2 upgrade: unable to write legacy redirect: ' . $path);
+            return false;
+        }
+        @chmod($path, 0644);
+    }
+
+    $readme = $legacyPath . DIRECTORY_SEPARATOR . 'MAPS-LEGACY-REDIRECT.txt';
+    $note = "Maps 1.5.2 legacy public folder\n"
+        . "This directory is intentionally retained for permanent HTTP 301 redirects.\n"
+        . "Do not remove it while old links or search-engine indexes may still reference /"
+        . $legacyFolder . "/.\nCanonical Maps URLs now use /maps/.\n";
+    @file_put_contents($readme, $note, LOCK_EX);
+
+    return true;
+}
+
+/**
+ * Maps 1.5.2 migration: canonicalize the public folder to /maps while keeping
+ * permanent 301 redirects from the previously configured slug.
+ *
+ * @return bool
+ */
+function MAPS_migratePublicFolder152()
+{
+    global $_CONF, $_TABLES, $_MAPS_CONF;
+
     require_once $_CONF['path_system'] . 'classes/config.class.php';
+    $group = 'maps';
+    $groupSql = MAPS_dbEscape($group);
+    $config = config::get_instance();
+
+    $legacy = isset($_MAPS_CONF['_legacy_maps_folder'])
+        ? (string) $_MAPS_CONF['_legacy_maps_folder'] : 'maps';
+    $legacy = MAPS_normalizeLegacyPublicFolder152($legacy);
+
+    if (!MAPS_deployCanonicalPublicFolder152()) {
+        return false;
+    }
+
+    if ($legacy !== '' && !MAPS_installLegacyRedirects152($legacy)) {
+        return false;
+    }
+
+    // Keep the previous slug as internal state, not as a visible Maps
+    // configuration item. Geeklog's vars table is intended for plugin/runtime
+    // state that does not belong on admin/configuration.php.
+    $legacyVar = 'maps_legacy_folder';
+    $legacyVarSql = MAPS_dbEscape($legacyVar);
+    $legacySql = MAPS_dbEscape($legacy);
+    if (DB_count($_TABLES['vars'], 'name', $legacyVar) > 0) {
+        DB_change($_TABLES['vars'], 'value', $legacySql, 'name', $legacyVar);
+    } else {
+        DB_query("INSERT INTO {$_TABLES['vars']} (name, value) VALUES ('"
+            . $legacyVarSql . "', '" . $legacySql . "')");
+    }
+
+    // Remove both the historical editable folder setting and the alpha3
+    // internal setting if they exist in the online configuration.
+    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='" . $groupSql
+        . "' AND name IN ('maps_folder','legacy_maps_folder')");
+
+    return true;
+}
+
+/**
+ * Maps 1.5.3 configuration cleanup.
+ *
+ * Earlier 1.5.2 alpha builds temporarily stored the legacy public folder in
+ * the online configuration. Internal SEO migration state belongs in Geeklog's
+ * vars table, not on admin/configuration.php.
+ *
+ * @return bool
+ */
+function MAPS_cleanupConfig153()
+{
+    global $_CONF, $_TABLES;
+
+    if (!isset($_TABLES['conf_values']) || !isset($_TABLES['vars'])) {
+        COM_errorLog('Maps 1.5.3 upgrade: Geeklog configuration tables are unavailable.');
+        return false;
+    }
+
+    $groupSql = MAPS_dbEscape('maps');
+    $nameSql = MAPS_dbEscape('legacy_maps_folder');
+    $legacy = '';
+
+    $result = DB_query("SELECT value FROM {$_TABLES['conf_values']} WHERE group_name='"
+        . $groupSql . "' AND name='" . $nameSql . "' LIMIT 1");
+    if ($result && DB_numRows($result) > 0) {
+        $row = DB_fetchArray($result);
+        if (isset($row['value'])) {
+            $raw = (string) $row['value'];
+            // Configuration strings are normally serialized by Geeklog.
+            $decoded = @unserialize($raw);
+            if ($decoded !== false || $raw === 'b:0;') {
+                $legacy = (string) $decoded;
+            } else {
+                $legacy = trim($raw, "\"'");
+            }
+        }
+    }
+
+    $legacy = MAPS_normalizeLegacyPublicFolder152($legacy);
+    if ($legacy !== '') {
+        $varName = 'maps_legacy_folder';
+        $varNameSql = MAPS_dbEscape($varName);
+        $legacySql = MAPS_dbEscape($legacy);
+        if (DB_count($_TABLES['vars'], 'name', $varName) > 0) {
+            DB_change($_TABLES['vars'], 'value', $legacySql, 'name', $varName);
+        } else {
+            DB_query("INSERT INTO {$_TABLES['vars']} (name, value) VALUES ('"
+                . $varNameSql . "', '" . $legacySql . "')");
+        }
+    }
+
+    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='"
+        . $groupSql . "' AND name='" . $nameSql . "'");
+
+    // Also remove maps_folder if an older migration left it behind. In 1.5.2+
+    // /maps/ is canonical and this setting is no longer user-editable.
+    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='"
+        . $groupSql . "' AND name='maps_folder'");
+
+    // Force Geeklog to rebuild its in-memory configuration after the cleanup.
+    if (isset($_CONF['path_system'])) {
+        require_once rtrim($_CONF['path_system'], '/\\') . DIRECTORY_SEPARATOR . 'classes'
+            . DIRECTORY_SEPARATOR . 'config.class.php';
+        if (class_exists('config')) {
+            $config = config::get_instance();
+            if (method_exists($config, 'initConfig')) {
+                $config->initConfig();
+            }
+        }
+    }
+
+    COM_errorLog('Maps 1.5.3 upgrade: obsolete legacy_maps_folder configuration removed.', 1);
+    return true;
+}
+
+
+/**
+ * Maps 1.5.4 configuration reorganization.
+ *
+ * Existing values are preserved. Only presentation metadata is moved to the
+ * new tabs/fieldsets, and new settings receive conservative defaults.
+ *
+ * @return bool
+ */
+function MAPS_repairConfig154()
+{
+    global $_CONF, $_TABLES;
+
+    require_once $_CONF['path_system'] . 'classes/config.class.php';
+    require_once $_CONF['path'] . 'plugins/maps/install_defaults.php';
+
+    if (!function_exists('MAPS_configDefinition154')) {
+        COM_errorLog('Maps 1.5.4 upgrade: configuration definition is unavailable.');
+        return false;
+    }
+
+    $group = 'maps';
+    $groupSql = MAPS_dbEscape($group);
+    $config = config::get_instance();
+    $rows = MAPS_configDefinition154();
+
+    // The former catch-all "Display" subgroup is replaced by explicit tabs.
+    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='" . $groupSql
+        . "' AND name='sg_display'");
+
+    foreach ($rows as $name => $def) {
+        $nameSql = MAPS_dbEscape($name);
+        $exists = (int) DB_getItem(
+            $_TABLES['conf_values'],
+            'COUNT(*)',
+            "group_name='" . $groupSql . "' AND name='" . $nameSql . "'"
+        );
+        if ($exists === 0) {
+            $config->add($name, $def[0], $def[1], $def[2], $def[3], $def[4], $def[5], true, $group);
+        }
+
+        $selection = ($def[4] === null) ? -1 : (int) $def[4];
+        DB_query("UPDATE {$_TABLES['conf_values']} SET type='" . MAPS_dbEscape($def[1])
+            . "', subgroup=" . (int) $def[2]
+            . ", fieldset=" . (int) $def[3]
+            . ", selectionArray=" . $selection
+            . ", sort_order=" . (int) $def[5]
+            . " WHERE group_name='" . $groupSql . "' AND name='" . $nameSql . "'");
+    }
+
+    if (method_exists($config, 'initConfig')) {
+        $config->initConfig();
+    }
+
+    COM_errorLog('Maps 1.5.4 upgrade: configuration reorganized into dedicated tabs.', 1);
+    return true;
+}
+
+
+/**
+ * Maps 1.5.5 configuration tab repair.
+ *
+ * Maps 1.5.4 incorrectly used multiple subgroups where Geeklog expects one
+ * plugin subgroup plus explicit entries of type "tab". Preserve every
+ * existing value and only repair the presentation metadata.
+ *
+ * @return bool
+ */
+function MAPS_repairConfig155()
+{
+    global $_CONF, $_TABLES;
+
+    require_once $_CONF['path_system'] . 'classes/config.class.php';
+    require_once $_CONF['path'] . 'plugins/maps/install_defaults.php';
+
+    if (!function_exists('MAPS_configDefinition155')) {
+        COM_errorLog('Maps 1.5.5 upgrade: configuration definition is unavailable.');
+        return false;
+    }
+
+    $group = 'maps';
+    $groupSql = MAPS_dbEscape($group);
+    $config = config::get_instance();
+    $rows = MAPS_configDefinition155();
+
+    // Remove the 1.5.4 pseudo-subgroups. sg_main remains the single plugin subgroup.
+    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='" . $groupSql
+        . "' AND name IN ('sg_google','sg_maps','sg_markers','sg_fields','sg_display')");
+
+    foreach ($rows as $name => $def) {
+        $nameSql = MAPS_dbEscape($name);
+        $exists = (int) DB_getItem(
+            $_TABLES['conf_values'],
+            'COUNT(*)',
+            "group_name='" . $groupSql . "' AND name='" . $nameSql . "'"
+        );
+
+        if ($exists === 0) {
+            $config->add(
+                $name,
+                $def[0],
+                $def[1],
+                $def[2],
+                $def[3],
+                $def[4],
+                $def[5],
+                true,
+                $group,
+                $def[6]
+            );
+        }
+
+        $selection = ($def[4] === null) ? -1 : (int) $def[4];
+        DB_query("UPDATE {$_TABLES['conf_values']} SET type='" . MAPS_dbEscape($def[1])
+            . "', subgroup=" . (int) $def[2]
+            . ", fieldset=" . (int) $def[3]
+            . ", selectionArray=" . $selection
+            . ", sort_order=" . (int) $def[5]
+            . ", tab=" . (int) $def[6]
+            . " WHERE group_name='" . $groupSql . "' AND name='" . $nameSql . "'");
+    }
+
+    if (method_exists($config, 'initConfig')) {
+        $config->initConfig();
+    }
+
+    COM_errorLog('Maps 1.5.5 upgrade: Geeklog configuration tabs repaired.', 1);
+    return true;
+}
+
+/**
+ * Maps 1.5.6 configuration metadata repair.
+ *
+ * Geeklog stores -1 in selectionArray when a configuration row has no
+ * selection list. Earlier 1.5.5 migration code wrote SQL NULL for fieldsets
+ * and tabs. config::_get_extended() sees that as an empty string and tries to
+ * resolve $LANG_configselects['maps'][''], producing an undefined-array-key
+ * warning. Preserve all values and normalize presentation metadata only.
+ *
+ * @return bool
+ */
+function MAPS_repairConfig156()
+{
+    global $_CONF, $_TABLES;
+
+    require_once $_CONF['path_system'] . 'classes/config.class.php';
+    require_once $_CONF['path'] . 'plugins/maps/install_defaults.php';
+
+    if (!function_exists('MAPS_configDefinition155')) {
+        COM_errorLog('Maps 1.5.6 upgrade: configuration definition is unavailable.');
+        return false;
+    }
+
+    $group = 'maps';
+    $groupSql = MAPS_dbEscape($group);
+    $config = config::get_instance();
+    $rows = MAPS_configDefinition155();
+
+    foreach ($rows as $name => $def) {
+        $nameSql = MAPS_dbEscape($name);
+        $exists = (int) DB_getItem(
+            $_TABLES['conf_values'],
+            'COUNT(*)',
+            "group_name='" . $groupSql . "' AND name='" . $nameSql . "'"
+        );
+
+        if ($exists === 0) {
+            $config->add($name, $def[0], $def[1], $def[2], $def[3], $def[4], $def[5], true, $group, $def[6]);
+        }
+
+        $selection = ($def[4] === null) ? -1 : (int) $def[4];
+        DB_query("UPDATE {$_TABLES['conf_values']} SET type='" . MAPS_dbEscape($def[1])
+            . "', subgroup=" . (int) $def[2]
+            . ", fieldset=" . (int) $def[3]
+            . ", selectionArray=" . $selection
+            . ", sort_order=" . (int) $def[5]
+            . ", tab=" . (int) $def[6]
+            . " WHERE group_name='" . $groupSql . "' AND name='" . $nameSql . "'");
+    }
+
+    DB_query("UPDATE {$_TABLES['conf_values']} SET selectionArray=-1"
+        . " WHERE group_name='" . $groupSql . "' AND selectionArray IS NULL");
+
+    if (method_exists($config, 'initConfig')) {
+        $config->initConfig();
+    }
+
+    COM_errorLog('Maps 1.5.6 upgrade: configuration selection metadata repaired.', 1);
+    return true;
+}
+
+function plugin_upgrade_maps()
+{
+    global $_CONF, $_TABLES;
+
+    $installed = (string) DB_getItem($_TABLES['plugins'], 'pi_version', "pi_name='maps'");
+    $code = plugin_chkVersion_maps();
+
+    require_once $_CONF['path'] . 'plugins/maps/autoinstall.php';
     if (!plugin_compatible_with_this_version_maps('maps')) {
         return 3002;
     }
 
     if (version_compare($installed, '1.4.0', '<')) {
-        COM_errorLog('Maps 1.5 upgrade requires Maps 1.4.0 or newer. Upgrade to 1.4.0 first.');
+        COM_errorLog('Maps 1.5.6 upgrade requires Maps 1.4.0 or newer. Upgrade to 1.4.0 first.');
         return false;
     }
 
-    $config = config::get_instance();
-    $group = 'maps';
-    $newSettings = array(
-        'google_server_api_key' => array('', 'text', 0, 1, 0, 120),
-        'google_map_id' => array('', 'text', 0, 1, 0, 130),
-        'google_language' => array('', 'text', 0, 1, 0, 140),
-        'google_region' => array('', 'text', 0, 1, 0, 150)
-    );
-    foreach ($newSettings as $name => $def) {
-        if (!array_key_exists($name, $_MAPS_CONF)) {
-            $config->add($name, $def[0], $def[1], $def[2], $def[3], $def[4], $def[5], true, $group);
+    /* Maps 1.5.1 configuration cleanup (also used for direct 1.4.x upgrades). */
+    if (version_compare($installed, '1.5.1', '<')) {
+        if (!MAPS_repairConfig151()) {
+            return false;
         }
     }
-    if (isset($_MAPS_CONF['url_geocode'])) {
-        $config->set('url_geocode', 'https://maps.googleapis.com/maps/api/geocode/json', $group);
+
+    /*
+     * Maps 1.5.2 SEO/public-folder migration.
+     * The canonical public folder becomes /maps/. A previous custom folder is
+     * retained as permanent 301 redirect entry points.
+     */
+    if (version_compare($installed, '1.5.2', '<')) {
+        if (!MAPS_migratePublicFolder152()) {
+            COM_errorLog('Maps 1.5.2 upgrade stopped: public-folder/SEO migration failed.');
+            return false;
+        }
     }
 
-    DB_query("UPDATE {$_TABLES['plugins']} SET pi_version='" . MAPS_dbEscape($code) . "', pi_gl_version='2.1.1' WHERE pi_name='maps'");
-    COM_errorLog('Updated Maps plugin from v' . $installed . ' to v' . $code, 1);
+    /* Maps 1.5.3 configuration-only cleanup for sites already on 1.5.2. */
+    if (version_compare($installed, '1.5.3', '<')) {
+        if (!MAPS_cleanupConfig153()) {
+            COM_errorLog('Maps 1.5.3 upgrade stopped: configuration cleanup failed.');
+            return false;
+        }
+    }
+
+    /* Maps 1.5.4 configuration tabs and extracted display defaults. */
+    if (version_compare($installed, '1.5.4', '<')) {
+        if (!MAPS_repairConfig154()) {
+            COM_errorLog('Maps 1.5.4 upgrade stopped: configuration reorganization failed.');
+            return false;
+        }
+    }
+
+    /* Maps 1.5.5 fixes the 1.5.4 subgroup/tab presentation metadata. */
+    if (version_compare($installed, '1.5.5', '<')) {
+        if (!MAPS_repairConfig155()) {
+            COM_errorLog('Maps 1.5.5 upgrade stopped: configuration tab repair failed.');
+            return false;
+        }
+    }
+
+    /* Maps 1.5.6 normalizes Geeklog selectionArray metadata (-1, never NULL). */
+    if (version_compare($installed, '1.5.6', '<')) {
+        if (!MAPS_repairConfig156()) {
+            COM_errorLog('Maps 1.5.6 upgrade stopped: configuration metadata repair failed.');
+            return false;
+        }
+    }
+
+    if (version_compare($installed, $code, '<')) {
+        DB_query("UPDATE {$_TABLES['plugins']} SET pi_version='" . MAPS_dbEscape($code)
+            . "', pi_gl_version='2.1.1' WHERE pi_name='maps'");
+        COM_errorLog('Updated Maps plugin from v' . $installed . ' to v' . $code, 1);
+    }
+
     return true;
 }
 
@@ -596,8 +1651,8 @@ function MAPS_getDBCoords(&$gid, $address, &$lat, &$lng)
     if (DB_numRows($res) > 0) {
         $row = DB_fetchArray($res);
         $gid = $row['gid'];
-        $lat = (float) $row['lat'];
-        $lng = (float) $row['lng'];
+        $lat = (float) MAPS_normalizeNumber($row['lat'], 0);
+        $lng = (float) MAPS_normalizeNumber($row['lng'], 0);
         if ($lat != 0 || $lng != 0) {
             return;
         }
@@ -643,14 +1698,14 @@ function MAPS_admin_menu()
     $menu->set_file(array('menu' => 'admin_menu.thtml'));
     $menu->set_var('site_admin_url', $_CONF['site_admin_url']);
     $menu->set_var('site_url', $_CONF['site_url']);
-    $menu->set_var('admin_home', $LANG_MAPS_1['maps']);
-    $menu->set_var('markers', $LANG_MAPS_1['markers']);
-    $menu->set_var('icons', $LANG_MAPS_1['icons']);
-    $menu->set_var('overlays', $LANG_MAPS_1['overlays']);
-    $menu->set_var('import_export', $LANG_MAPS_1['import_export']);
-    $menu->set_var('geocoder', $LANG_MAPS_1['geocoder']);
-    $menu->set_var('set_user_geo', $LANG_MAPS_1['set_user_geo']);
-    $menu->set_var('configuration', isset($LANG_MAPS_1['configuration']) ? $LANG_MAPS_1['configuration'] : 'Configuration');
+    $menu->set_var('admin_home', isset($LANG_MAPS_1['admin_menu_maps']) ? $LANG_MAPS_1['admin_menu_maps'] : $LANG_MAPS_1['maps']);
+    $menu->set_var('markers', isset($LANG_MAPS_1['admin_menu_markers']) ? $LANG_MAPS_1['admin_menu_markers'] : $LANG_MAPS_1['markers']);
+    $menu->set_var('icons', isset($LANG_MAPS_1['admin_menu_icons']) ? $LANG_MAPS_1['admin_menu_icons'] : $LANG_MAPS_1['icons']);
+    $menu->set_var('overlays', isset($LANG_MAPS_1['admin_menu_overlays']) ? $LANG_MAPS_1['admin_menu_overlays'] : $LANG_MAPS_1['overlays']);
+    $menu->set_var('import_export', isset($LANG_MAPS_1['admin_menu_import_export']) ? $LANG_MAPS_1['admin_menu_import_export'] : $LANG_MAPS_1['import_export']);
+    $menu->set_var('geocoder', isset($LANG_MAPS_1['admin_menu_geocoder']) ? $LANG_MAPS_1['admin_menu_geocoder'] : $LANG_MAPS_1['geocoder']);
+    $menu->set_var('set_user_geo', isset($LANG_MAPS_1['admin_menu_geolocation']) ? $LANG_MAPS_1['admin_menu_geolocation'] : $LANG_MAPS_1['set_user_geo']);
+    $menu->set_var('configuration', isset($LANG_MAPS_1['admin_menu_configuration']) ? $LANG_MAPS_1['admin_menu_configuration'] : (isset($LANG_MAPS_1['configuration']) ? $LANG_MAPS_1['configuration'] : 'Configuration'));
     return '<p>' . $menu->parse('output', 'menu') . '</p>';
 }
 
@@ -666,7 +1721,9 @@ function MAPS_filterVars($vars, &$arr)
                 $arr[$var] = COM_checkHTML($value, 'maps.admin');
                 break;
             case 'text':
-                $arr[$var] = htmlspecialchars(strip_tags((string) $value), ENT_QUOTES, 'UTF-8');
+                // Plain text must remain plain in storage. HTML escaping belongs
+                // to the output context, not the input/database layer.
+                $arr[$var] = strip_tags((string) $value);
                 break;
             case 'int':
                 $arr[$var] = (int) $value;
@@ -712,13 +1769,27 @@ function MAPS_fillMapCommon($t, $id, $lat, $lng, $zoom, $type, $width, $height)
     global $_MAPS_CONF, $LANG_MAPS_1;
     $t->set_var('mid', $id);
     $t->set_var('gid', $id);
-    $t->set_var('lat', (float) $lat);
-    $t->set_var('lng', (float) $lng);
-    $t->set_var('zoom', (int) $zoom);
-    $t->set_var('map_type', preg_replace('/[^A-Z_]/', '', strtoupper($type)));
-    $t->set_var('map_width', $width);
-    $t->set_var('map_height', $height);
+    $safeLat = MAPS_latitude($lat, 0);
+    $safeLng = MAPS_longitude($lng, 0);
+    $safeZoom = MAPS_zoom($zoom, 2);
+    $t->set_var('lat_js', MAPS_jsNumber($safeLat, 0));
+    $t->set_var('lng_js', MAPS_jsNumber($safeLng, 0));
+    $t->set_var('zoom_js', MAPS_jsNumber($safeZoom, 2));
+    // Keep legacy template variables for non-JavaScript uses.
+    $t->set_var('lat', $safeLat);
+    $t->set_var('lng', $safeLng);
+    $t->set_var('zoom', $safeZoom);
+    $mapType = preg_replace('/[^A-Z_]/', '', strtoupper((string) $type));
+    if (!in_array($mapType, array('ROADMAP', 'SATELLITE', 'HYBRID', 'TERRAIN'), true)) {
+        $mapType = 'ROADMAP';
+    }
+    $t->set_var('map_type', $mapType);
+    $t->set_var('map_width', MAPS_cssSize($width, '100%'));
+    $t->set_var('map_height', MAPS_cssSize($height, '400px'));
     $t->set_var('current_address', '');
+    $t->set_var('current_address_js', MAPS_jsString(''));
+    $t->set_var('error_address_empty_js', MAPS_jsString($LANG_MAPS_1['error_address_empty']));
+    $t->set_var('error_google_error_js', MAPS_jsString($LANG_MAPS_1['error_google_error']));
     $t->set_var('directions_input', '');
     $t->set_var('overlays_js', '');
     $t->set_var('overlays', '');
@@ -752,8 +1823,8 @@ function MAPS_getMap($mid, $zoom = '', $address = '')
         return MAPS_message($LANG_MAPS_1['private_access'], $LANG_MAPS_1['private_access']);
     }
 
-    $lat = (float) $a['lat'];
-    $lng = (float) $a['lng'];
+    $lat = MAPS_latitude($a['lat'], 0);
+    $lng = MAPS_longitude($a['lng'], 0);
     if (trim($address) !== '') {
         MAPS_getDBCoords($gid, $address, $lat, $lng);
     }
@@ -783,7 +1854,15 @@ function MAPS_getMap($mid, $zoom = '', $address = '')
     while ($o = DB_fetchArray($or)) {
         $oi++;
         $image = $_MAPS_CONF['images_overlay_url'] . rawurlencode($o['o_image']);
-        $overlays .= "var bounds{$oi}=new google.maps.LatLngBounds({lat:" . (float) $o['o_sw_lat'] . ",lng:" . (float) $o['o_sw_lng'] . "},{lat:" . (float) $o['o_ne_lat'] . ",lng:" . (float) $o['o_ne_lng'] . "});\n"
+        $swLat = MAPS_arrayGet($o, 'o_sw_lat', null);
+        $swLng = MAPS_arrayGet($o, 'o_sw_lng', null);
+        $neLat = MAPS_arrayGet($o, 'o_ne_lat', null);
+        $neLng = MAPS_arrayGet($o, 'o_ne_lng', null);
+        if (!MAPS_isValidCoordinatePair($swLat, $swLng) || !MAPS_isValidCoordinatePair($neLat, $neLng)) {
+            COM_errorLog('Maps: overlay ' . (string) MAPS_arrayGet($o, 'oid', '') . ' ignored because its bounds are invalid.');
+            continue;
+        }
+        $overlays .= "var bounds{$oi}=new google.maps.LatLngBounds({lat:Number(" . MAPS_jsNumber(MAPS_latitude($swLat, 0), 0) . "),lng:Number(" . MAPS_jsNumber(MAPS_longitude($swLng, 0), 0) . ")},{lat:Number(" . MAPS_jsNumber(MAPS_latitude($neLat, 0), 0) . "),lng:Number(" . MAPS_jsNumber(MAPS_longitude($neLng, 0), 0) . ")});\n"
             . "var overlay{$oi}=new google.maps.GroundOverlay(" . MAPS_jsString($image) . ",bounds{$oi});\n"
             . "overlay{$oi}.setMap(map{$mid});\n";
         $checks .= '<div><strong>' . htmlspecialchars($o['o_name'], ENT_QUOTES, 'UTF-8') . '</strong><br><img src="' . htmlspecialchars($image, ENT_QUOTES, 'UTF-8') . '" alt="" style="max-width:200px;height:auto"></div>';
@@ -794,7 +1873,7 @@ function MAPS_getMap($mid, $zoom = '', $address = '')
     $modified = COM_getUserDateTimeFormat($a['modified']);
     $t->set_var('date_and_hits', $LANG_MAPS_1['last_modification'] . ' ' . $modified[0] . ' | ' . (int) $a['hits'] . ' ' . $LANG_MAPS_1['hits']);
     if (SEC_hasRights('maps.admin')) {
-        $t->set_var('edit_button', '<p><a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=edit&amp;mid=' . $mid . '">' . $LANG_MAPS_1['edit_button'] . '</a></p>');
+        $t->set_var('edit_button', '<p><a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=edit&mid=' . $mid . '">' . $LANG_MAPS_1['edit_button'] . '</a></p>');
     }
     $t->parse('output', 'page');
     hitMap($mid);
@@ -813,8 +1892,8 @@ function MAPS_getGlobalMap($zoom = '', $address = '', $pagelist = false)
         return '';
     }
     $a = DB_fetchArray($first);
-    $lat = (float) $a['lat'];
-    $lng = (float) $a['lng'];
+    $lat = MAPS_latitude($a['lat'], 0);
+    $lng = MAPS_longitude($a['lng'], 0);
     if ($address !== '') {
         MAPS_getDBCoords($gid, $address, $lat, $lng);
     }
@@ -877,9 +1956,15 @@ function MAPS_renderMarker($marker, $primaryColor, $strokecolor, $label, $label_
     $mkid = preg_replace('/[^a-zA-Z0-9_]/', '_', (string) $marker['mkid']);
     $var = 'marker' . $mkid;
     $mapVar = 'map' . $mapid;
-    $name = stripslashes((string) MAPS_arrayGet($marker, 'name', ''));
-    $lat = (float) MAPS_arrayGet($marker, 'lat', 0);
-    $lng = (float) MAPS_arrayGet($marker, 'lng', 0);
+    $name = MAPS_decodeStoredText(MAPS_arrayGet($marker, 'name', ''));
+    if (!MAPS_isValidCoordinatePair(MAPS_arrayGet($marker, 'lat', null), MAPS_arrayGet($marker, 'lng', null))) {
+        if (function_exists('COM_errorLog')) {
+            COM_errorLog('Maps: marker ' . (string) MAPS_arrayGet($marker, 'mkid', '') . ' ignored because its coordinates are invalid.');
+        }
+        return '';
+    }
+    $lat = MAPS_latitude(MAPS_arrayGet($marker, 'lat', 0), 0);
+    $lng = MAPS_longitude(MAPS_arrayGet($marker, 'lng', 0), 0);
     $iconUrl = '';
 
     $markerIconId = (int) MAPS_arrayGet($marker, 'mk_icon', 0);
@@ -902,13 +1987,15 @@ function MAPS_renderMarker($marker, $primaryColor, $strokecolor, $label, $label_
         $iconUrl = MAPS_svgMarkerUri($fill, $text, $textColor);
     }
 
-    $js = "var {$var}=new google.maps.Marker({position:{lat:{$lat},lng:{$lng}},map:{$mapVar},title:" . MAPS_jsString($name) . ",icon:" . MAPS_jsString($iconUrl) . "});\n";
+    $js = "var {$var}=new google.maps.Marker({position:{lat:Number(" . MAPS_jsNumber($lat, 0) . "),lng:Number(" . MAPS_jsNumber($lng, 0) . ")},map:{$mapVar},title:" . MAPS_jsString($name) . ",icon:" . MAPS_jsString($iconUrl) . "});\n";
 
     if ($infos) {
         $template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
         if ((string) $mapid === 'events') {
             $template->set_file(array('presentation' => 'presentation_tab_event.thtml'));
             $template->set_var('name', '<strong>' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</strong>');
+            $template->set_var('popup_width', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'popup_width', '250px'), '250px'));
+            $template->set_var('popup_height', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'popup_height', '150px'), '150px'));
             $description = (string) MAPS_arrayGet($marker, 'description', '');
             if (function_exists('mb_substr')) {
                 $description = mb_substr($description, 0, 150, 'UTF-8');
@@ -921,7 +2008,9 @@ function MAPS_renderMarker($marker, $primaryColor, $strokecolor, $label, $label_
         } else {
             $template->set_file(array('presentation' => 'presentation_tab.thtml'));
             $template->set_var('name', '<strong>' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</strong>');
-            $description = stripslashes((string) MAPS_arrayGet($marker, 'description', ''));
+            $template->set_var('popup_width', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'popup_width', '250px'), '250px'));
+            $template->set_var('popup_height', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'popup_height', '150px'), '150px'));
+            $description = MAPS_decodeStoredText(MAPS_arrayGet($marker, 'description', ''));
             if (function_exists('mb_substr')) {
                 $short = mb_substr($description, 0, 150, 'UTF-8');
             } else {
@@ -939,11 +2028,12 @@ function MAPS_renderMarker($marker, $primaryColor, $strokecolor, $label, $label_
                 }
             }
             $template->set_var('ressources', $resources);
-            $readMore = MAPS_arrayGet($marker, 'url', '') !== '' ? $_CONF['site_url'] . '/' . ltrim($marker['url'], '/') : $_MAPS_CONF['site_url'] . '/markers.php?mode=show&amp;mkid=' . rawurlencode($marker['mkid']) . '&amp;mid=' . (int) $marker['mid'];
+            $readMore = MAPS_arrayGet($marker, 'url', '') !== '' ? $_CONF['site_url'] . '/' . ltrim($marker['url'], '/') : $_MAPS_CONF['site_url'] . '/markers.php?mode=show&mkid=' . rawurlencode($marker['mkid']) . '&mid=' . (int) $marker['mid'];
             $template->set_var('read_more', '<a href="' . htmlspecialchars($readMore, ENT_QUOTES, 'UTF-8') . '">' . $LANG_MAPS_1['read_more'] . '</a>');
-            $template->set_var('map', '<p>' . $LANG_MAPS_1['on_map'] . ' <a href="' . $_MAPS_CONF['site_url'] . '/index.php?mode=map&amp;mid=' . (int) $marker['mid'] . '">' . htmlspecialchars(stripslashes($mapname), ENT_QUOTES, 'UTF-8') . '</a></p>');
-            $ownerUid = isset($_USER['uid']) ? (int) $_USER['uid'] : 1;
-            $template->set_var('edit', SEC_hasRights('maps.admin') || $ownerUid === (int) MAPS_arrayGet($marker, 'owner_id', 0) ? '<a href="' . $_MAPS_CONF['site_url'] . '/markers.php?mode=edit&amp;mkid=' . rawurlencode($marker['mkid']) . '">' . $LANG_MAPS_1['edit_button'] . '</a>' : '');
+            $template->set_var('map', '<p>' . $LANG_MAPS_1['on_map'] . ' <a href="' . $_MAPS_CONF['site_url'] . '/index.php?mode=map&mid=' . (int) $marker['mid'] . '">' . htmlspecialchars(stripslashes($mapname), ENT_QUOTES, 'UTF-8') . '</a></p>');
+            $currentUid = isset($_USER['uid']) ? (int) $_USER['uid'] : 1;
+            $referentUid = MAPS_resolveMarkerOwnerUid($marker);
+            $template->set_var('edit', SEC_hasRights('maps.admin') || $currentUid === $referentUid ? '<a href="' . $_MAPS_CONF['site_url'] . '/markers.php?mode=edit&amp;mkid=' . rawurlencode($marker['mkid']) . '">' . $LANG_MAPS_1['edit_button'] . '</a>' : '');
         }
         $presentation = $template->parse('output', 'presentation');
         $infoVar = 'infowindow' . $mkid;
@@ -988,8 +2078,8 @@ function MAPS_selectedMarkers($width, $height, $zoom, $mkids = array())
     $lng = 0;
     while ($a = DB_fetchArray($res)) {
         $markers[] = $a;
-        $lat += (float) $a['lat'];
-        $lng += (float) $a['lng'];
+        $lat += MAPS_latitude($a['lat'], 0);
+        $lng += MAPS_longitude($a['lng'], 0);
     }
     if (empty($markers)) {
         return '';
@@ -999,12 +2089,12 @@ function MAPS_selectedMarkers($width, $height, $zoom, $mkids = array())
     return MAPS_getMarkerDetail(0, $markers, 1, $width, $height, $zoom, $lat, $lng);
 }
 
-function MAPS_getMarkerDetail($mid = 0, $mkid = '', $autotag = 0, $mapwidth = '100%', $mapheight = '300px', $mapzoom = '10', $lat = '0', $lng = '0')
+function MAPS_getMarkerDetail($mid = 0, $mkid = '', $autotag = 0, $mapwidth = '', $mapheight = '', $mapzoom = '', $lat = '0', $lng = '0')
 {
     global $_TABLES, $LANG_MAPS_1, $_MAPS_CONF, $_CONF;
 
     $list = array();
-    $map = array('mmk_default' => 1, 'mmk_icon' => 0, 'name' => '', 'primary_color' => '#666666', 'stroke_color' => '#333333', 'label' => '', 'label_color' => 0);
+    $map = array('mmk_default' => 1, 'mmk_icon' => 0, 'name' => '', 'primary_color' => MAPS_arrayGet($_MAPS_CONF, 'map_primary_color', '#666666'), 'stroke_color' => MAPS_arrayGet($_MAPS_CONF, 'map_stroke_color', '#333333'), 'label' => MAPS_arrayGet($_MAPS_CONF, 'map_label', ''), 'label_color' => MAPS_arrayGet($_MAPS_CONF, 'map_label_color', 0));
     if ((int) $mid > 0) {
         $resMap = DB_query("SELECT * FROM {$_TABLES['maps_maps']} WHERE mid=" . (int) $mid . ' LIMIT 1');
         if (DB_numRows($resMap) < 1) {
@@ -1063,6 +2153,7 @@ function MAPS_getMarkerDetail($mid = 0, $mkid = '', $autotag = 0, $mapwidth = '1
         $address = MAPS_arrayGet($list[0], 'address', '');
         $value = htmlentities($LANG_MAPS_1['value_directions'], ENT_QUOTES, 'UTF-8');
         $t->set_var('current_address', htmlspecialchars($address, ENT_QUOTES, 'UTF-8'));
+        $t->set_var('current_address_js', MAPS_jsString($address));
         $t->set_var('directions_input', '<div id="map_directions"><small>' . $LANG_MAPS_1['need_directions'] . '<br><input type="text" id="from_address' . $gid . '" value="' . $value . '" size="30"><input type="button" value="' . htmlspecialchars($LANG_MAPS_1['get_directions'], ENT_QUOTES, 'UTF-8') . '" onclick="get_directions' . $gid . '();"></small></div><a id="directions_' . $gid . '_table"></a><div id="directions' . $gid . '"></div>');
     }
     $t->parse('output', 'page');
@@ -1110,6 +2201,8 @@ function plugin_submit_maps($marker = array())
 
     $template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
     $template->set_file(array('form' => 'marker_submit_form.thtml'));
+        $template->set_var('marker_editor_width', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_width', '100%'), '100%'));
+        $template->set_var('marker_editor_height', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_height', '400px'), '400px'));
     $template->set_var('site_url', $_CONF['site_url']);
     $template->set_var('go', $LANG_MAPS_1['go']);
     $template->set_var('submit_marker', $LANG_MAPS_1['submit_marker']);
@@ -1160,10 +2253,11 @@ function plugin_submit_maps($marker = array())
     $template->set_var('save_button', $LANG_MAPS_1['save_button']);
     $template->set_var('delete_button', $LANG_MAPS_1['delete_button']);
     $template->set_var('mkid', $marker['mkid'] !== '' ? '<input type="hidden" name="mkid" value="' . htmlspecialchars($marker['mkid'], ENT_QUOTES, 'UTF-8') . '">' : '');
-    $template->set_var('arrow', '');
 
     $_SCRIPTS->setJavaScriptLibrary('jquery');
-    $js = "jQuery(function(){var el=document.getElementById('map_canvas');if(!el||!window.google){return;}var map=new google.maps.Map(el,{center:{lat:" . (float) $marker['lat'] . ",lng:" . (float) $marker['lng'] . "},zoom:10,mapTypeId:google.maps.MapTypeId.ROADMAP});var mk=new google.maps.Marker({map:map,position:{lat:" . (float) $marker['lat'] . ",lng:" . (float) $marker['lng'] . "},draggable:true});mk.addListener('dragend',function(e){document.getElementById('lat').value=e.latLng.lat().toFixed(6);document.getElementById('lng').value=e.latLng.lng().toFixed(6);});window.codeAddress=function(){var g=new google.maps.Geocoder();g.geocode({address:document.getElementById('geoaddress').value},function(r,s){if(s==='OK'&&r[0]){map.setCenter(r[0].geometry.location);mk.setPosition(r[0].geometry.location);document.getElementById('lat').value=r[0].geometry.location.lat();document.getElementById('lng').value=r[0].geometry.location.lng();}else{alert('Geocode: '+s);}});};});";
+    $editorZoom = (int) MAPS_arrayGet($_MAPS_CONF, 'marker_editor_zoom', 10);
+    $editorType = MAPS_mapType(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_type', 'ROADMAP'));
+    $js = "jQuery(function(){var el=document.getElementById('map_canvas');if(!el||!window.google){return;}var map=new google.maps.Map(el,{center:{lat:Number(" . MAPS_jsNumber($marker['lat'], 0) . "),lng:Number(" . MAPS_jsNumber($marker['lng'], 0) . ")},zoom:" . $editorZoom . ",mapTypeId:google.maps.MapTypeId." . $editorType . "});var mk=new google.maps.Marker({map:map,position:{lat:Number(" . MAPS_jsNumber($marker['lat'], 0) . "),lng:Number(" . MAPS_jsNumber($marker['lng'], 0) . ")},draggable:true});mk.addListener('dragend',function(e){document.getElementById('lat').value=e.latLng.lat().toFixed(6);document.getElementById('lng').value=e.latLng.lng().toFixed(6);});window.codeAddress=function(){var g=new google.maps.Geocoder();g.geocode({address:document.getElementById('geoaddress').value},function(r,s){if(s==='OK'&&r[0]){map.setCenter(r[0].geometry.location);mk.setPosition(r[0].geometry.location);document.getElementById('lat').value=r[0].geometry.location.lat();document.getElementById('lng').value=r[0].geometry.location.lng();}else{alert('Geocode: '+s);}});};});";
     $_SCRIPTS->setJavaScript($js, true, true);
     return $template->parse('output', 'form');
 }
@@ -1181,8 +2275,8 @@ function plugin_savesubmission_maps($a)
     }
 
     $ownerId = isset($_USER['uid']) && (int) $_USER['uid'] > 0 ? (int) $_USER['uid'] : 1;
-    $lat = isset($a['lat']) ? (float) $a['lat'] : 0;
-    $lng = isset($a['lng']) ? (float) $a['lng'] : 0;
+    $lat = isset($a['lat']) ? MAPS_latitude($a['lat'], 0) : 0;
+    $lng = isset($a['lng']) ? MAPS_longitude($a['lng'], 0) : 0;
     if ($lat == 0 && $lng == 0) {
         MAPS_getCoords($a['address'], $lat, $lng);
     }
@@ -1316,6 +2410,27 @@ function MAPS_message($message, $title = '')
     return COM_startBlock($title === '' ? $defaultTitle : $title) . stripslashes($message) . COM_endBlock();
 }
 
+
+function MAPS_resolveMarkerOwnerUid($marker)
+{
+    global $_TABLES;
+
+    $markerOwner = (int) MAPS_arrayGet($marker, 'owner_id', 0);
+    if ($markerOwner > 1 && DB_count($_TABLES['users'], 'uid', $markerOwner) > 0) {
+        return $markerOwner;
+    }
+
+    $mid = (int) MAPS_arrayGet($marker, 'mid', 0);
+    if ($mid > 0) {
+        $mapOwner = (int) DB_getItem($_TABLES['maps_maps'], 'owner_id', 'mid=' . $mid);
+        if ($mapOwner > 1 && DB_count($_TABLES['users'], 'uid', $mapOwner) > 0) {
+            return $mapOwner;
+        }
+    }
+
+    return 1;
+}
+
 function MAPS_ViewMarkerInfos($mkid)
 {
     global $LANG_MAPS_1, $_TABLES, $_CONF, $_MAPS_CONF, $_USER;
@@ -1333,8 +2448,8 @@ function MAPS_ViewMarkerInfos($mkid)
 
     $template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
     $template->set_file(array('presentation' => 'marker.thtml'));
-    $template->set_var('name', '<span style="text-transform:uppercase">' . htmlspecialchars(stripslashes($marker['name']), ENT_QUOTES, 'UTF-8') . '</span>');
-    $template->set_var('description', $marker['description'] !== '' ? '<p>' . nl2br(htmlspecialchars(stripslashes($marker['description']), ENT_QUOTES, 'UTF-8')) . '</p>' : '');
+    $template->set_var('name', '<span style="text-transform:uppercase">' . htmlspecialchars(MAPS_decodeStoredText($marker['name']), ENT_QUOTES, 'UTF-8') . '</span>');
+    $template->set_var('description', $marker['description'] !== '' ? '<p>' . nl2br(htmlspecialchars(MAPS_decodeStoredText($marker['description']), ENT_QUOTES, 'UTF-8')) . '</p>' : '');
     foreach (array('street','code','city','state','country','tel','fax') as $field) {
         $value = MAPS_arrayGet($marker, $field, '');
         $template->set_var($field, $value !== '' && (int) MAPS_arrayGet($_MAPS_CONF, $field, 1) ? '<p><strong>' . $LANG_MAPS_1[$field . '_label'] . '</strong> ' . htmlspecialchars(stripslashes($value), ENT_QUOTES, 'UTF-8') . '</p>' : '');
@@ -1350,16 +2465,21 @@ function MAPS_ViewMarkerInfos($mkid)
         }
     }
     $template->set_var('ressources', $resources);
+    $ownerUid = MAPS_resolveMarkerOwnerUid($marker);
     $uid = isset($_USER['uid']) ? (int) $_USER['uid'] : 1;
-    $template->set_var('edit', SEC_hasRights('maps.admin') || $uid === (int) $marker['owner_id'] ? ' | <a href="' . $_MAPS_CONF['site_url'] . '/markers.php?mode=edit&amp;mkid=' . rawurlencode($marker['mkid']) . '">' . $LANG_MAPS_1['edit_button'] . '</a>' : '');
+    $template->set_var('edit', SEC_hasRights('maps.admin') || $uid === $ownerUid ? '<a href="' . $_MAPS_CONF['site_url'] . '/markers.php?mode=edit&amp;mkid=' . rawurlencode($marker['mkid']) . '">' . $LANG_MAPS_1['edit_button'] . '</a>' : '');
     $mapname = DB_getItem($_TABLES['maps_maps'], 'name', 'mid=' . (int) $marker['mid']);
-    $template->set_var('map', ' | ' . $LANG_MAPS_1['from_map'] . ' <a href="' . $_MAPS_CONF['site_url'] . '/index.php?mode=map&amp;mid=' . (int) $marker['mid'] . '">' . htmlspecialchars(stripslashes($mapname), ENT_QUOTES, 'UTF-8') . '</a>');
-    $profileUrl = $_CONF['site_url'] . '/users.php?mode=profile&amp;uid=' . (int) $marker['owner_id'];
-    $template->set_var('owner', $LANG_MAPS_1['from_owner'] . ' ' . COM_createLink(COM_getDisplayName($marker['owner_id']), $profileUrl));
+    $template->set_var('map', $LANG_MAPS_1['from_map'] . ' <a href="' . $_MAPS_CONF['site_url'] . '/index.php?mode=map&amp;mid=' . (int) $marker['mid'] . '">' . htmlspecialchars(stripslashes($mapname), ENT_QUOTES, 'UTF-8') . '</a>');
+    if ($ownerUid > 1) {
+        $profileUrl = $_CONF['site_url'] . '/users.php?mode=profile&amp;uid=' . $ownerUid;
+        $template->set_var('owner', $LANG_MAPS_1['from_owner'] . ' ' . COM_createLink(COM_getDisplayName($ownerUid), $profileUrl));
+        $template->set_var('report', '<a href="' . $_CONF['site_url'] . '/profiles.php?uid=' . $ownerUid . '&amp;subject=' . rawurlencode($LANG_MAPS_1['report_subject'] . $marker['mkid']) . '">' . $LANG_MAPS_1['report'] . '</a>');
+    } else {
+        $template->set_var('owner', '');
+        $template->set_var('report', '');
+    }
     $update = COM_getUserDateTimeFormat($marker['modified']);
-    $template->set_var('update', '<br>' . $LANG_MAPS_1['last_modification'] . ' ' . $update[0] . ' | ' . (int) $marker['hits'] . ' ' . $LANG_MAPS_1['hits']);
-    $template->set_var('report', '<a href="' . $_CONF['site_url'] . '/profiles.php?uid=2&amp;subject=' . rawurlencode($LANG_MAPS_1['report_subject'] . $marker['mkid']) . '">' . $LANG_MAPS_1['report'] . '</a>');
-    $template->set_var('print', '<a href="' . $_MAPS_CONF['site_url'] . '/markers.php?mode=print&amp;mid=' . (int) $marker['mid'] . '&amp;mkid=' . rawurlencode($marker['mkid']) . '">' . $LANG_MAPS_1['print'] . '</a> | ');
+    $template->set_var('update', $LANG_MAPS_1['last_modification'] . ' ' . $update[0] . ' · ' . (int) $marker['hits'] . ' ' . $LANG_MAPS_1['hits']);
     $template->set_var('directions_table_result', '<a id="directions_' . htmlspecialchars($marker['mkid'], ENT_QUOTES, 'UTF-8') . '_table"></a><div id="directions' . htmlspecialchars($marker['mkid'], ENT_QUOTES, 'UTF-8') . '"></div>');
     hitMarker($mkid);
     return $template->parse('output', 'presentation');
@@ -1398,7 +2518,7 @@ function MAPS_ListMarkers($mid = '')
     );
     $sql = "SELECT * FROM {$_TABLES['maps_markers']} WHERE active=1 AND hidden=0" . ($mid > 0 ? ' AND mid=' . $mid : '');
     $query = array('table' => 'maps_markers', 'sql' => $sql, 'query_fields' => array('name','code','city'), 'default_filter' => COM_getPermSQL('AND', 0, 2));
-    $text = array('has_extras' => true, 'form_url' => $_MAPS_CONF['site_url'] . '/index.php?mode=markers&amp;mid=' . $mid);
+    $text = array('has_extras' => true, 'form_url' => $_MAPS_CONF['site_url'] . '/index.php?mode=markers&mid=' . $mid);
     $sort = array('field' => 'code', 'direction' => 'asc');
     return ADMIN_list('markers', 'MAPS_getListField_markersList', $header, $text, $query, $sort);
 }
@@ -1407,15 +2527,18 @@ function MAPS_getListField_markersList($fieldname, $fieldvalue, $a, $icon_arr)
 {
     global $_MAPS_CONF;
     if ($fieldname === 'name') {
-        return COM_createLink(htmlspecialchars(stripslashes($a['name']), ENT_QUOTES, 'UTF-8'), $_MAPS_CONF['site_url'] . '/markers.php?mode=show&amp;mkid=' . rawurlencode($a['mkid']) . '&amp;mid=' . (int) $a['mid']);
+        return COM_createLink(htmlspecialchars(stripslashes($a['name']), ENT_QUOTES, 'UTF-8'), $_MAPS_CONF['site_url'] . '/markers.php?mode=show&mkid=' . rawurlencode($a['mkid']) . '&mid=' . (int) $a['mid']);
     }
     return htmlspecialchars(stripslashes((string) $fieldvalue), ENT_QUOTES, 'UTF-8');
 }
 
 function MAPS_setGeoLocation()
 {
-    global $_TABLES;
-    $locations = DB_query("SELECT location FROM {$_TABLES['userinfo']} WHERE location<>''");
+    $userAttributesTable = MAPS_userAttributesTable();
+    if ($userAttributesTable === '') {
+        return;
+    }
+    $locations = DB_query("SELECT location FROM {$userAttributesTable} WHERE location<>''");
     while ($geo = DB_fetchArray($locations)) {
         $gid = '';
         $lat = 0;
@@ -1436,8 +2559,8 @@ function MAPS_displayEventsMap($output = true, $event_id = '')
         return '';
     }
     $a = DB_fetchArray($first);
-    $lat = (float) $a['lat'];
-    $lng = (float) $a['lng'];
+    $lat = MAPS_latitude($a['lat'], 0);
+    $lng = MAPS_longitude($a['lng'], 0);
     $zoom = (int) MAPS_arrayGet($_MAPS_CONF, 'global_zoom', 2);
     $height = MAPS_arrayGet($_MAPS_CONF, 'global_height', '600px');
 
@@ -1445,8 +2568,8 @@ function MAPS_displayEventsMap($output = true, $event_id = '')
         $events = DB_query("SELECT * FROM {$_TABLES['events']} WHERE dateend>=CURDATE()");
     } else {
         $events = DB_query("SELECT * FROM {$_TABLES['events']} WHERE eid='" . MAPS_dbEscape($event_id) . "' LIMIT 1");
-        $zoom = 8;
-        $height = '300px';
+        $zoom = (int) MAPS_arrayGet($_MAPS_CONF, 'events_map_zoom', 8);
+        $height = MAPS_arrayGet($_MAPS_CONF, 'events_map_height', '300px');
     }
 
     $js = 'var markers = [];' . LB;
@@ -1468,9 +2591,9 @@ function MAPS_displayEventsMap($output = true, $event_id = '')
             'payed' => 0, 'mk_default' => 1, 'validity' => 0,
             'perm_owner' => 2, 'perm_group' => 2, 'perm_members' => 2, 'perm_anon' => 2,
             'owner_id' => $event['owner_id'], 'group_id' => $event['group_id'], 'lat' => $elat, 'lng' => $elng,
-            'mid' => 0, 'mk_icon' => 0, 'mk_pcolor' => '#666666', 'mk_label' => '', 'mk_label_color' => 0
+            'mid' => 0, 'mk_icon' => 0, 'mk_pcolor' => MAPS_arrayGet($_MAPS_CONF, 'map_primary_color', '#666666'), 'mk_label' => MAPS_arrayGet($_MAPS_CONF, 'map_label', ''), 'mk_label_color' => MAPS_arrayGet($_MAPS_CONF, 'map_label_color', 0)
         );
-        $js .= MAPS_renderMarker($marker, '#666666', '#333333', '', '#ffffff', $LANG_MAPS_1['events_map'], '', '', 'events', $event_id === '', array('mmk_default' => 1, 'mmk_icon' => 0));
+        $js .= MAPS_renderMarker($marker, MAPS_arrayGet($_MAPS_CONF, 'map_primary_color', '#666666'), MAPS_arrayGet($_MAPS_CONF, 'map_stroke_color', '#333333'), MAPS_arrayGet($_MAPS_CONF, 'map_label', ''), (int) MAPS_arrayGet($_MAPS_CONF, 'map_label_color', 0) ? '#FFFFFF' : '#000000', $LANG_MAPS_1['events_map'], '', '', 'events', $event_id === '', array('mmk_default' => 1, 'mmk_icon' => 0));
     }
     if ((int) MAPS_arrayGet($_MAPS_CONF, 'use_cluster', 0)) {
         $js .= MAPS_clusterInitJs('mapevents');
