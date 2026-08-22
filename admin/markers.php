@@ -42,14 +42,14 @@ $display = '';
 
 // Ensure user even has the rights to access this page
 if (! SEC_hasRights('maps.admin')) {
-    $display .= COM_siteHeader('menu', $MESSAGE[30])
+    $display .= MAPS_compatSiteHeader('menu', $MESSAGE[30])
              . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
-             . COM_siteFooter();
+             . MAPS_compatSiteFooter();
 
     // Log attempt to access.log
     COM_accessLog("User {$_USER['username']} tried to illegally access the Maps plugin administration screen.");
 
-    echo $display;
+    MAPS_compatOutput($display);
     exit;
 }
 
@@ -97,6 +97,7 @@ function MAPS_listMarkersAdmin()
 	
     $query_arr = array(
         'sql'            => $sql,
+        'query_fields'   => array('a.name', 'a.address', 'b.name'),
         'default_filter' => COM_getPermSQL ('AND', 0, 3)
     );
 
@@ -118,55 +119,57 @@ function MAPS_listMarkersAdmin()
 */
 function plugin_getListField_markers($fieldname, $fieldvalue, $A, $icon_arr)
 {
-    global $_CONF, $_MAPS_CONF, $LANG_ADMIN, $LANG_STATIC, $_TABLES;
+    global $_CONF, $_MAPS_CONF, $LANG_ADMIN, $LANG_STATIC, $LANG_MAPS_1, $_TABLES;
 
     switch($fieldname) {
         case "edit":
             $retval = COM_createLink($icon_arr['edit'],
-                "{$_CONF['site_admin_url']}/plugins/maps/marker_edit.php?mode=edit&amp;mkid={$A['mkid']}");
+                "{$_CONF['site_admin_url']}/plugins/maps/marker_edit.php?mode=edit&mkid={$A['mkid']}");
             break;
         case "name":
-            $map_title = stripslashes ($A['name']);
+            $map_title = MAPS_decodeStoredText($A['name']);
             $url = $_MAPS_CONF['site_url'] .
-                                 '/markers.php?mode=show&amp;mkid=' . $A['mkid'] . '&amp;mid=' . $A['mid'];
+                                 '/markers.php?mode=show&mkid=' . $A['mkid'] . '&mid=' . $A['mid'];
             $retval = COM_createLink($map_title, $url, array('title'=>$LANG_MAPS_1['title_display']));
             break;
 
         case "id":
             $retval = $A['mkid'];
             break;
-		case "active":
-            if ($fieldvalue == 1) {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/green_dot.gif" alt="" valign="center">';
-			} else {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/red_dot.gif" alt="">';
-			}
+        case "active":
+            $retval = MAPS_adminStatusBadge(
+                $fieldvalue,
+                $LANG_MAPS_1['status_active'],
+                $LANG_MAPS_1['status_inactive']
+            );
             break;
-		case "hidden":
-            if ($fieldvalue == 0) {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/green_dot.gif" alt="">';
-			} else {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/red_dot.gif" alt="">';
-			}
+        case "hidden":
+            $retval = MAPS_adminStatusBadge(
+                $fieldvalue,
+                $LANG_MAPS_1['status_hidden'],
+                $LANG_MAPS_1['status_visible'],
+                'is-warning',
+                'is-positive'
+            );
             break;
         default:
-            $retval = stripslashes($fieldvalue);
+            $retval = htmlspecialchars(MAPS_decodeStoredText($fieldvalue), ENT_QUOTES, 'UTF-8');
             break;
     }
     return $retval;
 }
 
 // MAIN
-$display .= COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
+$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
 $display .= maps_admin_menu();
 
 $display .= '<br /><h1>' . $LANG_MAPS_1['markers_list'] . '</h1>';
-$display .= '<p>' . $LANG_MAPS_1['you_can'] . '<a href="' . $_CONF['site_url'] . '/admin/plugins/maps/marker_edit.php">' . $LANG_MAPS_1['create_marker'] . '</a>.</p>';
+$display .= '<p class="maps-list-actions"><a class="maps-primary-action" href="' . $_CONF['site_admin_url'] . '/plugins/maps/marker_edit.php">' . htmlspecialchars($LANG_MAPS_1['create_marker'], ENT_QUOTES, 'UTF-8') . '</a></p>';
 
 $display .= MAPS_listMarkersAdmin();
 
-$display .= COM_siteFooter(0);
+$display .= MAPS_compatSiteFooter(0);
 
-COM_output($display);
+MAPS_compatOutput($display);
 
 ?>
