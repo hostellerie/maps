@@ -17,7 +17,7 @@
 <script type="text/javascript">
 var map{gid};
 var directionsDisplay{gid};
-var current_address{gid} = '{address}';
+var current_address{gid} = {address_js};
 
 function initializeGMap{gid}() {
     var element = document.getElementById('map_canvas{gid}');
@@ -25,16 +25,23 @@ function initializeGMap{gid}() {
         return;
     }
 
-    map{gid} = new google.maps.Map(element, {
-        center: {lat: Number({lat}), lng: Number({lng})},
-        zoom: Number({zoom}),
-        mapTypeId: google.maps.MapTypeId.{map_type}
-    });
+    try {
+        map{gid} = new google.maps.Map(element, {
+                center: {lat: Number({lat_js}), lng: Number({lng_js})},
+                zoom: Number({zoom_js}),
+                mapTypeId: google.maps.MapTypeId.{map_type}
+            });
+    } catch (error) {
+        if (window.console && console.error) {
+            console.error('Maps: initialization failed for map {gid}', error);
+        }
+        return;
+    }
 
     new google.maps.Marker({
-        position: {lat: Number({lat}), lng: Number({lng})},
+        position: {lat: Number({lat_js}), lng: Number({lng_js})},
         map: map{gid},
-        title: '{address}'
+        title: {address_js}
     });
 
     directionsDisplay{gid} = new google.maps.DirectionsRenderer({
@@ -52,7 +59,7 @@ if (window.addEventListener) {
 function get_directions{gid}() {
     var input = document.getElementById('from_address{gid}');
     if (!input || !input.value) {
-        alert('{error_address_empty}');
+        alert({error_address_empty_js});
         return;
     }
 
@@ -69,7 +76,7 @@ function get_directions{gid}() {
                 anchor.scrollIntoView({behavior: 'smooth', block: 'start'});
             }
         } else {
-            alert('{error_google_error} (' + status + ')');
+            alert({error_google_error_js} + ' (' + status + ')');
         }
     });
 }

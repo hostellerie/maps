@@ -15,7 +15,7 @@
 <script type="text/javascript">
 var map{mid};
 var directionsDisplay{gid};
-var current_address{gid} = '{current_address}';
+var current_address{gid} = {current_address_js};
 var alloverlays = [];
 var map = [];
 var zoommax = [];
@@ -29,11 +29,18 @@ function initialize{mid}() {
         return;
     }
 
-    map{mid} = new google.maps.Map(element, {
-        center: {lat: Number({lat}), lng: Number({lng})},
-        zoom: Number({zoom}),
-        mapTypeId: google.maps.MapTypeId.{map_type}
-    });
+    try {
+        map{mid} = new google.maps.Map(element, {
+                center: {lat: Number({lat_js}), lng: Number({lng_js})},
+                zoom: Number({zoom_js}),
+                mapTypeId: google.maps.MapTypeId.{map_type}
+            });
+    } catch (error) {
+        if (window.console && console.error) {
+            console.error('Maps: initialization failed for map {mid}', error);
+        }
+        return;
+    }
 
     map[{mid}] = map{mid};
 
@@ -68,7 +75,7 @@ function get_directions{gid}() {
 
     var start = input.value;
     if (!start) {
-        alert('{error_address_empty}');
+        alert({error_address_empty_js});
         return;
     }
 
@@ -82,7 +89,7 @@ function get_directions{gid}() {
             directionsDisplay{gid}.setDirections(response);
             scrollToAnchor{gid}('directions_{gid}_table');
         } else {
-            alert('{error_google_error} (' + status + ')');
+            alert({error_google_error_js} + ' (' + status + ')');
         }
     });
 }

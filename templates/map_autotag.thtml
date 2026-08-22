@@ -21,11 +21,18 @@ function initialize{mid}() {
         return;
     }
 
-    map{mid} = new google.maps.Map(element, {
-        center: {lat: Number({lat}), lng: Number({lng})},
-        zoom: Number({zoom}),
-        mapTypeId: google.maps.MapTypeId.{map_type}
-    });
+    try {
+        map{mid} = new google.maps.Map(element, {
+                center: {lat: Number({lat_js}), lng: Number({lng_js})},
+                zoom: Number({zoom_js}),
+                mapTypeId: google.maps.MapTypeId.{map_type}
+            });
+    } catch (error) {
+        if (window.console && console.error) {
+            console.error('Maps: initialization failed for map {mid}', error);
+        }
+        return;
+    }
 
     {markers}
 }
