@@ -118,6 +118,65 @@ function MAPS_googleMapsApiUrl($libraries = array())
 }
 
 /**
+ * Register the Google Maps JavaScript API on Geeklog 2.2.x and newer.
+ *
+ * Maps 1.5 keeps its historical setJavaScript() loader for Geeklog 2.1.x,
+ * where that path is known to work with older Resource/theme combinations.
+ * Geeklog 2.2.x expects remote JavaScript URLs to be registered through
+ * setJavaScriptFile(); otherwise a complete <script src="..."> string passed
+ * to setJavaScript() may be reduced to an empty inline script in the rendered
+ * document. This compatibility shim deliberately leaves 2.1.x untouched.
+ *
+ * The Maps administration dashboard is excluded because it installs
+ * gm_authFailure() before loading Google Maps so API-key/billing failures can
+ * be diagnosed reliably.
+ *
+ * @return bool
+ */
+function MAPS_registerModernGoogleMapsApi()
+{
+    global $_MAPS_CONF, $_SCRIPTS;
+
+    static $registered = false;
+
+    if ($registered) {
+        return true;
+    }
+
+    if (!defined('VERSION') || version_compare(VERSION, '2.2.0', '<')) {
+        return false;
+    }
+
+    $scriptName = isset($_SERVER['SCRIPT_NAME'])
+        ? str_replace('\\', '/', (string) $_SERVER['SCRIPT_NAME'])
+        : '';
+    if (preg_match('#/admin/plugins/maps/index\.php$#', $scriptName)) {
+        return false;
+    }
+
+    $key = isset($_MAPS_CONF['google_api_key'])
+        ? trim((string) $_MAPS_CONF['google_api_key'])
+        : '';
+    if ($key === '') {
+        return false;
+    }
+
+    if (!isset($_SCRIPTS) || !is_object($_SCRIPTS)
+        || !method_exists($_SCRIPTS, 'setJavaScriptFile')
+    ) {
+        return false;
+    }
+
+    $registered = (bool) $_SCRIPTS->setJavaScriptFile(
+        'maps_google_api',
+        MAPS_googleMapsApiUrl(),
+        false
+    );
+
+    return $registered;
+}
+
+/**
  * Build a current Geocoding API URL.
  *
  * @param string $address
@@ -164,3 +223,7 @@ $_TABLES['maps_overlays'] = $_DB_table_prefix . 'maps_overlays';
 $_TABLES['maps_map_overlay'] = $_DB_table_prefix . 'maps_map_overlay';
 $_TABLES['maps_map_icons'] = $_DB_table_prefix . 'maps_map_icons';
 $_TABLES['maps_overlays_groups'] = $_DB_table_prefix . 'maps_overlays_groups';
+
+// Register the API early enough for Geeklog 2.2.x to include it in the page
+// header. The legacy 2.1.x loader in functions.inc remains unchanged.
+MAPS_registerModernGoogleMapsApi();
