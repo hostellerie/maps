@@ -78,7 +78,7 @@ MAPS_filterVars($vars, $_REQUEST);
 */
 function MAPS_listmaps()
 {
-    global $_CONF, $_TABLES, $_IMAGE_TYPE, $LANG_ADMIN, $LANG_MAPS_1;
+    global $_CONF, $_TABLES, $_IMAGE_TYPE, $LANG_ADMIN, $LANG_MAPS_1, $_MAPS_CONF;
 
     require_once $_CONF['path_system'] . 'lib-admin.php';
 
@@ -91,12 +91,14 @@ function MAPS_listmaps()
     $header_arr = array(      // display 'text' and use table field 'field'
         array('text' => $LANG_ADMIN['edit'], 'field' => 'edit', 'sort' => false),
         array('text' => $LANG_MAPS_1['id'], 'field' => 'mid', 'sort' => true),
-        array('text' => $LANG_MAPS_1['name'], 'field' => 'name', 'sort' => true),
-        array('text' => $LANG_MAPS_1['marker_count'], 'field' => 'marker_count', 'sort' => true),
-        array('text' => $LANG_MAPS_1['hits'], 'field' => 'hits', 'sort' => true),
-        array('text' => $LANG_MAPS_1['active_field'], 'field' => 'active', 'sort' => true),
-        array('text' => $LANG_MAPS_1['hidden_field'], 'field' => 'hidden', 'sort' => true)
+        array('text' => $LANG_MAPS_1['name'], 'field' => 'name', 'sort' => true)
     );
+    if ((int) MAPS_arrayGet($_MAPS_CONF, 'stats_admin_enabled', 1) === 1) {
+        $header_arr[] = array('text' => $LANG_MAPS_1['marker_count'], 'field' => 'marker_count', 'sort' => true);
+        $header_arr[] = array('text' => $LANG_MAPS_1['hits'], 'field' => 'hits', 'sort' => true);
+    }
+    $header_arr[] = array('text' => $LANG_MAPS_1['active_field'], 'field' => 'active', 'sort' => true);
+    $header_arr[] = array('text' => $LANG_MAPS_1['hidden_field'], 'field' => 'hidden', 'sort' => true);
     $defsort_arr = array('field' => 'mid', 'direction' => 'asc');
 
     $text_arr = array(
