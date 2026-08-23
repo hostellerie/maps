@@ -2,7 +2,7 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.4                                                           |
+// | Maps Plugin 1.5.7                                                         |
 // +---------------------------------------------------------------------------+
 // | index.php                                                                 |
 // |                                                                           |
@@ -64,9 +64,9 @@ if (! SEC_hasRights('maps.admin')) {
 // Incoming variable filter
 $vars = array('mode' => 'alpha',
                'cid' => 'number',
-			   'id'  => 'number',
-			   'msg' => 'text'
-			  );
+               'id'  => 'number',
+               'msg' => 'text'
+              );
 
 MAPS_filterVars($vars, $_REQUEST);
 
@@ -83,16 +83,17 @@ function MAPS_listmaps()
     require_once $_CONF['path_system'] . 'lib-admin.php';
 
     $retval = '';
-	
-	if (DB_count($_TABLES['maps_maps']) == 0){
-	return $retval = '';
-	}
+
+    if (DB_count($_TABLES['maps_maps']) == 0){
+        return $retval = '';
+    }
 
     $header_arr = array(      // display 'text' and use table field 'field'
         array('text' => $LANG_ADMIN['edit'], 'field' => 'edit', 'sort' => false),
         array('text' => $LANG_MAPS_1['id'], 'field' => 'mid', 'sort' => true),
         array('text' => $LANG_MAPS_1['name'], 'field' => 'name', 'sort' => true),
         array('text' => $LANG_MAPS_1['marker_count'], 'field' => 'marker_count', 'sort' => true),
+        array('text' => $LANG_MAPS_1['hits'], 'field' => 'hits', 'sort' => true),
         array('text' => $LANG_MAPS_1['active_field'], 'field' => 'active', 'sort' => true),
         array('text' => $LANG_MAPS_1['hidden_field'], 'field' => 'hidden', 'sort' => true)
     );
@@ -102,8 +103,8 @@ function MAPS_listmaps()
         'has_extras' => true,
         'form_url' => $_CONF['site_admin_url'] . '/plugins/maps/index.php'
     );
-	
-	$sql = "SELECT m.*,
+
+    $sql = "SELECT m.*,
                    (SELECT COUNT(*) FROM {$_TABLES['maps_markers']} AS mm WHERE mm.mid = m.mid) AS marker_count
             FROM {$_TABLES['maps_maps']} AS m
             WHERE 1=1";
@@ -146,11 +147,11 @@ function plugin_getListField_maps($fieldname, $fieldvalue, $A, $icon_arr)
                                  '/index.php?mode=map&mid=' . $A['mid'];
             $link = COM_createLink($map_title, $url, array('title'=>$LANG_MAPS_1['title_display']));
 
-			if ($A['description'] != '') {
-			    $retval = COM_getTooltip($map_title, MAPS_decodeStoredText($A['description']), $url, $map_title, 'help');
-			} else {
-			    $retval = $link;
-			}
+            if ($A['description'] != '') {
+                $retval = COM_getTooltip($map_title, MAPS_decodeStoredText($A['description']), $url, $map_title, 'help');
+            } else {
+                $retval = $link;
+            }
             break;
         case "id":
             $retval = $A['mid'];
@@ -397,6 +398,7 @@ switch ($mode) {
         }
 
         $display .= MAPS_adminGoogleApiStatus();
+        $display .= MAPS_renderStatistics(false);
         $display .= '<h1>' . $LANG_MAPS_1['maps_list'] . '</h1>';
         $display .= '<p>' . $LANG_MAPS_1['you_can'] . '<a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php">' . $LANG_MAPS_1['create_map'] . '</a>.</p>';
         $display .= MAPS_listmaps();
