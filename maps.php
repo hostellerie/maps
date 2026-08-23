@@ -79,6 +79,13 @@ if (!isset($_MAPS_CONF['max_image_size'])) {
  * initializers race an asynchronously inserted script element. A future major
  * version can move all rendering to importLibrary().
  *
+ * On Geeklog 2.2.x, Resource requires external scripts to be registered with
+ * setJavaScriptFile(). The historical MAPS_loadGoogleMapsApi() call remains
+ * untouched for Geeklog 2.1.x; when this URL builder is called by that helper
+ * on Geeklog 2.2.x, it additionally registers the same URL as an external
+ * resource. This preserves the historical load point without preloading the
+ * API from plugin bootstrap code or disturbing the admin gm_authFailure test.
+ *
  * Kept PHP 5.6 compatible intentionally.
  *
  * @param array $libraries Optional libraries to request
@@ -86,7 +93,7 @@ if (!isset($_MAPS_CONF['max_image_size'])) {
  */
 function MAPS_googleMapsApiUrl($libraries = array())
 {
-    global $_MAPS_CONF;
+    global $_MAPS_CONF, $_SCRIPTS;
 
     $params = array(
         'key' => isset($_MAPS_CONF['google_api_key']) ? trim($_MAPS_CONF['google_api_key']) : '',
@@ -114,7 +121,19 @@ function MAPS_googleMapsApiUrl($libraries = array())
         $params['region'] = trim($_MAPS_CONF['google_region']);
     }
 
-    return 'https://maps.googleapis.com/maps/api/js?' . http_build_query($params, '', '&');
+    $url = 'https://maps.googleapis.com/maps/api/js?' . http_build_query($params, '', '&');
+
+    if (defined('VERSION') && version_compare(VERSION, '2.2.0', '>=')
+        && isset($_SCRIPTS) && is_object($_SCRIPTS)
+        && method_exists($_SCRIPTS, 'setJavaScriptFile')
+    ) {
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+        if (isset($trace[1]['function']) && $trace[1]['function'] === 'MAPS_loadGoogleMapsApi') {
+            $_SCRIPTS->setJavaScriptFile('maps_google_api', $url, false);
+        }
+    }
+
+    return $url;
 }
 
 /**
