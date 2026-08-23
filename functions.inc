@@ -428,12 +428,13 @@ function MAPS_clusterInitJs($mapVariable)
 }
 
 /**
- * Register the Google Maps JavaScript API while preserving Geeklog 2.1.x.
+ * Register the Google Maps JavaScript API using the same mechanism that is
+ * known to work on Geeklog 2.1.1 (historically used by geocoder.php).
  *
- * Geeklog 2.1.x is known to work with the historical full script-element
- * registration. Geeklog 2.2.x Resource treats remote URLs as external files,
- * so setJavaScriptFile() must be used there. Keeping the switch here preserves
- * the original loading point and avoids early or duplicate API registration.
+ * $_SCRIPTS->setJavaScriptFile() does not reliably emit remote Google API
+ * URLs on every supported Geeklog/theme combination.  Registering the full
+ * script element through setJavaScript() works on both the tested 2.1.1
+ * renderer and current Geeklog releases.
  *
  * @return bool True when the API was registered (or had already been).
  */
@@ -453,17 +454,6 @@ function MAPS_loadGoogleMapsApi()
     }
 
     $apiUrl = MAPS_googleMapsApiUrl();
-
-    if (defined('VERSION') && version_compare(VERSION, '2.2.0', '>=')) {
-        $registered = (bool) $_SCRIPTS->setJavaScriptFile(
-            'maps_google_api',
-            $apiUrl,
-            false
-        );
-
-        return $registered;
-    }
-
     $_SCRIPTS->setJavaScript(
         '<script src="' . htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8') . '"></script>',
         false,
@@ -574,17 +564,24 @@ function plugin_dopluginsearch_maps($query, $datestart, $dateend, $topic, $type,
 {
     global $_TABLES, $LANG_MAPS_1;
 
+    // Follow the same SearchCriteria contract used by Geeklog core plugins:
+    // id, title, description, date, uid, hits and url.
     $query = trim(DB_escapeString($query));
 
     $markerAlias = 'maps_marker';
     $mapAlias = 'maps_parent';
     $markerOwnerAlias = 'maps_marker_owner';
     $mapOwnerAlias = 'maps_map_owner';
+    // Historical Maps rows can keep an owner_id after the corresponding Geeklog
+    // user has been deleted. Only expose an owner when the user still exists;
+    // otherwise fall back to the parent map owner, then Anonymous (uid 1).
     $ownerSql = "CASE "
               . "WHEN {$markerAlias}.owner_id > 1 AND {$markerOwnerAlias}.uid IS NOT NULL THEN {$markerAlias}.owner_id "
               . "WHEN {$mapAlias}.owner_id > 1 AND {$mapOwnerAlias}.uid IS NOT NULL THEN {$mapAlias}.owner_id "
               . "ELSE 1 END";
 
+    // COM_getPermSQL() emits unqualified permission fields. Qualify them because
+    // both joined Maps tables expose the same permission column names.
     $permSql = COM_getPermSQL('AND');
     $permSql = preg_replace(
         '/\\b(owner_id|group_id|perm_owner|perm_group|perm_members|perm_anon)\\b/',
@@ -624,6 +621,7 @@ function plugin_dopluginsearch_maps($query, $datestart, $dateend, $topic, $type,
     $search->setFtSQL($ftsql);
     $search->setRank(3);
     $search->setAppendQuery(false);
+    // Maps does not define a rewritten /markers.php/show/... route.
     $search->setURLRewrite(false);
 
     return $search;
@@ -836,6 +834,19 @@ function plugin_chkVersion_maps()
 
 /**
  * Upgrade Maps configuration to 1.5.1 without destructive data migration.
+ *
+ * The 1.5.0 -> 1.5.1 step normalizes configuration rows left by Maps 1.4,
+ * removes obsolete Google Ads settings and creates/repositions the current
+ * Google Maps Platform and marker-field settings.
+ */
+/**
+ * Repair and normalize the Maps 1.5.2 configuration layout.
+ *
+ * Maps 1.4 stored Google Ads options and used a different set of fieldset
+ * numbers. Upgrading used to add the new Google options without removing or
+ * relocating the legacy rows, which produced a mixed 1.4/1.5 configuration
+ * screen. This repair is intentionally idempotent and also runs when the
+ * migration is also safe to run more than once.
  */
 function MAPS_repairConfig151()
 {
@@ -848,6 +859,7 @@ function MAPS_repairConfig151()
     $groupSql = MAPS_dbEscape($group);
     $config = config::get_instance();
 
+    // Google Maps AdSense integration was removed from Maps 1.5.
     $obsolete = array(
         'monetize', 'fs_ads', 'AdsOnMap', 'publisher_id', 'channel_id',
         'maxAdsOnMap', 'fs_map_default', 'fs_marker_default'
@@ -857,6 +869,8 @@ function MAPS_repairConfig151()
             . "' AND name='" . MAPS_dbEscape($name) . "'");
     }
 
+    // Complete description of the 1.5 configuration. Existing values are kept;
+    // only missing rows are added and their presentation metadata is normalized.
     $rows = array(
         'sg_main' => array(null, 'subgroup', 0, 0, null, 0),
         'fs_main' => array(null, 'fieldset', 0, 0, null, 0),
@@ -865,6 +879,7 @@ function MAPS_repairConfig151()
         'marker_submission' => array($_MAPS_DEFAULT['marker_submission'], 'select', 0, 0, 3, 40),
         'submit_login_required' => array($_MAPS_DEFAULT['submit_login_required'], 'select', 0, 0, 3, 50),
         'marker_edition' => array($_MAPS_DEFAULT['marker_edition'], 'select', 0, 0, 3, 60),
+
         'fs_google' => array(null, 'fieldset', 0, 1, null, 0),
         'autofill_coord' => array($_MAPS_DEFAULT['autofill_coord'], 'select', 0, 1, 3, 100),
         'google_api_key' => array($_MAPS_DEFAULT['google_api_key'], 'text', 0, 1, 0, 110),
@@ -873,14 +888,17 @@ function MAPS_repairConfig151()
         'google_language' => array($_MAPS_DEFAULT['google_language'], 'text', 0, 1, 0, 140),
         'google_region' => array($_MAPS_DEFAULT['google_region'], 'text', 0, 1, 0, 150),
         'url_geocode' => array($_MAPS_DEFAULT['url_geocode'], 'text', 0, 1, 0, 160),
+
         'fs_permissions' => array(null, 'fieldset', 0, 2, null, 0),
         'default_permissions' => array($_MAPS_DEFAULT['default_permissions'], '@select', 0, 2, 12, 200),
+
         'sg_display' => array(null, 'subgroup', 1, 0, null, 0),
         'fs_display' => array(null, 'fieldset', 1, 0, null, 0),
         'map_main_header' => array($_MAPS_DEFAULT['map_main_header'], 'text', 1, 0, 0, 10),
         'map_main_footer' => array($_MAPS_DEFAULT['map_main_footer'], 'text', 1, 0, 0, 20),
         'use_cluster' => array($_MAPS_DEFAULT['use_cluster'], 'select', 1, 0, 3, 30),
         'display_events_map' => array($_MAPS_DEFAULT['display_events_map'], 'select', 1, 0, 3, 40),
+
         'fs_global_map' => array(null, 'fieldset', 1, 1, null, 0),
         'users_map' => array($_MAPS_DEFAULT['users_map'], 'select', 1, 1, 3, 10),
         'global_map' => array($_MAPS_DEFAULT['global_map'], 'select', 1, 1, 3, 20),
@@ -888,6 +906,7 @@ function MAPS_repairConfig151()
         'global_width' => array($_MAPS_DEFAULT['global_width'], 'text', 1, 1, 0, 40),
         'global_height' => array($_MAPS_DEFAULT['global_height'], 'text', 1, 1, 0, 50),
         'global_zoom' => array($_MAPS_DEFAULT['global_zoom'], 'text', 1, 1, 0, 60),
+
         'fs_display_profile' => array(null, 'fieldset', 1, 2, null, 0),
         'display_geo_profile' => array($_MAPS_DEFAULT['display_geo_profile'], 'select', 1, 2, 3, 10),
         'map_type_profile' => array($_MAPS_DEFAULT['map_type_profile'], 'select', 1, 2, 20, 20),
@@ -895,12 +914,14 @@ function MAPS_repairConfig151()
         'map_height_profile' => array($_MAPS_DEFAULT['map_height_profile'], 'text', 1, 2, 0, 40),
         'zoom_profile' => array($_MAPS_DEFAULT['zoom_profile'], 'text', 1, 2, 0, 50),
         'show_directions_profile' => array($_MAPS_DEFAULT['show_directions_profile'], 'select', 1, 2, 3, 60),
+
         'fs_display_geo' => array(null, 'fieldset', 1, 3, null, 0),
         'map_type_geotag' => array($_MAPS_DEFAULT['map_type_geotag'], 'select', 1, 3, 20, 10),
         'map_width_geotag' => array($_MAPS_DEFAULT['map_width_geotag'], 'text', 1, 3, 0, 20),
         'map_height_geotag' => array($_MAPS_DEFAULT['map_height_geotag'], 'text', 1, 3, 0, 30),
         'map_zoom_geotag' => array($_MAPS_DEFAULT['map_zoom_geotag'], 'text', 1, 3, 0, 40),
         'show_directions_geo' => array($_MAPS_DEFAULT['show_directions_geo'], 'select', 1, 3, 3, 50),
+
         'fs_map_defaults' => array(null, 'fieldset', 1, 4, null, 0),
         'map_type' => array($_MAPS_DEFAULT['map_type'], 'select', 1, 4, 20, 10),
         'map_width' => array($_MAPS_DEFAULT['map_width'], 'text', 1, 4, 0, 20),
@@ -910,6 +931,7 @@ function MAPS_repairConfig151()
         'map_hidden' => array($_MAPS_DEFAULT['map_hidden'], 'select', 1, 4, 3, 60),
         'free_markers' => array($_MAPS_DEFAULT['free_markers'], 'select', 1, 4, 3, 70),
         'paid_markers' => array($_MAPS_DEFAULT['paid_markers'], 'select', 1, 4, 3, 80),
+
         'fs_marker_defaults' => array(null, 'fieldset', 1, 5, null, 0),
         'marker_active' => array($_MAPS_DEFAULT['marker_active'], 'select', 1, 5, 3, 10),
         'marker_hidden' => array($_MAPS_DEFAULT['marker_hidden'], 'select', 1, 5, 3, 20),
@@ -919,6 +941,7 @@ function MAPS_repairConfig151()
         'star_stroke_color' => array($_MAPS_DEFAULT['star_stroke_color'], 'text', 1, 5, 0, 60),
         'label_color' => array($_MAPS_DEFAULT['label_color'], 'select', 1, 5, 0, 70),
         'detail_zoom' => array($_MAPS_DEFAULT['detail_zoom'], 'text', 1, 5, 0, 80),
+
         'fs_marker_fields' => array(null, 'fieldset', 1, 6, null, 0)
     );
 
@@ -936,7 +959,11 @@ function MAPS_repairConfig151()
 
     foreach ($rows as $name => $def) {
         $nameSql = MAPS_dbEscape($name);
-        $exists = (int) DB_getItem($_TABLES['conf_values'], 'COUNT(*)', "group_name='" . $groupSql . "' AND name='" . $nameSql . "'");
+        $exists = (int) DB_getItem(
+            $_TABLES['conf_values'],
+            'COUNT(*)',
+            "group_name='" . $groupSql . "' AND name='" . $nameSql . "'"
+        );
         if ($exists === 0) {
             $config->add($name, $def[0], $def[1], $def[2], $def[3], $def[4], $def[5], true, $group);
         }
@@ -950,6 +977,8 @@ function MAPS_repairConfig151()
             . " WHERE group_name='" . $groupSql . "' AND name='" . $nameSql . "'");
     }
 
+    // Convert the 1.4 geocoding URL template to the current endpoint while
+    // preserving a custom endpoint if an administrator intentionally changed it.
     $legacyGeocode = isset($_MAPS_CONF['url_geocode']) ? (string) $_MAPS_CONF['url_geocode'] : '';
     if ($legacyGeocode === '' || strpos($legacyGeocode, '%address%') !== false || strpos($legacyGeocode, 'sensor=') !== false) {
         $config->set('url_geocode', $_MAPS_DEFAULT['url_geocode'], $group);
@@ -958,6 +987,16 @@ function MAPS_repairConfig151()
     return true;
 }
 
+
+/**
+ * Validate a legacy public folder configured by Maps <= 1.5.1.
+ *
+ * Nested relative folders are accepted, but traversal and absolute paths are
+ * rejected. The returned value never has leading/trailing slashes.
+ *
+ * @param string $folder
+ * @return string
+ */
 function MAPS_normalizeLegacyPublicFolder152($folder)
 {
     $folder = trim(str_replace('\\', '/', (string) $folder));
@@ -974,6 +1013,7 @@ function MAPS_normalizeLegacyPublicFolder152($folder)
         }
     }
 
+    // Drive letters, URL schemes and query fragments are not filesystem slugs.
     if (strpos($folder, ':') !== false || strpos($folder, '?') !== false || strpos($folder, '#') !== false) {
         return '';
     }
@@ -981,6 +1021,16 @@ function MAPS_normalizeLegacyPublicFolder152($folder)
     return $folder;
 }
 
+/**
+ * Verify the canonical public folder installed by Geeklog.
+ *
+ * Geeklog's native plugin uploader extracts the package and moves the package
+ * public_html directory to $_CONF['path_html'] . 'maps' before calling the
+ * plugin upgrade callback. Maps must therefore never reconstruct a source
+ * path or copy files out of the installed plugin directory here.
+ *
+ * @return bool
+ */
 function MAPS_deployCanonicalPublicFolder152()
 {
     global $_CONF;
@@ -990,7 +1040,9 @@ function MAPS_deployCanonicalPublicFolder152()
         return false;
     }
 
-    $target = rtrim((string) $_CONF['path_html'], '/\\') . DIRECTORY_SEPARATOR . 'maps';
+    $target = rtrim((string) $_CONF['path_html'], '/\\')
+        . DIRECTORY_SEPARATOR . 'maps';
+
     COM_errorLog('Maps 1.5.2 upgrade: canonical public folder from Geeklog path_html: ' . $target);
 
     if (!is_dir($target)) {
@@ -998,6 +1050,8 @@ function MAPS_deployCanonicalPublicFolder152()
         return false;
     }
 
+    // index.php and markers.php are core Maps public entry points. Their
+    // presence confirms that Geeklog deployed the public part of this package.
     foreach (array('index.php', 'markers.php') as $entry) {
         $path = $target . DIRECTORY_SEPARATOR . $entry;
         if (!is_file($path)) {
@@ -1009,6 +1063,13 @@ function MAPS_deployCanonicalPublicFolder152()
     return true;
 }
 
+/**
+ * Return true when an existing legacy PHP entry point belongs to Maps (or is
+ * one of the 1.5.2 redirect stubs). This prevents overwriting unrelated files.
+ *
+ * @param string $path
+ * @return bool
+ */
 function MAPS_isLegacyMapsEntryPoint152($path)
 {
     if (!file_exists($path)) {
@@ -1030,6 +1091,13 @@ function MAPS_isLegacyMapsEntryPoint152($path)
         || strpos($sampleLower, 'maps 1.5.2 permanent seo redirect') !== false;
 }
 
+/**
+ * Install permanent redirect entry points in a legacy Maps public folder.
+ * Query strings are preserved exactly (minus CR/LF header characters).
+ *
+ * @param string $legacyFolder Relative folder under path_html
+ * @return bool
+ */
 function MAPS_installLegacyRedirects152($legacyFolder)
 {
     global $_CONF;
@@ -1047,6 +1115,9 @@ function MAPS_installLegacyRedirects152($legacyFolder)
         return false;
     }
 
+    // On case-insensitive filesystems, a legacy slug such as "Maps" may resolve
+    // to the canonical "maps" directory. Never replace canonical files with
+    // redirect stubs in that situation.
     $canonicalPath = rtrim($_CONF['path_html'], '/\\') . DIRECTORY_SEPARATOR . 'maps';
     $legacyReal = realpath($legacyPath);
     $canonicalReal = realpath($canonicalPath);
@@ -1091,6 +1162,12 @@ function MAPS_installLegacyRedirects152($legacyFolder)
     return true;
 }
 
+/**
+ * Maps 1.5.2 migration: canonicalize the public folder to /maps while keeping
+ * permanent 301 redirects from the previously configured slug.
+ *
+ * @return bool
+ */
 function MAPS_migratePublicFolder152()
 {
     global $_CONF, $_TABLES, $_MAPS_CONF;
@@ -1100,7 +1177,8 @@ function MAPS_migratePublicFolder152()
     $groupSql = MAPS_dbEscape($group);
     $config = config::get_instance();
 
-    $legacy = isset($_MAPS_CONF['_legacy_maps_folder']) ? (string) $_MAPS_CONF['_legacy_maps_folder'] : 'maps';
+    $legacy = isset($_MAPS_CONF['_legacy_maps_folder'])
+        ? (string) $_MAPS_CONF['_legacy_maps_folder'] : 'maps';
     $legacy = MAPS_normalizeLegacyPublicFolder152($legacy);
 
     if (!MAPS_deployCanonicalPublicFolder152()) {
@@ -1111,21 +1189,36 @@ function MAPS_migratePublicFolder152()
         return false;
     }
 
+    // Keep the previous slug as internal state, not as a visible Maps
+    // configuration item. Geeklog's vars table is intended for plugin/runtime
+    // state that does not belong on admin/configuration.php.
     $legacyVar = 'maps_legacy_folder';
     $legacyVarSql = MAPS_dbEscape($legacyVar);
     $legacySql = MAPS_dbEscape($legacy);
     if (DB_count($_TABLES['vars'], 'name', $legacyVar) > 0) {
         DB_change($_TABLES['vars'], 'value', $legacySql, 'name', $legacyVar);
     } else {
-        DB_query("INSERT INTO {$_TABLES['vars']} (name, value) VALUES ('" . $legacyVarSql . "', '" . $legacySql . "')");
+        DB_query("INSERT INTO {$_TABLES['vars']} (name, value) VALUES ('"
+            . $legacyVarSql . "', '" . $legacySql . "')");
     }
 
+    // Remove both the historical editable folder setting and the alpha3
+    // internal setting if they exist in the online configuration.
     DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='" . $groupSql
         . "' AND name IN ('maps_folder','legacy_maps_folder')");
 
     return true;
 }
 
+/**
+ * Maps 1.5.3 configuration cleanup.
+ *
+ * Earlier 1.5.2 alpha builds temporarily stored the legacy public folder in
+ * the online configuration. Internal SEO migration state belongs in Geeklog's
+ * vars table, not on admin/configuration.php.
+ *
+ * @return bool
+ */
 function MAPS_cleanupConfig153()
 {
     global $_CONF, $_TABLES;
@@ -1145,6 +1238,7 @@ function MAPS_cleanupConfig153()
         $row = DB_fetchArray($result);
         if (isset($row['value'])) {
             $raw = (string) $row['value'];
+            // Configuration strings are normally serialized by Geeklog.
             $decoded = @unserialize($raw);
             if ($decoded !== false || $raw === 'b:0;') {
                 $legacy = (string) $decoded;
@@ -1162,13 +1256,20 @@ function MAPS_cleanupConfig153()
         if (DB_count($_TABLES['vars'], 'name', $varName) > 0) {
             DB_change($_TABLES['vars'], 'value', $legacySql, 'name', $varName);
         } else {
-            DB_query("INSERT INTO {$_TABLES['vars']} (name, value) VALUES ('" . $varNameSql . "', '" . $legacySql . "')");
+            DB_query("INSERT INTO {$_TABLES['vars']} (name, value) VALUES ('"
+                . $varNameSql . "', '" . $legacySql . "')");
         }
     }
 
-    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='" . $groupSql . "' AND name='" . $nameSql . "'");
-    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='" . $groupSql . "' AND name='maps_folder'");
+    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='"
+        . $groupSql . "' AND name='" . $nameSql . "'");
 
+    // Also remove maps_folder if an older migration left it behind. In 1.5.2+
+    // /maps/ is canonical and this setting is no longer user-editable.
+    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='"
+        . $groupSql . "' AND name='maps_folder'");
+
+    // Force Geeklog to rebuild its in-memory configuration after the cleanup.
     if (isset($_CONF['path_system'])) {
         require_once rtrim($_CONF['path_system'], '/\\') . DIRECTORY_SEPARATOR . 'classes'
             . DIRECTORY_SEPARATOR . 'config.class.php';
@@ -1184,6 +1285,15 @@ function MAPS_cleanupConfig153()
     return true;
 }
 
+
+/**
+ * Maps 1.5.4 configuration reorganization.
+ *
+ * Existing values are preserved. Only presentation metadata is moved to the
+ * new tabs/fieldsets, and new settings receive conservative defaults.
+ *
+ * @return bool
+ */
 function MAPS_repairConfig154()
 {
     global $_CONF, $_TABLES;
@@ -1201,11 +1311,17 @@ function MAPS_repairConfig154()
     $config = config::get_instance();
     $rows = MAPS_configDefinition154();
 
-    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='" . $groupSql . "' AND name='sg_display'");
+    // The former catch-all "Display" subgroup is replaced by explicit tabs.
+    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='" . $groupSql
+        . "' AND name='sg_display'");
 
     foreach ($rows as $name => $def) {
         $nameSql = MAPS_dbEscape($name);
-        $exists = (int) DB_getItem($_TABLES['conf_values'], 'COUNT(*)', "group_name='" . $groupSql . "' AND name='" . $nameSql . "'");
+        $exists = (int) DB_getItem(
+            $_TABLES['conf_values'],
+            'COUNT(*)',
+            "group_name='" . $groupSql . "' AND name='" . $nameSql . "'"
+        );
         if ($exists === 0) {
             $config->add($name, $def[0], $def[1], $def[2], $def[3], $def[4], $def[5], true, $group);
         }
@@ -1227,6 +1343,16 @@ function MAPS_repairConfig154()
     return true;
 }
 
+
+/**
+ * Maps 1.5.5 configuration tab repair.
+ *
+ * Maps 1.5.4 incorrectly used multiple subgroups where Geeklog expects one
+ * plugin subgroup plus explicit entries of type "tab". Preserve every
+ * existing value and only repair the presentation metadata.
+ *
+ * @return bool
+ */
 function MAPS_repairConfig155()
 {
     global $_CONF, $_TABLES;
@@ -1244,15 +1370,31 @@ function MAPS_repairConfig155()
     $config = config::get_instance();
     $rows = MAPS_configDefinition155();
 
+    // Remove the 1.5.4 pseudo-subgroups. sg_main remains the single plugin subgroup.
     DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='" . $groupSql
         . "' AND name IN ('sg_google','sg_maps','sg_markers','sg_fields','sg_display')");
 
     foreach ($rows as $name => $def) {
         $nameSql = MAPS_dbEscape($name);
-        $exists = (int) DB_getItem($_TABLES['conf_values'], 'COUNT(*)', "group_name='" . $groupSql . "' AND name='" . $nameSql . "'");
+        $exists = (int) DB_getItem(
+            $_TABLES['conf_values'],
+            'COUNT(*)',
+            "group_name='" . $groupSql . "' AND name='" . $nameSql . "'"
+        );
 
         if ($exists === 0) {
-            $config->add($name, $def[0], $def[1], $def[2], $def[3], $def[4], $def[5], true, $group, $def[6]);
+            $config->add(
+                $name,
+                $def[0],
+                $def[1],
+                $def[2],
+                $def[3],
+                $def[4],
+                $def[5],
+                true,
+                $group,
+                $def[6]
+            );
         }
 
         $selection = ($def[4] === null) ? -1 : (int) $def[4];
@@ -1273,6 +1415,17 @@ function MAPS_repairConfig155()
     return true;
 }
 
+/**
+ * Maps 1.5.6 configuration metadata repair.
+ *
+ * Geeklog stores -1 in selectionArray when a configuration row has no
+ * selection list. Earlier 1.5.5 migration code wrote SQL NULL for fieldsets
+ * and tabs. config::_get_extended() sees that as an empty string and tries to
+ * resolve $LANG_configselects['maps'][''], producing an undefined-array-key
+ * warning. Preserve all values and normalize presentation metadata only.
+ *
+ * @return bool
+ */
 function MAPS_repairConfig156()
 {
     global $_CONF, $_TABLES;
@@ -1292,7 +1445,11 @@ function MAPS_repairConfig156()
 
     foreach ($rows as $name => $def) {
         $nameSql = MAPS_dbEscape($name);
-        $exists = (int) DB_getItem($_TABLES['conf_values'], 'COUNT(*)', "group_name='" . $groupSql . "' AND name='" . $nameSql . "'");
+        $exists = (int) DB_getItem(
+            $_TABLES['conf_values'],
+            'COUNT(*)',
+            "group_name='" . $groupSql . "' AND name='" . $nameSql . "'"
+        );
 
         if ($exists === 0) {
             $config->add($name, $def[0], $def[1], $def[2], $def[3], $def[4], $def[5], true, $group, $def[6]);
@@ -1308,7 +1465,8 @@ function MAPS_repairConfig156()
             . " WHERE group_name='" . $groupSql . "' AND name='" . $nameSql . "'");
     }
 
-    DB_query("UPDATE {$_TABLES['conf_values']} SET selectionArray=-1 WHERE group_name='" . $groupSql . "' AND selectionArray IS NULL");
+    DB_query("UPDATE {$_TABLES['conf_values']} SET selectionArray=-1"
+        . " WHERE group_name='" . $groupSql . "' AND selectionArray IS NULL");
 
     if (method_exists($config, 'initConfig')) {
         $config->initConfig();
@@ -1335,28 +1493,55 @@ function plugin_upgrade_maps()
         return false;
     }
 
-    if (version_compare($installed, '1.5.1', '<') && !MAPS_repairConfig151()) {
-        return false;
+    /* Maps 1.5.1 configuration cleanup (also used for direct 1.4.x upgrades). */
+    if (version_compare($installed, '1.5.1', '<')) {
+        if (!MAPS_repairConfig151()) {
+            return false;
+        }
     }
-    if (version_compare($installed, '1.5.2', '<') && !MAPS_migratePublicFolder152()) {
-        COM_errorLog('Maps 1.5.2 upgrade stopped: public-folder/SEO migration failed.');
-        return false;
+
+    /*
+     * Maps 1.5.2 SEO/public-folder migration.
+     * The canonical public folder becomes /maps/. A previous custom folder is
+     * retained as permanent 301 redirect entry points.
+     */
+    if (version_compare($installed, '1.5.2', '<')) {
+        if (!MAPS_migratePublicFolder152()) {
+            COM_errorLog('Maps 1.5.2 upgrade stopped: public-folder/SEO migration failed.');
+            return false;
+        }
     }
-    if (version_compare($installed, '1.5.3', '<') && !MAPS_cleanupConfig153()) {
-        COM_errorLog('Maps 1.5.3 upgrade stopped: configuration cleanup failed.');
-        return false;
+
+    /* Maps 1.5.3 configuration-only cleanup for sites already on 1.5.2. */
+    if (version_compare($installed, '1.5.3', '<')) {
+        if (!MAPS_cleanupConfig153()) {
+            COM_errorLog('Maps 1.5.3 upgrade stopped: configuration cleanup failed.');
+            return false;
+        }
     }
-    if (version_compare($installed, '1.5.4', '<') && !MAPS_repairConfig154()) {
-        COM_errorLog('Maps 1.5.4 upgrade stopped: configuration reorganization failed.');
-        return false;
+
+    /* Maps 1.5.4 configuration tabs and extracted display defaults. */
+    if (version_compare($installed, '1.5.4', '<')) {
+        if (!MAPS_repairConfig154()) {
+            COM_errorLog('Maps 1.5.4 upgrade stopped: configuration reorganization failed.');
+            return false;
+        }
     }
-    if (version_compare($installed, '1.5.5', '<') && !MAPS_repairConfig155()) {
-        COM_errorLog('Maps 1.5.5 upgrade stopped: configuration tab repair failed.');
-        return false;
+
+    /* Maps 1.5.5 fixes the 1.5.4 subgroup/tab presentation metadata. */
+    if (version_compare($installed, '1.5.5', '<')) {
+        if (!MAPS_repairConfig155()) {
+            COM_errorLog('Maps 1.5.5 upgrade stopped: configuration tab repair failed.');
+            return false;
+        }
     }
-    if (version_compare($installed, '1.5.6', '<') && !MAPS_repairConfig156()) {
-        COM_errorLog('Maps 1.5.6 upgrade stopped: configuration metadata repair failed.');
-        return false;
+
+    /* Maps 1.5.6 normalizes Geeklog selectionArray metadata (-1, never NULL). */
+    if (version_compare($installed, '1.5.6', '<')) {
+        if (!MAPS_repairConfig156()) {
+            COM_errorLog('Maps 1.5.6 upgrade stopped: configuration metadata repair failed.');
+            return false;
+        }
     }
 
     if (version_compare($installed, $code, '<')) {
@@ -1396,6 +1581,9 @@ function plugin_autouninstall_maps()
     );
 }
 
+/**
+ * Resolve an address with Google Geocoding API.
+ */
 function MAPS_getCoords($address, &$lat, &$lng)
 {
     global $_MAPS_CONF;
@@ -1533,6 +1721,8 @@ function MAPS_filterVars($vars, &$arr)
                 $arr[$var] = COM_checkHTML($value, 'maps.admin');
                 break;
             case 'text':
+                // Plain text must remain plain in storage. HTML escaping belongs
+                // to the output context, not the input/database layer.
                 $arr[$var] = strip_tags((string) $value);
                 break;
             case 'int':
@@ -1573,6 +1763,7 @@ function MAPS_recurseMaps($sel)
     return $str;
 }
 
+/** Fill shared map template variables. */
 function MAPS_fillMapCommon($t, $id, $lat, $lng, $zoom, $type, $width, $height)
 {
     global $_MAPS_CONF, $LANG_MAPS_1;
@@ -1584,6 +1775,7 @@ function MAPS_fillMapCommon($t, $id, $lat, $lng, $zoom, $type, $width, $height)
     $t->set_var('lat_js', MAPS_jsNumber($safeLat, 0));
     $t->set_var('lng_js', MAPS_jsNumber($safeLng, 0));
     $t->set_var('zoom_js', MAPS_jsNumber($safeZoom, 2));
+    // Keep legacy template variables for non-JavaScript uses.
     $t->set_var('lat', $safeLat);
     $t->set_var('lng', $safeLng);
     $t->set_var('zoom', $safeZoom);
@@ -2009,8 +2201,8 @@ function plugin_submit_maps($marker = array())
 
     $template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
     $template->set_file(array('form' => 'marker_submit_form.thtml'));
-    $template->set_var('marker_editor_width', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_width', '100%'), '100%'));
-    $template->set_var('marker_editor_height', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_height', '400px'), '400px'));
+        $template->set_var('marker_editor_width', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_width', '100%'), '100%'));
+        $template->set_var('marker_editor_height', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_height', '400px'), '400px'));
     $template->set_var('site_url', $_CONF['site_url']);
     $template->set_var('go', $LANG_MAPS_1['go']);
     $template->set_var('submit_marker', $LANG_MAPS_1['submit_marker']);
@@ -2218,6 +2410,7 @@ function MAPS_message($message, $title = '')
     return COM_startBlock($title === '' ? $defaultTitle : $title) . stripslashes($message) . COM_endBlock();
 }
 
+
 function MAPS_resolveMarkerOwnerUid($marker)
 {
     global $_TABLES;
@@ -2292,6 +2485,7 @@ function MAPS_ViewMarkerInfos($mkid)
     return $template->parse('output', 'presentation');
 }
 
+/** PHP 7/8-safe replacement for the old preg_replace /e implementation. */
 function MAPS_convertLinkToUrl($url, $length = 35)
 {
     global $_CONF;
