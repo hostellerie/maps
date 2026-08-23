@@ -2,7 +2,7 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.5.6                                                         |
+// | Maps Plugin 1.5.7                                                         |
 // +---------------------------------------------------------------------------+
 // | Public entry point                                                        |
 // +---------------------------------------------------------------------------+
@@ -49,6 +49,7 @@ function MAPS_displayFrontPage()
         $retval .= MAPS_getGlobalMap('', '', true);
     }
 
+    $retval .= MAPS_renderStatistics(true);
     $retval .= '<p>' . $LANG_MAPS_1['user_maps_list'] . '</p>';
     $result = DB_query("SELECT mid,name,description,active,hidden,modified,hits FROM {$_TABLES['maps_maps']} ORDER BY name ASC");
     $count = 0;
@@ -63,11 +64,14 @@ function MAPS_displayFrontPage()
         if ($map['description'] !== '') {
             $retval .= '<br>' . htmlspecialchars(stripslashes($map['description']), ENT_QUOTES, 'UTF-8');
         }
-        $markers = DB_count($_TABLES['maps_markers'], 'mid', $map['mid']);
         $modified = COM_getUserDateTimeFormat($map['modified']);
-        $retval .= '<br><small>' . $LANG_MAPS_1['last_modification'] . ' ' . $modified[0]
-            . ' | ' . (int) $markers . ' ' . $LANG_MAPS_1['records']
-            . ' | ' . (int) $map['hits'] . ' ' . $LANG_MAPS_1['hits'] . '</small>';
+        $retval .= '<br><small>' . $LANG_MAPS_1['last_modification'] . ' ' . $modified[0];
+        if ((int) MAPS_arrayGet($_MAPS_CONF, 'stats_public_enabled', 1) === 1) {
+            $markers = DB_count($_TABLES['maps_markers'], 'mid', $map['mid']);
+            $retval .= ' | ' . (int) $markers . ' ' . $LANG_MAPS_1['records']
+                . ' | ' . (int) $map['hits'] . ' ' . $LANG_MAPS_1['hits'];
+        }
+        $retval .= '</small>';
         if (SEC_hasRights('maps.admin')) {
             $retval .= ' | <a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=edit&amp;mid=' . (int) $map['mid'] . '">' . $LANG_MAPS_1['edit_button'] . '</a>';
         }
