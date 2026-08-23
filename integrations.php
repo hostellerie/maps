@@ -11,6 +11,49 @@ if (!defined('VERSION')) {
     die('This file can not be used on its own.');
 }
 
+if (!isset($LANG_confignames['maps']) || !is_array($LANG_confignames['maps'])) {
+    $LANG_confignames['maps'] = array();
+}
+if (!isset($LANG_fs['maps']) || !is_array($LANG_fs['maps'])) {
+    $LANG_fs['maps'] = array();
+}
+if (!isset($LANG_MAPS_1) || !is_array($LANG_MAPS_1)) {
+    $LANG_MAPS_1 = array();
+}
+
+$maps157French = isset($_CONF['language'])
+    && strpos(strtolower($_CONF['language']), 'french') === 0;
+
+if ($maps157French) {
+    $LANG_fs['maps']['fs_integrations'] = 'Intégrations et statistiques';
+    $LANG_confignames['maps']['whatsnew_enabled'] = 'Afficher les cartes récentes dans le bloc Quoi de neuf';
+    $LANG_confignames['maps']['whatsnew_interval'] = 'Période Quoi de neuf (secondes)';
+    $LANG_confignames['maps']['whatsnew_limit'] = 'Nombre maximal de cartes dans Quoi de neuf';
+    $LANG_confignames['maps']['stats_admin_enabled'] = 'Afficher les statistiques dans l’administration';
+    $LANG_confignames['maps']['stats_public_enabled'] = 'Afficher les statistiques sur la page publique';
+    $LANG_MAPS_1['whatsnew_title'] = 'Cartes récemment mises à jour';
+    $LANG_MAPS_1['whatsnew_none'] = 'Aucune carte récemment mise à jour.';
+    $LANG_MAPS_1['stats_title'] = 'Statistiques Maps';
+    $LANG_MAPS_1['stats_maps'] = 'cartes';
+    $LANG_MAPS_1['stats_map_views'] = 'vues des cartes';
+    $LANG_MAPS_1['stats_markers'] = 'marqueurs';
+    $LANG_MAPS_1['stats_marker_views'] = 'vues des marqueurs';
+} else {
+    $LANG_fs['maps']['fs_integrations'] = 'Integrations and statistics';
+    $LANG_confignames['maps']['whatsnew_enabled'] = 'Show recently updated maps in What’s New';
+    $LANG_confignames['maps']['whatsnew_interval'] = 'What’s New period (seconds)';
+    $LANG_confignames['maps']['whatsnew_limit'] = 'Maximum maps in What’s New';
+    $LANG_confignames['maps']['stats_admin_enabled'] = 'Show statistics in administration';
+    $LANG_confignames['maps']['stats_public_enabled'] = 'Show statistics on the public page';
+    $LANG_MAPS_1['whatsnew_title'] = 'Recently updated maps';
+    $LANG_MAPS_1['whatsnew_none'] = 'No recently updated maps.';
+    $LANG_MAPS_1['stats_title'] = 'Maps statistics';
+    $LANG_MAPS_1['stats_maps'] = 'maps';
+    $LANG_MAPS_1['stats_map_views'] = 'map views';
+    $LANG_MAPS_1['stats_markers'] = 'markers';
+    $LANG_MAPS_1['stats_marker_views'] = 'marker views';
+}
+
 /**
  * Add Maps 1.5.7 configuration rows on existing installations.
  *
@@ -86,7 +129,6 @@ function MAPS_ensure157Configuration()
 
     return true;
 }
-
 MAPS_ensure157Configuration();
 
 /**
