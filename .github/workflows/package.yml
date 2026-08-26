@@ -111,6 +111,7 @@ function MAPS_compatOutput($content, $title = '')
             php -l "$file" >/dev/null
           done
           php -l functions.inc >/dev/null
+          php -l interoperability.php >/dev/null
 
       - name: Commit migrated rendering
         if: github.event_name == 'push'
@@ -130,14 +131,14 @@ function MAPS_compatOutput($content, $title = '')
           set -e
           rm -rf dist
           mkdir -p dist/maps
-          cp -a admin autoinstall.php functions.inc install_defaults.php language maps.php public_html sql templates README.md dist/maps/
+          cp -a admin autoinstall.php functions.inc install_defaults.php integrations.php interoperability.php language maps.php public_html sql templates README.md dist/maps/
           cd dist
-          zip -r maps-1.5.0-alpha2.zip maps >/dev/null
+          zip -r maps-1.5.7-test.zip maps >/dev/null
 
       - name: Upload installable archive
         uses: actions/upload-artifact@v4
         with:
-          name: maps-1.5.0-alpha2
-          path: dist/maps-1.5.0-alpha2.zip
+          name: maps-1.5.7-test
+          path: dist/maps-1.5.7-test.zip
           if-no-files-found: error
           retention-days: 7
