@@ -673,12 +673,19 @@ $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
 $display .= maps_admin_menu();
 
 $requestMode = isset($_REQUEST['mode']) ? $_REQUEST['mode'] : '';
+$markerMapBefore = 0;
+if ($requestMode === 'delete' && !empty($mkid)) {
+    $markerMapBefore = (int) DB_getItem($_TABLES['maps_markers'], 'mid', "mkid='" . MAPS_dbEscape($mkid) . "'");
+}
 switch ($requestMode) {
     case 'delete':
         $isSubmission = isset($_REQUEST['submission']) ? (int) $_REQUEST['submission'] : 0;
 	    if ($isSubmission !== 1) {
 			DB_delete($_TABLES['maps_markers'], 'mkid', $mkid);
 			if (DB_affectedRows('') == 1) {
+                if ($markerMapBefore > 0) {
+                    updateMap($markerMapBefore);
+                }
 				$msg = $LANG_MAPS_1['deletion_succes'];
 			} else {
 				$msg = $LANG_MAPS_1['deletion_fail'];

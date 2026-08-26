@@ -2388,7 +2388,18 @@ function hitMarker($mkid)
 function updateMap($map)
 {
     global $_TABLES;
-    DB_query("UPDATE {$_TABLES['maps_maps']} SET modified='" . date('YmdHis') . "' WHERE mid=" . (int) $map);
+
+    $map = (int) $map;
+    if ($map <= 0 || (int) DB_count($_TABLES['maps_maps'], 'mid', $map) === 0) {
+        return false;
+    }
+
+    DB_query("UPDATE {$_TABLES['maps_maps']} SET modified='" . date('YmdHis') . "' WHERE mid=" . $map);
+    if (!DB_error() && function_exists('PLG_itemSaved')) {
+        PLG_itemSaved($map, 'maps');
+    }
+
+    return !DB_error();
 }
 
 function plugin_getuseroption_maps()

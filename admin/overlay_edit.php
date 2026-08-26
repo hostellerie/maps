@@ -310,6 +310,21 @@ function MAPS_selectGroupOverlays ($selected)
 
 // MAIN
 $oid = $_REQUEST['oid'];
+$overlayAffectedMaps = array();
+if ((int) $oid > 0 && isset($_REQUEST['mode'])
+    && in_array($_REQUEST['mode'], array('save', 'delete'), true)) {
+    $affectedResult = DB_query("SELECT DISTINCT mo_mid FROM {$_TABLES['maps_map_overlay']} WHERE mo_oid=" . (int) $oid);
+    while ($affected = DB_fetchArray($affectedResult)) {
+        if (isset($affected['mo_mid']) && (int) $affected['mo_mid'] > 0) {
+            $overlayAffectedMaps[(int) $affected['mo_mid']] = true;
+        }
+    }
+}
+register_shutdown_function(function () use (&$overlayAffectedMaps) {
+    foreach (array_keys($overlayAffectedMaps) as $affectedMid) {
+        updateMap((int) $affectedMid);
+    }
+});
 $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
 $display .= maps_admin_menu();
 

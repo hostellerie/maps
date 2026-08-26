@@ -294,6 +294,9 @@ function MAPS_importCSV ($FILES = '', $map_id, $separator=';', $fields, $valid =
 				
 				if ( $mkid_exists == '' and $mkid != '') {
     				DB_query ($sql, 0);
+                    if (!DB_error()) {
+                        updateMap($map_id);
+                    }
 				} else {
 				    COM_errorLog('MAPS - Duplicate mkid during import from ' . $filename);
 				}
