@@ -32,8 +32,9 @@ The principal remaining release gates are:
 2. finish security and runtime audits;
 3. validate upgrades from representative legacy installations;
 4. complete the Geeklog 2.1.1 / 2.2.2 functional matrix;
-5. verify packaging and version consistency;
-6. run an RC period focused on regressions rather than new features.
+5. complete the final public statistics presentation pass;
+6. verify packaging and version consistency;
+7. run an RC period focused on regressions rather than new features.
 
 The interoperability work is deliberately part of **1.5.x**, not postponed to 2.0, because it provides a small stable public surface without requiring a data-layer rewrite.
 
@@ -51,6 +52,7 @@ The interoperability work is deliberately part of **1.5.x**, not postponed to 2.
 | Public/admin runtime stability | ~80–85% | Critical |
 | Plugin content interoperability | ~25% | **Critical / release gate** |
 | What’s New / statistics integration | ~85–90% | High |
+| Statistics presentation | ~60% | High |
 | UI / UX modernization | ~65–70% | High |
 | Documentation | ~80% | Medium |
 | Test matrix / release validation | ~55–60% | Critical |
@@ -552,11 +554,91 @@ Improve progressively:
 
 Do not introduce a plugin-specific front-end framework solely for Maps.
 
+## 16. Public statistics presentation
+
+Status: **Required product-quality pass before stable release**
+
+Maps already computes public usage statistics. The remaining work is to turn those values into useful, readable presentation rather than a compact inline sentence.
+
+### Global Maps page — `/maps/`
+
+Improve the statistics section on the public Maps landing page by displaying the principal figures as responsive statistic cards.
+
+Initial cards should include, when relevant and enabled:
+
+- total public maps;
+- total visible markers;
+- total map views;
+- total marker views.
+
+Presentation requirements:
+
+- one clear value and one short label per card;
+- responsive card grid that works with Geeklog themes;
+- no plugin-specific CSS framework;
+- accessible markup and sufficient semantic meaning without relying on color alone;
+- avoid decorative charts unless they add useful information;
+- hide the complete block when public statistics are disabled;
+- count only content visible according to the public permission model.
+
+### Individual map page — `/maps/index.php?mode=map&mid={id}`
+
+Add a compact statistics section for the currently displayed map.
+
+Initial per-map statistics should include where available:
+
+- views of the current map;
+- number of visible markers attached to the map;
+- cumulative marker views for markers visible on that map.
+
+Possible additional figures should only be added when they are reliable and useful.
+
+The per-map statistics must:
+
+- reuse the same visual card language as `/maps/`;
+- respect the current visitor's permissions;
+- exclude hidden/inaccessible markers from public counts;
+- avoid extra queries per marker where a grouped aggregate query can provide the result;
+- remain optional through the existing public-statistics configuration unless a dedicated setting becomes demonstrably useful.
+
+### Implementation guidance
+
+Prefer extending the existing statistics helpers rather than introducing separate page-specific SQL.
+
+A useful target is to keep separate responsibilities:
+
+```text
+statistics query/helper
+        |
+        +-- global public statistics
+        |
+        +-- current-map statistics
+        |
+        +-- admin statistics
+                |
+          presentation renderer
+```
+
+The renderer may provide reusable statistic-card markup so the global and individual map pages remain visually consistent.
+
+### Statistics exit criteria
+
+Before stable release:
+
+- `/maps/` statistics render as responsive cards;
+- individual map pages display map-specific statistics;
+- public permission filtering is verified;
+- no N+1 marker query pattern is introduced;
+- statistics disabled in configuration produce no public statistics block;
+- display works on Geeklog 2.1.1 and 2.2.2 themes;
+- mobile rendering remains readable.
+
 Exit criteria for the 1.5 stable release:
 
 - Core workflows can be understood without reading documentation first.
 - Forms remain compatible with existing Geeklog themes.
 - Mobile use is practical for common map/marker operations.
+- Global and per-map statistics are readable and visually consistent.
 
 ---
 
@@ -590,7 +672,9 @@ Public:
 - autotags: `maps`, `geo`, `marker`
 - event map integration
 - What’s New Maps section
-- public statistics when enabled
+- public statistics cards on `/maps/`
+- per-map statistics on `/maps/index.php?mode=map&mid={id}`
+- public statistics disabled state
 
 Administration:
 
@@ -616,6 +700,15 @@ Interoperability:
 - Item Info URL fallback
 - `plugin_idtourl_maps()` on supported core versions
 - What’s New after interoperability refactor
+
+Statistics:
+
+- global counts match visible database content;
+- per-map marker count matches visible markers;
+- per-map cumulative marker views are correct;
+- private/hidden content is excluded for unauthorized visitors;
+- statistics cards remain usable on narrow/mobile layouts;
+- disabling public statistics removes global and per-map statistic blocks.
 
 Data cases:
 
@@ -645,6 +738,7 @@ Exit criteria:
 - No unintended data loss.
 - No regression between Geeklog 2.1.1 and 2.2.2.
 - No interoperability callback exposes content that the current user cannot access.
+- Public statistics never expose inaccessible maps or markers.
 
 ---
 
@@ -661,6 +755,7 @@ Before RC:
 - Document geocoding and user geolocation behavior.
 - Document legacy `/cartes/` → `/maps/` behavior.
 - Add a short troubleshooting section for grey maps / API failures.
+- Document public/global and per-map statistics behavior.
 - Document the Maps interoperability capabilities for plugin developers.
 - Link to the common Plugin Content Interoperability Contract rather than duplicating it in full.
 
@@ -689,7 +784,7 @@ Preferred sequence:
 2. Finish remaining 1.5.x runtime fixes.
 3. Complete security sweep.
 4. Complete upgrade validation.
-5. Complete essential UI/UX pass.
+5. Complete essential UI/UX pass, including global and per-map statistics presentation.
 6. Complete 2.1.1 functional matrix.
 7. Complete 2.2.2 functional matrix.
 8. Verify package/version consistency.
@@ -711,7 +806,15 @@ A stable release should not be declared solely because PHP lint passes; runtime 
 - clean PHP lint/package workflow
 - no known fatal error on supported Geeklog targets
 - key public/admin workflows usable
+- public statistics data/helper layer ready and permission-safe
 - version/package consistency
+
+## Must be complete for stable release
+
+- responsive statistic cards on `/maps/`;
+- map-specific statistics on `/maps/index.php?mode=map&mid={id}`;
+- global/per-map statistics validated against permissions;
+- RC regressions resolved.
 
 ## May be completed during RC if non-blocking
 
@@ -728,6 +831,7 @@ A stable release should not be declared solely because PHP lint passes; runtime 
 - AdvancedMarkerElement migration
 - architectural repository/service rewrite
 - major schema redesign
+- decorative or advanced statistical charts beyond the release requirements
 
 ---
 
