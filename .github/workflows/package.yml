@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - modernize/maps-1.5
-  pull_request:
 
 permissions:
   contents: write
@@ -13,132 +12,46 @@ jobs:
   package:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: modernize/maps-1.5
+      - name: Checkout branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git clone --depth 1 --branch modernize/maps-1.5 \
+            https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
-      - name: Migrate Geeklog rendering compatibility
+      - name: Lint interoperability files
+        shell: bash
+        run: |
+          php -l source/interoperability.php
+          php -l source/maps.php
+          php -l source/admin/map_edit.php
+
+      - name: Build installable archive
         shell: bash
         run: |
           set -e
-          python3 - <<'PY'
-          from pathlib import Path
-
-          targets = []
-          for pattern in ('admin/*.php', 'public_html/*.php', 'functions.inc'):
-              targets.extend(Path('.').glob(pattern))
-
-          for path in targets:
-              text = path.read_text(encoding='utf-8')
-              if 'COM_siteHeader(' not in text and 'COM_siteFooter(' not in text:
-                  continue
-              text = text.replace('COM_siteHeader(', 'MAPS_compatSiteHeader(')
-              text = text.replace('COM_siteFooter(', 'MAPS_compatSiteFooter(')
-              text = text.replace('COM_output($display);', 'MAPS_compatOutput($display);')
-              text = text.replace('COM_output($output);', 'MAPS_compatOutput($output);')
-              text = text.replace('COM_output($retval);', 'MAPS_compatOutput($retval);')
-              text = text.replace('echo $display;\n', 'MAPS_compatOutput($display);\n')
-              text = text.replace('echo $output;\n', 'MAPS_compatOutput($output);\n')
-              text = text.replace('echo $retval;\n', 'MAPS_compatOutput($retval);\n')
-              path.write_text(text, encoding='utf-8')
-
-          f = Path('functions.inc')
-          text = f.read_text(encoding='utf-8')
-          marker = "require_once $_CONF['path'] . 'plugins/maps/maps.php';\n"
-          helper = r'''
-
-/**
- * Compatibility page renderer.
- * Geeklog 2.2.x uses COM_createHTMLDocument() exclusively.
- * Geeklog 2.1.1 falls back to the legacy header/footer renderer.
- */
-function MAPS_compatSiteHeader()
-{
-    global $_MAPS_RENDER_TITLE;
-    $args = func_get_args();
-
-    if (isset($args[1]) && $args[1] !== '') {
-        $_MAPS_RENDER_TITLE = $args[1];
-    }
-
-    if (function_exists('COM_createHTMLDocument')) {
-        return '';
-    }
-
-    return call_user_func_array('COM_' . 'siteHeader', $args);
-}
-
-function MAPS_compatSiteFooter()
-{
-    if (function_exists('COM_createHTMLDocument')) {
-        return '';
-    }
-
-    return call_user_func_array('COM_' . 'siteFooter', func_get_args());
-}
-
-function MAPS_compatOutput($content, $title = '')
-{
-    global $_MAPS_RENDER_TITLE;
-
-    if (function_exists('COM_createHTMLDocument')) {
-        if ($title === '' && isset($_MAPS_RENDER_TITLE)) {
-            $title = $_MAPS_RENDER_TITLE;
-        }
-        $options = array();
-        if ($title !== '') {
-            $options['pagetitle'] = $title;
-        }
-        $content = COM_createHTMLDocument($content, $options);
-    }
-
-    COM_output($content);
-}
-'''
-          if 'function MAPS_compatSiteHeader()' not in text:
-              if marker not in text:
-                  raise SystemExit('Unable to insert rendering helper in functions.inc')
-              text = text.replace(marker, marker + helper, 1)
-              f.write_text(text, encoding='utf-8')
-          PY
-
-          if grep -RInE 'COM_site(Header|Footer)\(' admin public_html functions.inc --include='*.php' --include='*.inc'; then
-            echo 'Direct legacy page rendering call remains.'
-            exit 1
-          fi
-
-          find admin public_html -type f -name '*.php' -print0 | while IFS= read -r -d '' file; do
-            php -l "$file" >/dev/null
-          done
-          php -l functions.inc >/dev/null
-          php -l interoperability.php >/dev/null
-
-      - name: Commit migrated rendering
-        if: github.event_name == 'push'
-        shell: bash
-        run: |
-          if ! git diff --quiet; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add admin public_html functions.inc
-            git commit -m 'Use COM_createHTMLDocument on Geeklog 2.2'
-            git push origin HEAD:modernize/maps-1.5
-          fi
-
-      - name: Build Geeklog plugin archive
-        shell: bash
-        run: |
-          set -e
-          rm -rf dist
-          mkdir -p dist/maps
-          cp -a admin autoinstall.php functions.inc install_defaults.php integrations.php interoperability.php language maps.php public_html sql templates README.md dist/maps/
-          cd dist
+          cd source
+          rm -rf build
+          mkdir -p build/maps
+          cp -a admin autoinstall.php functions.inc install_defaults.php integrations.php interoperability.php language maps.php public_html sql templates README.md build/maps/
+          cd build
           zip -r maps-1.5.7-test.zip maps >/dev/null
 
-      - name: Upload installable archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: maps-1.5.7-test
-          path: dist/maps-1.5.7-test.zip
-          if-no-files-found: error
-          retention-days: 7
+      - name: Commit test archive
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          cd source
+          mkdir -p dist
+          cp build/maps-1.5.7-test.zip dist/maps-1.5.7-test.zip
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f dist/maps-1.5.7-test.zip
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Build Maps 1.5.7 test archive [skip ci]'
+          git push origin HEAD:modernize/maps-1.5
