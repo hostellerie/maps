@@ -28,6 +28,7 @@ jobs:
           php -l source/distribution.php
           php -l source/maps.php
           php -l source/admin/map_edit.php
+          php -l source/admin/ajax.php
 
       - name: Build installable archive
         shell: bash
