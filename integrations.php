@@ -4,7 +4,7 @@
 // +--------------------------------------------------------------------------+
 // | integrations.php                                                         |
 // |                                                                          |
-// | Geeklog What’s New integration and usage statistics.                     |
+// | Geeklog integration, What's New and usage statistics.                    |
 // +--------------------------------------------------------------------------+
 
 if (!defined('VERSION')) {
@@ -34,10 +34,13 @@ if ($maps157French) {
     $LANG_MAPS_1['whatsnew_title'] = 'Cartes récemment mises à jour';
     $LANG_MAPS_1['whatsnew_none'] = 'Aucune carte récemment mise à jour.';
     $LANG_MAPS_1['stats_title'] = 'Statistiques Maps';
+    $LANG_MAPS_1['stats_map_title'] = 'Statistiques de cette carte';
     $LANG_MAPS_1['stats_maps'] = 'cartes';
     $LANG_MAPS_1['stats_map_views'] = 'vues des cartes';
     $LANG_MAPS_1['stats_markers'] = 'marqueurs';
     $LANG_MAPS_1['stats_marker_views'] = 'vues des marqueurs';
+    $LANG_MAPS_1['stats_top_maps'] = 'Cartes les plus consultées';
+    $LANG_MAPS_1['stats_no_views'] = 'Aucune consultation enregistrée.';
 } else {
     $LANG_fs['maps']['fs_integrations'] = 'Integrations and statistics';
     $LANG_confignames['maps']['whatsnew_enabled'] = 'Show recently updated maps in What’s New';
@@ -48,19 +51,17 @@ if ($maps157French) {
     $LANG_MAPS_1['whatsnew_title'] = 'Recently updated maps';
     $LANG_MAPS_1['whatsnew_none'] = 'No recently updated maps.';
     $LANG_MAPS_1['stats_title'] = 'Maps statistics';
+    $LANG_MAPS_1['stats_map_title'] = 'Map statistics';
     $LANG_MAPS_1['stats_maps'] = 'maps';
     $LANG_MAPS_1['stats_map_views'] = 'map views';
     $LANG_MAPS_1['stats_markers'] = 'markers';
     $LANG_MAPS_1['stats_marker_views'] = 'marker views';
+    $LANG_MAPS_1['stats_top_maps'] = 'Most viewed maps';
+    $LANG_MAPS_1['stats_no_views'] = 'No views recorded.';
 }
 
 /**
  * Add Maps 1.5.7 configuration rows on existing installations.
- *
- * This bootstrap is intentionally idempotent. It is loaded before Geeklog
- * calls plugin_upgrade_maps(), so an installed 1.5.6 site receives the new
- * configuration rows before the existing upgrade routine records 1.5.7.
- * Existing values are never overwritten.
  *
  * @return bool
  */
@@ -132,7 +133,7 @@ function MAPS_ensure157Configuration()
 MAPS_ensure157Configuration();
 
 /**
- * Advertise Maps support for Geeklog's What’s New block.
+ * Advertise Maps support for Geeklog's What's New block.
  *
  * @return array|bool
  */
@@ -154,13 +155,16 @@ function plugin_whatsnewsupported_maps()
 }
 
 /**
- * Return recently modified visible maps for Geeklog's What’s New block.
+ * Return recently modified visible maps for Geeklog's What's New block.
+ *
+ * The HTML renderer deliberately consumes the same normalized permission-aware
+ * query layer as Item Info so structured consumers and What's New cannot drift.
  *
  * @return string
  */
 function plugin_getwhatsnew_maps()
 {
-    global $_TABLES, $_MAPS_CONF, $LANG_MAPS_1;
+    global $_MAPS_CONF, $LANG_MAPS_1;
 
     if (empty($_MAPS_CONF['whatsnew_enabled'])) {
         return '';
@@ -168,56 +172,40 @@ function plugin_getwhatsnew_maps()
 
     $interval = max(60, (int) $_MAPS_CONF['whatsnew_interval']);
     $limit = max(1, min(50, (int) $_MAPS_CONF['whatsnew_limit']));
-    $cutoff = date('Y-m-d H:i:s', time() - $interval);
-    $cutoffSql = function_exists('DB_escapeString')
-        ? DB_escapeString($cutoff) : addslashes($cutoff);
+    $items = MAPS_contentQuery('*', 0, array(
+        'since' => time() - $interval,
+        'limit' => $limit,
+        'order' => 'modified-desc'
+    ));
 
-    $sql = "SELECT mid,name,modified FROM {$_TABLES['maps_maps']} "
-        . "WHERE active=1 AND hidden=0 AND modified>='{$cutoffSql}' "
-        . COM_getPermSQL('AND', 0, 2)
-        . " ORDER BY modified DESC";
-
-    $result = DB_query($sql);
-    $items = array();
-    while (count($items) < $limit && ($row = DB_fetchArray($result))) {
-        if (!is_array($row) || empty($row['mid'])) {
+    $links = array();
+    foreach ($items as $item) {
+        $title = isset($item['title']) ? $item['title'] : '';
+        $url = isset($item['url']) ? $item['url'] : '';
+        if ($title === '' || $url === '') {
             continue;
         }
-
-        $title = trim(html_entity_decode(
-            stripslashes(isset($row['name']) ? $row['name'] : ''),
-            ENT_QUOTES,
-            'UTF-8'
-        ));
-        if ($title === '') {
-            $title = '#' . (int) $row['mid'];
-        }
-
-        $url = $_MAPS_CONF['site_url'] . '/index.php?mode=map&mid=' . (int) $row['mid'];
-        $items[] = COM_createLink(
+        $links[] = COM_createLink(
             COM_truncate($title, 60, '...'),
             $url,
             array('title' => $title)
         ) . LB;
     }
 
-    if (empty($items)) {
+    if (empty($links)) {
         return isset($LANG_MAPS_1['whatsnew_none'])
             ? $LANG_MAPS_1['whatsnew_none'] . '<br' . XHTML . '>' : '';
     }
 
     if (function_exists('PLG_getThemeItem')) {
-        return COM_makeList($items, PLG_getThemeItem('core-css-list-new', 'core'));
+        return COM_makeList($links, PLG_getThemeItem('core-css-list-new', 'core'));
     }
 
-    return COM_makeList($items);
+    return COM_makeList($links);
 }
 
 /**
  * Compute Maps usage statistics.
- *
- * Public statistics only include maps and markers visible to the current
- * visitor. Administration statistics include all stored rows.
  *
  * @param bool $public
  * @return array
@@ -291,7 +279,85 @@ function MAPS_getStatistics($public = true)
 }
 
 /**
- * Render a compact statistics summary.
+ * Compute statistics for one map.
+ *
+ * @param int  $mid
+ * @param bool $public
+ * @return array
+ */
+function MAPS_getMapStatistics($mid, $public = true)
+{
+    global $_TABLES;
+
+    $mid = (int) $mid;
+    $stats = array('map_views' => 0, 'markers' => 0, 'marker_views' => 0);
+    if ($mid <= 0) {
+        return $stats;
+    }
+
+    if ($public && empty(MAPS_contentQuery($mid, 0, array('limit' => 1)))) {
+        return $stats;
+    }
+
+    $stats['map_views'] = (int) DB_getItem($_TABLES['maps_maps'], 'hits', 'mid=' . $mid);
+    $where = 'mid=' . $mid;
+    if ($public) {
+        $where .= ' AND active=1 AND hidden=0';
+    }
+
+    $result = DB_query("SELECT * FROM {$_TABLES['maps_markers']} WHERE " . $where);
+    while ($marker = DB_fetchArray($result)) {
+        if (!is_array($marker)) {
+            continue;
+        }
+        if ($public && !MAPS_checkMarkervalidity($marker)) {
+            continue;
+        }
+        $stats['markers']++;
+        $stats['marker_views'] += (int) $marker['hits'];
+    }
+
+    return $stats;
+}
+
+/**
+ * Render statistics as responsive semantic cards.
+ *
+ * @param array  $stats
+ * @param string $title
+ * @return string
+ */
+function MAPS_renderStatisticCards($stats, $title)
+{
+    global $LANG_MAPS_1;
+
+    $labels = array(
+        'maps' => isset($LANG_MAPS_1['stats_maps']) ? $LANG_MAPS_1['stats_maps'] : 'maps',
+        'map_views' => isset($LANG_MAPS_1['stats_map_views']) ? $LANG_MAPS_1['stats_map_views'] : 'map views',
+        'markers' => isset($LANG_MAPS_1['stats_markers']) ? $LANG_MAPS_1['stats_markers'] : 'markers',
+        'marker_views' => isset($LANG_MAPS_1['stats_marker_views']) ? $LANG_MAPS_1['stats_marker_views'] : 'marker views'
+    );
+
+    $html = '<section class="maps-statistics" aria-label="'
+        . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '">';
+    $html .= '<h2 class="maps-statistics-title">' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</h2>';
+    $html .= '<div class="maps-statistics-cards">';
+    foreach ($stats as $key => $value) {
+        if (!isset($labels[$key])) {
+            continue;
+        }
+        $html .= '<div class="maps-stat-card">';
+        $html .= '<strong class="maps-stat-value">' . COM_numberFormat((int) $value) . '</strong>';
+        $html .= '<span class="maps-stat-label">' . htmlspecialchars($labels[$key], ENT_QUOTES, 'UTF-8') . '</span>';
+        $html .= '</div>';
+    }
+    $html .= '</div></section>';
+
+    return $html;
+}
+
+/**
+ * Render global statistics.
  *
  * @param bool $public
  * @return string
@@ -305,28 +371,79 @@ function MAPS_renderStatistics($public = true)
         return '';
     }
 
-    $stats = MAPS_getStatistics($public);
-    $title = isset($LANG_MAPS_1['stats_title'])
-        ? $LANG_MAPS_1['stats_title'] : 'Maps statistics';
+    $title = isset($LANG_MAPS_1['stats_title']) ? $LANG_MAPS_1['stats_title'] : 'Maps statistics';
+    return MAPS_renderStatisticCards(MAPS_getStatistics($public), $title);
+}
 
-    $labels = array(
-        'maps' => isset($LANG_MAPS_1['stats_maps']) ? $LANG_MAPS_1['stats_maps'] : 'maps',
-        'map_views' => isset($LANG_MAPS_1['stats_map_views']) ? $LANG_MAPS_1['stats_map_views'] : 'map views',
-        'markers' => isset($LANG_MAPS_1['stats_markers']) ? $LANG_MAPS_1['stats_markers'] : 'markers',
-        'marker_views' => isset($LANG_MAPS_1['stats_marker_views']) ? $LANG_MAPS_1['stats_marker_views'] : 'marker views'
+/**
+ * Render statistics for one public map.
+ *
+ * @param int  $mid
+ * @param bool $public
+ * @return string
+ */
+function MAPS_renderMapStatistics($mid, $public = true)
+{
+    global $_MAPS_CONF, $LANG_MAPS_1;
+
+    $setting = $public ? 'stats_public_enabled' : 'stats_admin_enabled';
+    if (empty($_MAPS_CONF[$setting])) {
+        return '';
+    }
+
+    $title = isset($LANG_MAPS_1['stats_map_title']) ? $LANG_MAPS_1['stats_map_title'] : 'Map statistics';
+    return MAPS_renderStatisticCards(MAPS_getMapStatistics($mid, $public), $title);
+}
+
+/**
+ * Native Geeklog statistics summary callback.
+ *
+ * @return array
+ */
+function plugin_statssummary_maps()
+{
+    global $LANG_MAPS_1;
+
+    $stats = MAPS_getStatistics(true);
+    $label = isset($LANG_MAPS_1['plugin_name']) ? $LANG_MAPS_1['plugin_name'] : 'Maps';
+    $value = COM_numberFormat($stats['maps']) . ' (' . COM_numberFormat($stats['map_views']) . ')';
+
+    return array($label, $value);
+}
+
+/**
+ * Native Geeklog detailed statistics callback for /stats.php.
+ *
+ * @return string
+ */
+function plugin_showstats_maps()
+{
+    global $_TABLES, $LANG_MAPS_1;
+
+    $title = isset($LANG_MAPS_1['stats_top_maps']) ? $LANG_MAPS_1['stats_top_maps'] : 'Most viewed maps';
+    $none = isset($LANG_MAPS_1['stats_no_views']) ? $LANG_MAPS_1['stats_no_views'] : 'No views recorded.';
+    $result = DB_query(
+        "SELECT mid,name,hits FROM {$_TABLES['maps_maps']} "
+        . "WHERE active=1 AND hidden=0 AND hits>0"
+        . COM_getPermSQL('AND', 0, 2)
+        . " ORDER BY hits DESC, mid DESC LIMIT 10"
     );
 
-    $html = '<div class="maps-statistics" style="margin:12px 0;padding:10px;border:1px solid #ccc">';
-    $html .= '<strong>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . ':</strong> ';
-    $html .= number_format($stats['maps'], 0, '.', ' ') . ' '
-        . htmlspecialchars($labels['maps'], ENT_QUOTES, 'UTF-8') . ' &middot; ';
-    $html .= number_format($stats['map_views'], 0, '.', ' ') . ' '
-        . htmlspecialchars($labels['map_views'], ENT_QUOTES, 'UTF-8') . ' &middot; ';
-    $html .= number_format($stats['markers'], 0, '.', ' ') . ' '
-        . htmlspecialchars($labels['markers'], ENT_QUOTES, 'UTF-8') . ' &middot; ';
-    $html .= number_format($stats['marker_views'], 0, '.', ' ') . ' '
-        . htmlspecialchars($labels['marker_views'], ENT_QUOTES, 'UTF-8');
-    $html .= '</div>';
+    $rows = array();
+    while ($row = DB_fetchArray($result)) {
+        if (!is_array($row) || empty($row['mid'])) {
+            continue;
+        }
+        $name = MAPS_decodeStoredText(isset($row['name']) ? $row['name'] : '');
+        $rows[] = '<li>' . COM_createLink(
+            htmlspecialchars($name, ENT_QUOTES, 'UTF-8'),
+            MAPS_contentUrl((int) $row['mid'])
+        ) . ' <span class="maps-stats-hits">(' . COM_numberFormat((int) $row['hits']) . ')</span></li>';
+    }
+
+    $html = COM_startBlock($title);
+    $html .= empty($rows) ? htmlspecialchars($none, ENT_QUOTES, 'UTF-8') : '<ol class="maps-stats-list">' . implode('', $rows) . '</ol>';
+    $html .= COM_endBlock();
 
     return $html;
 }
