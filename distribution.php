@@ -65,12 +65,18 @@ function plugin_getfeednames_maps()
 /**
  * Supply Maps entries to Geeklog's RSS/Atom generator.
  *
+ * Geeklog's dispatcher also supplies the feed type and version. Older plugin
+ * examples often omit them, but accepting them lets Maps expose extension tags
+ * correctly while remaining compatible with Geeklog 2.1.1 through 2.2.2.
+ *
  * @param int|string $feed
  * @param string     $link
  * @param string     $update
+ * @param string     $feedType
+ * @param string     $feedVersion
  * @return array
  */
-function plugin_getfeedcontent_maps($feed, &$link, &$update)
+function plugin_getfeedcontent_maps($feed, &$link, &$update, $feedType = '', $feedVersion = '')
 {
     global $_TABLES, $_MAPS_CONF;
 
@@ -112,7 +118,7 @@ function plugin_getfeedcontent_maps($feed, &$link, &$update)
             $summary = COM_truncateHTML($summary, $contentLength, ' ...');
         }
 
-        $entries[] = array(
+        $entry = array(
             'title' => isset($item['title']) ? $item['title'] : '',
             'summary' => $summary,
             'text' => $summary,
@@ -122,6 +128,19 @@ function plugin_getfeedcontent_maps($feed, &$link, &$update)
             'date' => isset($item['date-modified']) ? (int) $item['date-modified'] : 0,
             'format' => 'html'
         );
+
+        if (function_exists('PLG_getFeedElementExtensions')) {
+            $entry['extensions'] = PLG_getFeedElementExtensions(
+                'maps',
+                (string) $item['id'],
+                (string) $feedType,
+                (string) $feedVersion,
+                'all',
+                $feedId
+            );
+        }
+
+        $entries[] = $entry;
         $ids[] = (string) $item['id'];
     }
 
