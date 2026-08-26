@@ -1,0 +1,294 @@
+<?php
+// +--------------------------------------------------------------------------+
+// | Maps Plugin 1.5.7                                                        |
+// +--------------------------------------------------------------------------+
+// | distribution.php                                                         |
+// |                                                                          |
+// | Native Geeklog distribution and discovery callbacks.                     |
+// +--------------------------------------------------------------------------+
+
+if (!defined('VERSION')) {
+    die('This file can not be used on its own.');
+}
+
+/**
+ * Translate a Geeklog syndication limit into Maps collection options.
+ *
+ * Geeklog feed limits may be an item count (for example "10") or an hour
+ * window (for example "24h"). Maps keeps the common convention and bounds
+ * item-count queries so a feed request cannot become unbounded accidentally.
+ *
+ * @param mixed $limit
+ * @return array
+ */
+function MAPS_feedCollectionOptions($limit)
+{
+    $options = array('limit' => 10, 'order' => 'modified-desc');
+    $limit = trim((string) $limit);
+
+    if ($limit === '') {
+        return $options;
+    }
+
+    if (substr($limit, -1) === 'h') {
+        $hours = (int) substr($limit, 0, -1);
+        if ($hours > 0) {
+            $options['since'] = time() - ($hours * 3600);
+            $options['limit'] = 100;
+        }
+        return $options;
+    }
+
+    if (ctype_digit($limit)) {
+        $options['limit'] = max(1, min(100, (int) $limit));
+    }
+
+    return $options;
+}
+
+/**
+ * Expose Maps as a source in Geeklog Content Syndication.
+ *
+ * Maps currently exposes one canonical feed source containing all public,
+ * accessible maps. More specialized feeds should only be added when Maps gains
+ * a stable category/topic model that can be represented without plugin-specific
+ * syndication SQL.
+ *
+ * @return array
+ */
+function plugin_getfeednames_maps()
+{
+    global $LANG_MAPS_1;
+
+    $name = isset($LANG_MAPS_1['plugin_name']) ? $LANG_MAPS_1['plugin_name'] : 'Maps';
+
+    return array(
+        array('id' => 'all', 'name' => $name)
+    );
+}
+
+/**
+ * Supply Maps entries to Geeklog's RSS/Atom generator.
+ *
+ * @param int|string $feed
+ * @param string     $link
+ * @param string     $update
+ * @return array
+ */
+function plugin_getfeedcontent_maps($feed, &$link, &$update)
+{
+    global $_TABLES, $_MAPS_CONF;
+
+    $link = rtrim($_MAPS_CONF['site_url'], '/') . '/';
+    $update = '';
+
+    $feedId = (int) $feed;
+    if ($feedId <= 0) {
+        return array();
+    }
+
+    $result = DB_query(
+        "SELECT topic,limits,content_length FROM {$_TABLES['syndication']} WHERE fid=" . $feedId
+    );
+    $syndication = DB_fetchArray($result);
+    if (!is_array($syndication)) {
+        return array();
+    }
+
+    $source = isset($syndication['topic']) ? (string) $syndication['topic'] : 'all';
+    if ($source !== '' && $source !== 'all') {
+        return array();
+    }
+
+    $options = MAPS_feedCollectionOptions(isset($syndication['limits']) ? $syndication['limits'] : '');
+    $items = MAPS_contentQuery('*', 1, $options);
+    $contentLength = isset($syndication['content_length']) ? (int) $syndication['content_length'] : 0;
+    $entries = array();
+    $ids = array();
+
+    foreach ($items as $item) {
+        if (empty($item['id']) || empty($item['url'])) {
+            continue;
+        }
+
+        $summary = isset($item['description']) ? $item['description'] : '';
+        $summary = PLG_replaceTags($summary);
+        if ($contentLength > 1) {
+            $summary = COM_truncateHTML($summary, $contentLength, ' ...');
+        }
+
+        $entry = array(
+            'title' => isset($item['title']) ? $item['title'] : '',
+            'summary' => $summary,
+            'text' => $summary,
+            'link' => $item['url'],
+            'uid' => isset($item['uid']) ? (int) $item['uid'] : 0,
+            'author' => isset($item['author']) ? $item['author'] : '',
+            'date' => isset($item['date-modified']) ? (int) $item['date-modified'] : 0,
+            'format' => 'html'
+        );
+
+        if (function_exists('PLG_getFeedElementExtensions')) {
+            $entry['extensions'] = PLG_getFeedElementExtensions(
+                'maps',
+                (string) $item['id'],
+                '',
+                '',
+                'all',
+                $feedId
+            );
+        }
+
+        $entries[] = $entry;
+        $ids[] = (string) $item['id'];
+    }
+
+    $update = implode(',', $ids);
+
+    return $entries;
+}
+
+/**
+ * Tell Geeklog whether an existing Maps feed still represents current data.
+ *
+ * @param int|string $feed
+ * @param string     $topic
+ * @param string     $updateData
+ * @param string     $limit
+ * @param string     $updatedType
+ * @param string     $updatedTopic
+ * @param string     $updatedId
+ * @return bool true when current, false when regeneration is required
+ */
+function plugin_feedupdatecheck_maps(
+    $feed,
+    $topic,
+    $updateData,
+    $limit,
+    $updatedType = '',
+    $updatedTopic = '',
+    $updatedId = ''
+) {
+    if ($updatedType === 'maps' && $updatedId !== '') {
+        return false;
+    }
+
+    $items = MAPS_contentQuery('*', 1, MAPS_feedCollectionOptions($limit));
+    $ids = array();
+    foreach ($items as $item) {
+        if (isset($item['id'])) {
+            $ids[] = (string) $item['id'];
+        }
+    }
+
+    return implode(',', $ids) === (string) $updateData;
+}
+
+/**
+ * Native Geeklog XML Sitemap collector.
+ *
+ * This specialized collector deliberately returns only sitemap-specific data;
+ * general metadata remains owned by plugin_getiteminfo_maps().
+ *
+ * @param int $uid   User ID, normally 1 for anonymous sitemap generation
+ * @param int $limit Maximum number of items, 0 for no explicit limit
+ * @return array
+ */
+function plugin_collectSitemapItems_maps($uid = 1, $limit = 0)
+{
+    global $_TABLES;
+
+    $uid = (int) $uid;
+    $limit = (int) $limit;
+
+    $sql = "SELECT mid,modified FROM {$_TABLES['maps_maps']} "
+        . "WHERE active=1 AND hidden=0"
+        . COM_getPermSQL('AND', $uid, 2)
+        . " ORDER BY modified DESC, mid DESC";
+    if ($limit > 0) {
+        $sql .= ' LIMIT ' . $limit;
+    }
+
+    $result = DB_query($sql);
+    $items = array();
+    while ($row = DB_fetchArray($result)) {
+        if (!is_array($row) || empty($row['mid'])) {
+            continue;
+        }
+        $modified = isset($row['modified']) ? strtotime($row['modified']) : false;
+        $items[] = array(
+            'url' => MAPS_contentUrl((int) $row['mid']),
+            'date-modified' => ($modified === false ? 0 : $modified)
+        );
+    }
+
+    return $items;
+}
+
+/**
+ * Native Geeklog related-items callback.
+ *
+ * Geeklog's existing contract defines related items by topic. Maps has no
+ * plugin-specific topic column, so this callback uses Geeklog's shared
+ * topic_assignments table when Maps assignments exist. It returns no invented
+ * relations when no topic association has been made.
+ *
+ * @param array $tids Topic IDs
+ * @param int   $max  Maximum number of items
+ * @param int   $trim Maximum title length
+ * @return array Unix timestamp => clickable related-item link
+ */
+function plugin_getrelateditems_maps($tids, $max, $trim)
+{
+    global $_TABLES;
+
+    if (!is_array($tids) || empty($tids)) {
+        return array();
+    }
+
+    $safeTids = array();
+    foreach ($tids as $tid) {
+        $tid = trim((string) $tid);
+        if ($tid !== '') {
+            $safeTids[] = "'" . MAPS_dbEscape($tid) . "'";
+        }
+    }
+    if (empty($safeTids)) {
+        return array();
+    }
+
+    $max = max(1, min(100, (int) $max));
+    $trim = max(1, (int) $trim);
+
+    $sql = "SELECT DISTINCT m.mid,m.name,m.modified "
+        . "FROM {$_TABLES['maps_maps']} m "
+        . "INNER JOIN {$_TABLES['topic_assignments']} ta "
+        . "ON ta.type='maps' AND ta.id=m.mid "
+        . "WHERE ta.tid IN (" . implode(',', $safeTids) . ") "
+        . "AND m.active=1 AND m.hidden=0"
+        . COM_getPermSQL('AND', 0, 2, 'm')
+        . " ORDER BY m.modified DESC, m.mid DESC LIMIT " . $max;
+
+    $result = DB_query($sql);
+    $related = array();
+    while ($row = DB_fetchArray($result)) {
+        if (!is_array($row) || empty($row['mid'])) {
+            continue;
+        }
+        $title = MAPS_decodeStoredText(isset($row['name']) ? $row['name'] : '');
+        $title = COM_truncate($title, $trim, '...');
+        $timestamp = isset($row['modified']) ? strtotime($row['modified']) : false;
+        if ($timestamp === false || $timestamp <= 0) {
+            $timestamp = time();
+        }
+        while (isset($related[$timestamp])) {
+            $timestamp--;
+        }
+        $related[$timestamp] = COM_createLink(
+            htmlspecialchars($title, ENT_QUOTES, 'UTF-8'),
+            MAPS_contentUrl((int) $row['mid'])
+        );
+    }
+
+    return $related;
+}
