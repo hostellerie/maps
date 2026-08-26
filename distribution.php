@@ -49,11 +49,6 @@ function MAPS_feedCollectionOptions($limit)
 /**
  * Expose Maps as a source in Geeklog Content Syndication.
  *
- * Maps currently exposes one canonical feed source containing all public,
- * accessible maps. More specialized feeds should only be added when Maps gains
- * a stable category/topic model that can be represented without plugin-specific
- * syndication SQL.
- *
  * @return array
  */
 function plugin_getfeednames_maps()
@@ -113,11 +108,11 @@ function plugin_getfeedcontent_maps($feed, &$link, &$update)
 
         $summary = isset($item['description']) ? $item['description'] : '';
         $summary = PLG_replaceTags($summary);
-        if ($contentLength > 1) {
+        if ($contentLength > 1 && function_exists('COM_truncateHTML')) {
             $summary = COM_truncateHTML($summary, $contentLength, ' ...');
         }
 
-        $entry = array(
+        $entries[] = array(
             'title' => isset($item['title']) ? $item['title'] : '',
             'summary' => $summary,
             'text' => $summary,
@@ -127,19 +122,6 @@ function plugin_getfeedcontent_maps($feed, &$link, &$update)
             'date' => isset($item['date-modified']) ? (int) $item['date-modified'] : 0,
             'format' => 'html'
         );
-
-        if (function_exists('PLG_getFeedElementExtensions')) {
-            $entry['extensions'] = PLG_getFeedElementExtensions(
-                'maps',
-                (string) $item['id'],
-                '',
-                '',
-                'all',
-                $feedId
-            );
-        }
-
-        $entries[] = $entry;
         $ids[] = (string) $item['id'];
     }
 
@@ -187,8 +169,8 @@ function plugin_feedupdatecheck_maps(
 /**
  * Native Geeklog XML Sitemap collector.
  *
- * This specialized collector deliberately returns only sitemap-specific data;
- * general metadata remains owned by plugin_getiteminfo_maps().
+ * General metadata remains owned by plugin_getiteminfo_maps(); this callback
+ * supplies the optimized sitemap-specific representation requested by core.
  *
  * @param int $uid   User ID, normally 1 for anonymous sitemap generation
  * @param int $limit Maximum number of items, 0 for no explicit limit
@@ -228,10 +210,9 @@ function plugin_collectSitemapItems_maps($uid = 1, $limit = 0)
 /**
  * Native Geeklog related-items callback.
  *
- * Geeklog's existing contract defines related items by topic. Maps has no
- * plugin-specific topic column, so this callback uses Geeklog's shared
- * topic_assignments table when Maps assignments exist. It returns no invented
- * relations when no topic association has been made.
+ * Geeklog's current related-items contract is topic based. Maps therefore uses
+ * the shared topic_assignments table when Maps topic assignments exist and
+ * returns no invented relationship when none exists.
  *
  * @param array $tids Topic IDs
  * @param int   $max  Maximum number of items
