@@ -126,6 +126,7 @@ switch ($mode) {
     case 'map':
         if ($mid > 0) {
             $content .= MAPS_getMap($mid);
+            $content .= MAPS_renderMapStatistics($mid, true);
             $content .= MAPS_ListMarkers($mid);
         } else {
             $content .= MAPS_getGlobalMap();
