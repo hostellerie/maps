@@ -184,4 +184,5 @@ $_TABLES['maps_map_overlay'] = $_DB_table_prefix . 'maps_map_overlay';
 $_TABLES['maps_map_icons'] = $_DB_table_prefix . 'maps_map_icons';
 $_TABLES['maps_overlays_groups'] = $_DB_table_prefix . 'maps_overlays_groups';
 
+require_once $_CONF['path'] . 'plugins/maps/interoperability.php';
 require_once $_CONF['path'] . 'plugins/maps/integrations.php';
