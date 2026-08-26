@@ -383,3 +383,52 @@ div.tabs > div h2 {
     .maps-marker-meta > div { margin-top: .35rem; }
     .maps-marker-meta-actions { margin-left: 0; }
 }
+
+/* Maps 1.5.7 public and native statistics */
+.maps-statistics {
+    margin: 1.25rem 0;
+}
+.maps-statistics-title {
+    margin: 0 0 .7rem;
+    font-size: 1.15rem;
+}
+.maps-statistics-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .7rem;
+}
+.maps-stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+    min-width: 0;
+    padding: .8rem .9rem;
+    border: 1px solid rgba(127,127,127,.28);
+    border-radius: 7px;
+    background: rgba(127,127,127,.05);
+}
+.maps-stat-value {
+    font-size: 1.4rem;
+    line-height: 1.15;
+}
+.maps-stat-label {
+    opacity: .78;
+    font-size: .9em;
+}
+.maps-stats-list {
+    margin: .5rem 0;
+}
+.maps-stats-hits {
+    white-space: nowrap;
+    opacity: .75;
+}
+@media (max-width: 760px) {
+    .maps-statistics-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 420px) {
+    .maps-statistics-cards {
+        grid-template-columns: 1fr;
+    }
+}
