@@ -2,7 +2,7 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.5.6                                                         |
+// | Maps Plugin 1.5.7                                                         |
 // +---------------------------------------------------------------------------+
 // | map_edit.php                                                              |
 // +---------------------------------------------------------------------------+
@@ -208,9 +208,15 @@ $mid = isset($_REQUEST['mid']) ? (int) $_REQUEST['mid'] : 0;
 $content = MAPS_admin_menu();
 
 if ($mode === 'delete' && $mid > 0) {
+    $mapExisted = (int) DB_count($_TABLES['maps_maps'], 'mid', $mid) > 0;
     DB_delete($_TABLES['maps_maps'], 'mid', $mid);
     DB_delete($_TABLES['maps_markers'], 'mid', $mid);
     DB_delete($_TABLES['maps_map_overlay'], 'mo_mid', $mid);
+    if ($mapExisted && (int) DB_count($_TABLES['maps_maps'], 'mid', $mid) === 0
+        && function_exists('PLG_itemDeleted')
+    ) {
+        PLG_itemDeleted($mid, 'maps');
+    }
     echo COM_refresh($_CONF['site_admin_url'] . '/plugins/maps/index.php');
     exit;
 }
@@ -344,6 +350,10 @@ if ($mode === 'save') {
             $content .= getMapForm(array_merge($post, array('mid' => $mid)));
             COM_output(COM_createHTMLDocument($content, array('pagetitle' => $LANG_MAPS_1['plugin_name'])));
             exit;
+        }
+
+        if (function_exists('PLG_itemSaved')) {
+            PLG_itemSaved($mid, 'maps');
         }
 
         echo COM_refresh($_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=edit&mid=' . (int) $mid);
