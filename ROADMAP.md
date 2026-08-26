@@ -14,8 +14,28 @@ The current modernization target is:
 - Existing Maps data and URLs preserved whenever practical
 - Safe upgrade path from historical Maps installations
 - Progressive UI/UX modernization without introducing a plugin-specific CSS framework
+- Compliance with the Geeklog Plugin Content Interoperability Contract defined in `hostellerie/memorandum/plugin-content-interoperability-contract.md`
 
-The current development line is **1.5.x**. A future **2.0** may introduce deeper architectural changes that are intentionally out of scope for the stabilization release.
+The current development line is **1.5.x** and is currently identified as **1.5.7** in the plugin metadata. A future **2.0** may introduce deeper architectural changes that are intentionally out of scope for the stabilization release.
+
+---
+
+## Release assessment
+
+The modernization branch is already a substantial rewrite of the historical Maps 1.4 codebase and is close to a release-candidate stage in several technical areas.
+
+However, the next public release should not be proposed as stable yet.
+
+The principal remaining release gates are:
+
+1. complete the **P1 content interoperability baseline**;
+2. finish security and runtime audits;
+3. validate upgrades from representative legacy installations;
+4. complete the Geeklog 2.1.1 / 2.2.2 functional matrix;
+5. verify packaging and version consistency;
+6. run an RC period focused on regressions rather than new features.
+
+The interoperability work is deliberately part of **1.5.x**, not postponed to 2.0, because it provides a small stable public surface without requiring a data-layer rewrite.
 
 ---
 
@@ -29,11 +49,15 @@ The current development line is **1.5.x**. A future **2.0** may introduce deeper
 | Configuration cleanup | ~90% | High |
 | Security hardening | ~80–85% | Critical |
 | Public/admin runtime stability | ~80–85% | Critical |
+| Plugin content interoperability | ~25% | **Critical / release gate** |
+| What’s New / statistics integration | ~85–90% | High |
 | UI / UX modernization | ~65–70% | High |
 | Documentation | ~80% | Medium |
 | Test matrix / release validation | ~55–60% | Critical |
 
 Percentages are directional indicators, not release guarantees.
+
+The interoperability percentage reflects that Maps already has useful permission-aware recent-content query logic for What’s New, but does not yet expose the P1 structured contract required by the memorandum.
 
 ---
 
@@ -100,9 +124,218 @@ Exit criteria:
 
 ---
 
-# Phase 2 — Configuration and upgrade stabilization
+# Phase 2 — Content interoperability baseline
 
-## 3. Configuration cleanup
+Status: **Required before RC1**
+
+Maps must comply with the common Geeklog Plugin Content Interoperability Contract so Hello, Hub, IndexNow, Sitemap, Search, recommendations and future consumers can reuse Maps content without reading Maps tables directly.
+
+This phase should stay intentionally small and compatibility-oriented. It must not become a new Maps-specific service API.
+
+## 3. Structured Item Info — P1
+
+Implement:
+
+```php
+function plugin_getiteminfo_maps($id, $what, $uid = 0, $options = array())
+```
+
+For an addressable map, expose at minimum:
+
+```text
+id
+title
+url
+description or excerpt
+date-created
+date-modified
+```
+
+Where practical also expose:
+
+```text
+uid
+author
+type
+subtype
+```
+
+Recommended identity values:
+
+```text
+type = maps
+subtype = map
+```
+
+The plugin remains responsible for permissions, SQL structure, routing and formatting.
+
+Consumers must never need to know that Maps stores identifiers in `mid`, titles in `name`, or dates in internal table fields.
+
+### Implementation rule
+
+Do not duplicate the permission-aware recent-map query already used by What’s New.
+
+Create or reuse an internal Maps query/helper layer that can serve both:
+
+- `plugin_getiteminfo_maps()` structured results;
+- `plugin_getwhatsnew_maps()` presentation HTML.
+
+This keeps What’s New as a renderer while Item Info becomes the normalized data contract.
+
+## 4. Collection retrieval — P1
+
+Support:
+
+```php
+$id = '*';
+```
+
+When `'*'` is requested, return an array of normalized map records.
+
+Initial common options:
+
+```php
+$options = array(
+    'since' => $timestamp,
+    'limit' => 20,
+    'order' => 'modified-desc'
+);
+```
+
+Required initial behavior:
+
+- `since` — maps created or modified at or after the supplied timestamp;
+- `limit` — bounded maximum result count;
+- `order` — at least `modified-desc` and `created-desc`;
+- current-user permission filtering;
+- exclude inactive/hidden maps from ordinary public collection queries.
+
+Future filters such as `ids`, `author`, `category` or subtype should wait until a concrete consumer needs them.
+
+## 5. Lifecycle events — P1
+
+After every successful map creation or update, emit:
+
+```php
+PLG_itemSaved($map_id, 'maps');
+```
+
+After every successful map deletion, emit:
+
+```php
+PLG_itemDeleted($map_id, 'maps');
+```
+
+Audit **all mutation paths**, including:
+
+- normal administration save;
+- alternate edit paths;
+- import routines if they create/update addressable maps;
+- any future service or batch operation.
+
+The event must be emitted only after the corresponding database mutation succeeds.
+
+### Marker events
+
+Markers are useful interoperable content, but they should not block the first 1.5 interoperability baseline unless a consumer immediately needs them.
+
+Recommended sequence:
+
+1. make **maps** fully interoperable first;
+2. model marker support as `subtype = marker` after the map contract is stable;
+3. preserve nullable subtype compatibility for older Geeklog lifecycle APIs.
+
+## 6. Canonical item URL resolution — P2
+
+For Geeklog versions that support the callback, implement:
+
+```php
+function plugin_idtourl_maps($sub_type, $item_id)
+```
+
+Initial behavior:
+
+- `map` or empty/legacy subtype resolves to the canonical map URL;
+- future `marker` subtype may resolve marker detail URLs;
+- unsupported subtype returns a safe failure value rather than guessing.
+
+`plugin_getiteminfo_maps(..., 'url', ...)` remains mandatory as the compatibility fallback across Geeklog 2.1.1–2.2.2.
+
+## 7. Preserve What’s New as presentation — already substantially implemented
+
+Maps already implements:
+
+```php
+plugin_whatsnewsupported_maps()
+plugin_getwhatsnew_maps()
+```
+
+Keep this capability.
+
+Refactor it so the presentation code consumes the same underlying permission-aware content retrieval used by Item Info where practical.
+
+Do not make Hello, Hub or IndexNow parse What’s New HTML.
+
+## 8. Interoperability tests
+
+Add explicit tests to the release checklist:
+
+Single item:
+
+```php
+PLG_getItemInfo('maps', $map_id, 'id,title,url,excerpt,date-modified');
+```
+
+Collection:
+
+```php
+PLG_getItemInfo(
+    'maps',
+    '*',
+    'id,title,url,excerpt,date-modified',
+    0,
+    array('since' => $timestamp, 'limit' => 20, 'order' => 'modified-desc')
+);
+```
+
+Lifecycle:
+
+- create a map → one save notification;
+- edit a map → one save notification;
+- delete a map → one delete notification;
+- failed save/delete → no lifecycle notification.
+
+Permissions:
+
+- anonymous user does not receive private maps;
+- authenticated users receive only maps they can access;
+- collection results obey the same visibility rules as direct item retrieval.
+
+URL resolution:
+
+- canonical URL from Item Info matches the public Maps route;
+- `plugin_idtourl_maps()` matches Item Info where supported.
+
+### Interoperability exit criteria
+
+Before RC1, all of the following must be true:
+
+- `plugin_getiteminfo_maps()` implemented;
+- single-map metadata implemented;
+- `'*'` collection implemented;
+- `since`, `limit`, `order` implemented;
+- permission behavior validated;
+- `PLG_itemSaved()` added to all relevant map save/update paths;
+- `PLG_itemDeleted()` added to all relevant map delete paths;
+- canonical URL available through Item Info;
+- `plugin_idtourl_maps()` implemented for supported Geeklog versions or explicitly compatibility-guarded;
+- What’s New still works after query refactoring.
+
+---
+
+# Phase 3 — Configuration and upgrade stabilization
+
+## 9. Configuration cleanup
 
 Status: **In progress**
 
@@ -118,6 +351,7 @@ Configuration organization:
 - Maps
 - Markers
 - Marker fields
+- Integrations and statistics
 
 Completed / planned configurable values include:
 
@@ -133,6 +367,8 @@ Completed / planned configurable values include:
 - Default map colors
 - Image upload limits
 - Permissions and marker field visibility
+- What’s New enable/interval/limit settings
+- administration/public statistics settings
 
 Keep internal unless a real use case appears:
 
@@ -149,7 +385,7 @@ Remaining:
 - Verify restored-default behavior after configuration migration.
 - Verify configuration rendering on both Geeklog 2.1.1 and 2.2.2.
 
-## 4. Upgrade and legacy preservation
+## 10. Upgrade and legacy preservation
 
 Status: **In progress**
 
@@ -177,7 +413,7 @@ Exit criteria:
 
 ---
 
-# Phase 3 — Security and data hardening
+# Phase 4 — Security and data hardening
 
 Status: **High priority before RC**
 
@@ -193,6 +429,8 @@ Audit and fix:
 - Import/export input validation.
 - SQL values and identifier validation.
 - Geocoding input/output handling.
+- Interoperability callbacks must not bypass existing permission rules.
+- Collection queries must use bounded limits and validated sort modes.
 
 Already completed:
 
@@ -205,16 +443,17 @@ Exit criteria:
 
 - No known high-risk input path remains unchecked.
 - Destructive actions require appropriate rights and request validation.
+- Item Info cannot expose inaccessible content.
 
 ---
 
-# Phase 4 — UI / UX modernization
+# Phase 5 — UI / UX modernization
 
 Status: **Major remaining product-quality phase**
 
 The goal is not a visual rewrite. The goal is to make Maps easier to understand and faster to operate while remaining compatible with Geeklog themes.
 
-## 5. Administration navigation
+## 11. Administration navigation
 
 Improve the Maps administration home page so the main workflows are immediately visible:
 
@@ -238,7 +477,7 @@ Dashboard information worth exposing:
 
 Avoid displaying low-value technical statistics.
 
-## 6. Map edit form
+## 12. Map edit form
 
 Reorganize into clear sections:
 
@@ -258,7 +497,7 @@ Improvements:
 - advanced options collapsed by default
 - consistent save/cancel actions
 
-## 7. Marker edit form
+## 13. Marker edit form
 
 Reorganize into:
 
@@ -278,7 +517,7 @@ Improvements:
 - clearer handling of the additional-contact field
 - preserve form values after validation errors
 
-## 8. Lists
+## 14. Lists
 
 Modernize map and marker lists with:
 
@@ -297,7 +536,7 @@ Candidate convenience actions:
 - duplicate marker
 - quickly enable/disable an item where the data model permits it
 
-## 9. Public map experience
+## 15. Public map experience
 
 Keep the map visually dominant.
 
@@ -321,7 +560,7 @@ Exit criteria for the 1.5 stable release:
 
 ---
 
-# Phase 5 — Functional test matrix
+# Phase 6 — Functional test matrix
 
 Status: **Required before RC**
 
@@ -350,6 +589,8 @@ Public:
 - profile map
 - autotags: `maps`, `geo`, `marker`
 - event map integration
+- What’s New Maps section
+- public statistics when enabled
 
 Administration:
 
@@ -362,6 +603,19 @@ Administration:
 - geolocation refresh
 - import/export
 - configuration and every configuration tab
+- administration statistics when enabled
+
+Interoperability:
+
+- Item Info single map
+- Item Info collection
+- `since`, `limit`, `modified-desc`, `created-desc`
+- permission filtering
+- save/update lifecycle notification
+- delete lifecycle notification
+- Item Info URL fallback
+- `plugin_idtourl_maps()` on supported core versions
+- What’s New after interoperability refactor
 
 Data cases:
 
@@ -390,10 +644,11 @@ Exit criteria:
 - No Maps JavaScript syntax/runtime error.
 - No unintended data loss.
 - No regression between Geeklog 2.1.1 and 2.2.2.
+- No interoperability callback exposes content that the current user cannot access.
 
 ---
 
-# Phase 6 — Documentation and release preparation
+# Phase 7 — Documentation, packaging and release preparation
 
 ## Documentation
 
@@ -406,21 +661,73 @@ Before RC:
 - Document geocoding and user geolocation behavior.
 - Document legacy `/cartes/` → `/maps/` behavior.
 - Add a short troubleshooting section for grey maps / API failures.
+- Document the Maps interoperability capabilities for plugin developers.
+- Link to the common Plugin Content Interoperability Contract rather than duplicating it in full.
+
+## Packaging/version consistency
+
+Before RC1:
+
+- verify every plugin header and metadata location reports the same version;
+- verify `functions.inc`, `maps.php`, `autoinstall.php`, upgrade metadata and package name agree;
+- verify packaged archive root layout;
+- verify removed legacy assets are not accidentally shipped;
+- verify required new files such as `integrations.php` are included;
+- run package installation from the generated archive, not only from a Git checkout;
+- confirm PHP lint workflow results for the exact RC commit.
+
+Current note:
+
+- plugin metadata is already on **1.5.7**;
+- at least one source-file header may still carry an earlier 1.5.x identifier and should be normalized before release packaging.
 
 ## Release sequence
 
 Preferred sequence:
 
-1. Finish 1.5.x runtime fixes.
-2. Complete UI/UX pass.
+1. Complete the interoperability P1 baseline.
+2. Finish remaining 1.5.x runtime fixes.
 3. Complete security sweep.
-4. Complete 2.1.1 functional matrix.
-5. Complete 2.2.2 functional matrix.
-6. Release `1.5.x-rc1`.
-7. Fix RC feedback only; avoid feature growth.
-8. Release stable.
+4. Complete upgrade validation.
+5. Complete essential UI/UX pass.
+6. Complete 2.1.1 functional matrix.
+7. Complete 2.2.2 functional matrix.
+8. Verify package/version consistency.
+9. Release `1.5.x-rc1`.
+10. Fix RC feedback only; avoid feature growth.
+11. Release stable.
 
 A stable release should not be declared solely because PHP lint passes; runtime validation on the supported Geeklog environments is required.
+
+---
+
+# Proposed release gates
+
+## Must be complete for RC1
+
+- P1 interoperability contract
+- no known critical/high security issue
+- successful upgrade from at least one representative Maps 1.4 installation
+- clean PHP lint/package workflow
+- no known fatal error on supported Geeklog targets
+- key public/admin workflows usable
+- version/package consistency
+
+## May be completed during RC if non-blocking
+
+- small UI polish
+- secondary accessibility improvements
+- documentation refinements
+- low-risk warning cleanup on uncommon paths
+
+## Must not delay 1.5 stable
+
+- marker-level interoperability unless required by an immediate consumer
+- advanced recommendations
+- new specialized service APIs
+- AdvancedMarkerElement migration
+- architectural repository/service rewrite
+- major schema redesign
 
 ---
 
@@ -440,6 +747,19 @@ Possible 2.0 work:
 - review SQL schema and indexes
 - automated upgrade tests
 - broader integration test coverage
+
+The 1.5 interoperability helpers should be designed so they can later call a cleaner 2.0 data layer without changing the public Geeklog callback contract.
+
+## Interoperability 2.0 candidates
+
+After the map-level contract is stable:
+
+- marker Item Info using `subtype = marker`;
+- marker lifecycle events;
+- related map/marker discovery;
+- `plugin_getrelateditems_maps()` where Hub/recommendations have a concrete use case;
+- richer image/category metadata;
+- optional specialized services only for actions that cannot be represented by Item Info.
 
 ## Google Maps next generation
 
@@ -463,10 +783,14 @@ These changes should be introduced only when compatibility implications are unde
 
 ---
 
-# Development rule
+# Development rules
 
 Until the stable 1.5 release:
 
-> Prefer stabilization, compatibility, data preservation and usability improvements over architectural rewrites or feature expansion.
+> Prefer stabilization, compatibility, data preservation, interoperability and usability improvements over architectural rewrites or feature expansion.
 
 When a runtime issue is found, fix the underlying pattern and audit the same pattern elsewhere instead of applying a page-specific workaround.
+
+For interoperability specifically:
+
+> The Maps plugin remains the authority for Maps content. Other plugins should consume normalized Geeklog callbacks and must not depend on Maps SQL tables, column names, internal paths or routing implementation.
