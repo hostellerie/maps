@@ -72,8 +72,8 @@
 				<option value="0"{validity_no}>{no}</option>
 				<option value="1"{validity_yes}>{yes}</option>
 				</select>
-				&nbsp;&nbsp;&nbsp;{from_label} <input type="text" id="from" name="from" value="{from}" size="14" maxlength="12"{disabled}>
-				&nbsp;&nbsp;&nbsp;{to_label}  <input type="text" id="to" name="to" value="{to}" size="14" maxlength="12"{disabled}></p>
+				&nbsp;&nbsp;&nbsp;{from_label} <input type="date" id="from" name="from" value="{from}" size="14" maxlength="12"{disabled}>
+				&nbsp;&nbsp;&nbsp;{to_label}  <input type="date" id="to" name="to" value="{to}" size="14" maxlength="12"{disabled}></p>
 				<p><a class="maps-section-toggle" onClick="elementToggle('remark_panel'); return false;" href="#">{remark_label}</a></p>
 				<div id="remark_panel" style="display:none">
 				    <textarea rows="5" id="remark" name="remark" cols="51" style="width:99%">{remark}</textarea>

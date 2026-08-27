@@ -323,19 +323,19 @@ function getMarkerForm($marker = array()) {
 		
 		$template->set_var('from_label', $LANG_MAPS_1['from']);
 		if ($marker['validity_start'] != '') {
-			$datefrom = date("m/d/Y", strtotime($marker['validity_start']));
+			$datefrom = date("Y-m-d", strtotime($marker['validity_start']));
 			$template->set_var('from', $datefrom);
 		} else {
-		$datefrom = date("m/d/Y");
+		$datefrom = date("Y-m-d");
 		$template->set_var('from', $datefrom);
 		}
 		
 		$template->set_var('to_label', $LANG_MAPS_1['to']);
 		if ($marker['validity_end'] != '') {
-			$dateto = date("m/d/Y", strtotime($marker['validity_end']));
+			$dateto = date("Y-m-d", strtotime($marker['validity_end']));
 			$template->set_var('to', $dateto);
 		} else {
-		$dateto = date("m/d/Y");
+		$dateto = date("Y-m-d");
 		$template->set_var('to', $dateto);
 		}
 		
@@ -504,13 +504,6 @@ function getMarkerForm($marker = array()) {
 	$_SCRIPTS->setJavaScriptLibrary('jquery');
 	$deleteConfirmJs = MAPS_jsString(isset($LANG_MAPS_1['delete_confirm']) ? $LANG_MAPS_1['delete_confirm'] : 'Delete this marker?');
 	$js = LB . '<script type="text/javascript">
-	jQuery(document).ready(
-        function()
-        {
-			$( "#from" ).datepicker();
-		    $( "#to" ).datepicker();
-        });
-		
 		function changeValidity()
 		{
 		  if (document.getElementById(\'validity\').value == 0){
@@ -534,7 +527,7 @@ function getMarkerForm($marker = array()) {
 		});
 		
 		
-		var geocoder = new google.maps.Geocoder();
+		var geocoder = null;
 		var map;
 		var editMarker;
 
@@ -557,7 +550,19 @@ function getMarkerForm($marker = array()) {
 			}
 		}
 
-		function initializeGMap() {
+		function initializeGMap(attempt) {
+			if (typeof window.google === "undefined" || !google.maps
+			    || typeof google.maps.Map !== "function"
+			    || typeof google.maps.Marker !== "function"
+			    || typeof google.maps.Geocoder !== "function"
+			    || !google.maps.MapTypeId || !google.maps.event) {
+				if (attempt < 120) {
+					window.setTimeout(function () { initializeGMap(attempt + 1); }, 100);
+				}
+				return;
+			}
+			if (map) { return; }
+			geocoder = new google.maps.Geocoder();
 			var initialPosition = {lat:Number(' . MAPS_jsNumber($marker['lat'], 0) . '), lng:Number(' . MAPS_jsNumber($marker['lng'], 0) . ')};
 			var mapOptions = {
 			  center: initialPosition,
@@ -583,11 +588,15 @@ function getMarkerForm($marker = array()) {
 			});
 		}
 
-		if (document.readyState === "complete") { initializeGMap(); } else { window.addEventListener("load", initializeGMap); }
+		if (document.readyState === "complete") { initializeGMap(0); } else { window.addEventListener("load", function () { initializeGMap(0); }); }
 
 		function codeAddress() {
 		  var address = document.getElementById("geoaddress").value;
 		  if (!address) {
+			return;
+		  }
+		  if (!geocoder) {
+			initializeGMap(0);
 			return;
 		  }
 		  geocoder.geocode({"address": address}, function(results, status) {
@@ -667,8 +676,6 @@ function getMarkerForm($marker = array()) {
 		</script>' . LB. LB;
 		
 	$_SCRIPTS->setJavaScript($js, false);
-	$_SCRIPTS->setJavaScriptFile('ui_core', '/javascript/jquery_ui/jquery.ui.core.min.js');
-	$_SCRIPTS->setJavaScriptFile('datepicker', '/javascript/jquery_ui/jquery.ui.datepicker.min.js');
 
     return $display;
 }

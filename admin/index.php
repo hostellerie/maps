@@ -88,10 +88,8 @@ function MAPS_listmaps()
         return $retval = '';
     }
 
-    $viewLabel = isset($LANG_ADMIN['view']) ? $LANG_ADMIN['view'] : 'View';
     $header_arr = array(      // display 'text' and use table field 'field'
         array('text' => $LANG_ADMIN['edit'], 'field' => 'edit', 'sort' => false),
-        array('text' => $viewLabel, 'field' => 'view', 'sort' => false),
         array('text' => $LANG_MAPS_1['id'], 'field' => 'mid', 'sort' => true),
         array('text' => $LANG_MAPS_1['name'], 'field' => 'name', 'sort' => true)
     );
@@ -144,19 +142,6 @@ function plugin_getListField_maps($fieldname, $fieldvalue, $A, $icon_arr)
         case "edit":
             $retval = COM_createLink($icon_arr['edit'],
                 "{$_CONF['site_admin_url']}/plugins/maps/map_edit.php?mode=edit&mid={$A['mid']}");
-            break;
-        case "view":
-            $viewUrl = rtrim($_MAPS_CONF['site_url'], '/')
-                . '/index.php?mode=map&mid=' . (int) $A['mid'];
-            $viewLabel = isset($LANG_ADMIN['view']) ? $LANG_ADMIN['view'] : 'View';
-            $retval = COM_createLink(
-                '&#8599;',
-                $viewUrl,
-                array(
-                    'title' => htmlspecialchars($viewLabel, ENT_QUOTES, 'UTF-8'),
-                    'aria-label' => htmlspecialchars($viewLabel, ENT_QUOTES, 'UTF-8')
-                )
-            );
             break;
         case "name":
             $map_title = MAPS_decodeStoredText($A['name']);
