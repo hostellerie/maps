@@ -1,0 +1,41 @@
+name: Fix Maps 1.5.8 infos_label upgrade
+
+on:
+  push:
+    branches:
+      - modernize/maps-1.5
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modernize/maps-1.5
+          fetch-depth: 0
+      - name: Sync branch
+        run: git pull --rebase origin modernize/maps-1.5
+      - name: Apply upgrade fix
+        run: python3 tools/fix-infos-label-upgrade-1.5.8.py
+      - name: Validate
+        run: |
+          grep -q "function MAPS_cleanupConfig158" functions.inc
+          grep -q "version_compare(\$installed, '1.5.8', '<')" functions.inc
+          grep -q "obsolete infos_label configuration removed" functions.inc
+          php -l functions.inc
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add functions.inc RELEASE-NOTES-1.5.8.md
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Fix Maps 1.5.8 infos_label upgrade cleanup [skip ci]'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin modernize/maps-1.5
+            if git push origin HEAD:modernize/maps-1.5; then exit 0; fi
+            sleep 2
+          done
+          exit 1
