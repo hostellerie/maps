@@ -7,6 +7,7 @@
 <div id="map_infos" class="maps-map-editor-panel">
 <form id="map_form" action="{site_admin_url}/plugins/maps/map_edit.php" enctype="multipart/form-data" method="POST">
 {mid}
+{csrf_token}
 
 <fieldset><legend><b>{informations}</b></legend>
 <div class="maps-form-grid">
