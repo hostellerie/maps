@@ -18,7 +18,7 @@ function MAPS_serviceRejectWeb($args, &$svc_msg)
     return false;
 }
 
-function MAPS_serviceMarkerRow($markerId, $publicOnly = true)
+function MAPS_serviceMarkerRow($markerId, $publicOnly = true, $checkAccess = true)
 {
     global $_TABLES;
     $markerId = (string) $markerId;
@@ -33,9 +33,11 @@ function MAPS_serviceMarkerRow($markerId, $publicOnly = true)
         return false;
     }
     $row = DB_fetchArray($res);
-    $access = SEC_hasAccess((int)$row['owner_id'], (int)$row['group_id'], (int)$row['perm_owner'], (int)$row['perm_group'], (int)$row['perm_members'], (int)$row['perm_anon']);
-    if ($access < 2) {
-        return false;
+    if ($checkAccess) {
+        $access = SEC_hasAccess((int)$row['owner_id'], (int)$row['group_id'], (int)$row['perm_owner'], (int)$row['perm_group'], (int)$row['perm_members'], (int)$row['perm_anon']);
+        if ($access < 2) {
+            return false;
+        }
     }
     if ($publicOnly && ((int)$row['active'] !== 1 || (int)$row['hidden'] === 1)) {
         return false;
@@ -171,7 +173,7 @@ function MAPS_serviceApplyValidity($args, $extend, &$output, &$svc_msg)
     $output=array(); $svc_msg=array();
     if (MAPS_serviceRejectWeb($args, $svc_msg)) return PLG_RET_AUTH_FAILED;
     $markerId=(string)MAPS_arrayGet($args,'marker_id','');
-    $row=MAPS_serviceMarkerRow($markerId,false);
+    $row=MAPS_serviceMarkerRow($markerId,false,false);
     if ($row===false) { $svc_msg['error_desc']='Marker not found or not accessible.'; return PLG_RET_ERROR; }
     $action=$extend?'marker_extend_validity':'marker_set_validity';
     $duplicate=false;
@@ -194,7 +196,7 @@ function MAPS_serviceApplyValidity($args, $extend, &$output, &$svc_msg)
     DB_query("UPDATE {$_TABLES['maps_markers']} SET validity=1,validity_start='".date('Y-m-d H:i:s',$start)."',validity_end='".date('Y-m-d H:i:s',$end)."',payed=".$paid.",modified='".date('Y-m-d H:i:s')."' WHERE mkid='".MAPS_dbEscape($markerId)."'");
     if (DB_error()) { MAPS_serviceOperationRollback($args); $svc_msg['error_desc']='Unable to update marker validity.'; return PLG_RET_ERROR; }
     updateMap((int)$row['mid']);
-    $updated=MAPS_serviceMarkerRow($markerId,false);
+    $updated=MAPS_serviceMarkerRow($markerId,false,false);
     $output=MAPS_serviceMarkerData($updated);
     $output['idempotent']=false;
     return PLG_RET_OK;
