@@ -15,14 +15,112 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: modernize/maps-1.5
+
       - name: Apply fixes
+        shell: bash
         run: |
-          printf '%s' 'CmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAoKcD1QYXRoKCJhZG1pbi9pbmRleC5waHAiKQpzPXAucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpCnM9cy5yZXBsYWNlKCIgICAgJHZpZXdMYWJlbCA9IGlzc2V0KCRMQU5HX0FETUlOWyd2aWV3J10pID8gJExBTkdfQURNSU5bJ3ZpZXcnXSA6ICdWaWV3JztcbiIsIiIpCnM9cy5yZXBsYWNlKCIgICAgICAgIGFycmF5KCd0ZXh0JyA9PiAkdmlld0xhYmVsLCAnZmllbGQnID0+ICd2aWV3JywgJ3NvcnQnID0+IGZhbHNlKSxcbiIsIiIpCmE9cy5maW5kKCcgICAgICAgIGNhc2UgInZpZXciOicpCmI9cy5maW5kKCcgICAgICAgIGNhc2UgIm5hbWUiOicsIGEpCmlmIGEhPS0xIGFuZCBiIT0tMToKICAgIHM9c1s6YV0rc1tiOl0KcC53cml0ZV90ZXh0KHMsZW5jb2Rpbmc9InV0Zi04IikKCnA9UGF0aCgidGVtcGxhdGVzL21hcmtlcl9mb3JtLnRodG1sIikKcz1wLnJlYWRfdGV4dChlbmNvZGluZz0idXRmLTgiKQpzPXMucmVwbGFjZSgndHlwZT0idGV4dCIgaWQ9ImZyb20iIG5hbWU9ImZyb20iJywndHlwZT0iZGF0ZSIgaWQ9ImZyb20iIG5hbWU9ImZyb20iJykKcz1zLnJlcGxhY2UoJ3R5cGU9InRleHQiIGlkPSJ0byIgbmFtZT0idG8iJywndHlwZT0iZGF0ZSIgaWQ9InRvIiBuYW1lPSJ0byInKQpwLndyaXRlX3RleHQocyxlbmNvZGluZz0idXRmLTgiKQoKcD1QYXRoKCJhZG1pbi9tYXJrZXJfZWRpdC5waHAiKQpzPXAucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpCnM9cy5yZXBsYWNlKCdkYXRlKCJtL2QvWSIsIHN0cnRvdGltZSgkbWFya2VyW1xcJ3ZhbGlkaXR5X3N0YXJ0XFwnXSkpJywnZGF0ZSgiWS1tLWQiLCBzdHJ0b3RpbWUoJG1hcmtlcltcXCd2YWxpZGl0eV9zdGFydFxcJ10pKScpCnM9cy5yZXBsYWNlKCdkYXRlKCJtL2QvWSIsIHN0cnRvdGltZSgkbWFya2VyW1xcJ3ZhbGlkaXR5X2VuZFxcJ10pKScsJ2RhdGUoIlktbS1kIiwgc3RydG90aW1lKCRtYXJrZXJbXFwndmFsaWRpdHlfZW5kXFwnXSkpJykKcz1zLnJlcGxhY2UoJ2RhdGUoIm0vZC9ZIiknLCdkYXRlKCJZLW0tZCIpJykKc3RhcnQ9cy5maW5kKCJcdCRfU0NSSVBUUy0+c2V0SmF2YVNjcmlwdExpYnJhcnkoJ2pxdWVyeScpO1xuXHQkZGVsZXRlQ29uZmlybUpzIikKZW5kbT0iXG5cdCRfU0NSSVBUUy0+c2V0SmF2YVNjcmlwdEZpbGUoJ2RhdGVwaWNrZXInLCAnL2phdmFzY3JpcHQvanF1ZXJ5X3VpL2pxdWVyeS51aS5kYXRlcGlja2VyLm1pbi5qcycpO1xuIgplbmQ9cy5maW5kKGVuZG0sc3RhcnQpCmlmIHN0YXJ0PT0tMSBvciBlbmQ9PS0xOgogICAgcmFpc2UgU3lzdGVtRXhpdCgibWFya2VyIEpTIGFuY2hvcnMgbWlzc2luZyIpCmVuZCs9bGVuKGVuZG0pCm5ldyA9ICcnJyAgICAkZGVsZXRlQ29uZmlybUpzID0gTUFQU19qc1N0cmluZyhpc3NldCgkTEFOR19NQVBTXzFbJ2RlbGV0ZV9jb25maXJtJ10pID8gJExBTkdfTUFQU18xWydkZWxldGVfY29uZmlybSddIDogJ0RlbGV0ZSB0aGlzIG1hcmtlcj8nKTsKICAgICRqcyA9IExCIC4gJzxzY3JpcHQgdHlwZT0idGV4dC9qYXZhc2NyaXB0Ij4KICAgIChmdW5jdGlvbiAoKSB7CiAgICAgICAgdmFyIGdlb2NvZGVyID0gbnVsbCwgbWFwID0gbnVsbCwgZWRpdE1hcmtlciA9IG51bGwsIGdvb2dsZVJlYWR5ID0gZmFsc2U7CiAgICAgICAgZnVuY3Rpb24gcmVhZHkoZm4pIHsgaWYgKGRvY3VtZW50LnJlYWR5U3RhdGUgPT09ICJsb2FkaW5nIikgeyBkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCJET01Db250ZW50TG9hZGVkIiwgZm4pOyB9IGVsc2UgeyBmbigpOyB9IH0KICAgICAgICB3aW5kb3cuY2hhbmdlVmFsaWRpdHkgPSBmdW5jdGlvbiAoKSB7CiAgICAgICAgICAgIHZhciB2YWxpZGl0eSA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJ2YWxpZGl0eSIpLCBmcm9tID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoImZyb20iKSwgdG8gPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgidG8iKTsKICAgICAgICAgICAgdmFyIGRpc2FibGVkID0gIXZhbGlkaXR5IHx8IHZhbGlkaXR5LnZhbHVlID09PSAiMCI7CiAgICAgICAgICAgIGlmIChmcm9tKSB7IGZyb20uZGlzYWJsZWQgPSBkaXNhYmxlZDsgfSBpZiAodG8pIHsgdG8uZGlzYWJsZWQgPSBkaXNhYmxlZDsgfQogICAgICAgIH07CiAgICAgICAgZnVuY3Rpb24gdXBkYXRlTWFya2VyQ29vcmRpbmF0ZXMocG9zaXRpb24pIHsKICAgICAgICAgICAgaWYgKCFwb3NpdGlvbikgeyByZXR1cm47IH0KICAgICAgICAgICAgdmFyIGxhdElucHV0ID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoImxhdCIpLCBsbmdJbnB1dCA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCJsbmciKTsKICAgICAgICAgICAgaWYgKGxhdElucHV0KSB7IGxhdElucHV0LnZhbHVlID0gcG9zaXRpb24ubGF0KCkudG9GaXhlZCg2KTsgfQogICAgICAgICAgICBpZiAobG5nSW5wdXQpIHsgbG5nSW5wdXQudmFsdWUgPSBwb3NpdGlvbi5sbmcoKS50b0ZpeGVkKDYpOyB9CiAgICAgICAgfQogICAgICAgIGZ1bmN0aW9uIG1vdmVFZGl0TWFya2VyKHBvc2l0aW9uLCByZWNlbnRlcikgewogICAgICAgICAgICBpZiAoIWVkaXRNYXJrZXIgfHwgIXBvc2l0aW9uKSB7IHJldHVybjsgfQogICAgICAgICAgICBlZGl0TWFya2VyLnNldFBvc2l0aW9uKHBvc2l0aW9uKTsgdXBkYXRlTWFya2VyQ29vcmRpbmF0ZXMocG9zaXRpb24pOwogICAgICAgICAgICBpZiAocmVjZW50ZXIgJiYgbWFwKSB7IG1hcC5wYW5Ubyhwb3NpdGlvbik7IH0KICAgICAgICB9CiAgICAgICAgZnVuY3Rpb24gZ29vZ2xlTWFwc0lzUmVhZHkoKSB7CiAgICAgICAgICAgIHJldHVybiB0eXBlb2Ygd2luZG93Lmdvb2dsZSAhPT0gInVuZGVmaW5lZCIgJiYgZ29vZ2xlLm1hcHMKICAgICAgICAgICAgICAgICYmIHR5cGVvZiBnb29nbGUubWFwcy5NYXAgPT09ICJmdW5jdGlvbiIKICAgICAgICAgICAgICAgICYmIHR5cGVvZiBnb29nbGUubWFwcy5NYXJrZXIgPT09ICJmdW5jdGlvbiIKICAgICAgICAgICAgICAgICYmIHR5cGVvZiBnb29nbGUubWFwcy5HZW9jb2RlciA9PT0gImZ1bmN0aW9uIgogICAgICAgICAgICAgICAgJiYgZ29vZ2xlLm1hcHMuTWFwVHlwZUlkICYmIGdvb2dsZS5tYXBzLmV2ZW50OwogICAgICAgIH0KICAgICAgICBmdW5jdGlvbiBpbml0aWFsaXplR01hcChhdHRlbXB0KSB7CiAgICAgICAgICAgIGlmICghZ29vZ2xlTWFwc0lzUmVhZHkoKSkgewogICAgICAgICAgICAgICAgaWYgKGF0dGVtcHQgPCAxMjApIHsgd2luZG93LnNldFRpbWVvdXQoZnVuY3Rpb24gKCkgeyBpbml0aWFsaXplR01hcChhdHRlbXB0ICsgMSk7IH0sIDEwMCk7IH0KICAgICAgICAgICAgICAgIHJldHVybjsKICAgICAgICAgICAgfQogICAgICAgICAgICBpZiAoZ29vZ2xlUmVhZHkpIHsgcmV0dXJuOyB9CiAgICAgICAgICAgIGdvb2dsZVJlYWR5ID0gdHJ1ZTsgZ2VvY29kZXIgPSBuZXcgZ29vZ2xlLm1hcHMuR2VvY29kZXIoKTsKICAgICAgICAgICAgdmFyIGluaXRpYWxQb3NpdGlvbiA9IHtsYXQ6TnVtYmVyKCcgLiBNQVBTX2pzTnVtYmVyKCRtYXJrZXJbJ2xhdCddLCAwKSAuICcpLCBsbmc6TnVtYmVyKCcgLiBNQVBTX2pzTnVtYmVyKCRtYXJrZXJbJ2xuZyddLCAwKSAuICcpfTsKICAgICAgICAgICAgdmFyIHJlcXVlc3RlZFR5cGUgPSAnIC4gTUFQU19qc1N0cmluZyhNQVBTX21hcFR5cGUoTUFQU19hcnJheUdldCgkX01BUFNfQ09ORiwgJ21hcmtlcl9lZGl0b3JfdHlwZScsICdST0FETUFQJykpKSAuICc7CiAgICAgICAgICAgIHZhciBtYXBUeXBlID0gZ29vZ2xlLm1hcHMuTWFwVHlwZUlkW3JlcXVlc3RlZFR5cGVdIHx8IGdvb2dsZS5tYXBzLk1hcFR5cGVJZC5ST0FETUFQOwogICAgICAgICAgICB2YXIgbWFwQ2FudmFzID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoIm1hcF9jYW52YXMiKTsgaWYgKCFtYXBDYW52YXMpIHsgcmV0dXJuOyB9CiAgICAgICAgICAgIG1hcCA9IG5ldyBnb29nbGUubWFwcy5NYXAobWFwQ2FudmFzLCB7Y2VudGVyOiBpbml0aWFsUG9zaXRpb24sIHpvb206ICcgLiAoaW50KSBNQVBTX2FycmF5R2V0KCRfTUFQU19DT05GLCAnbWFya2VyX2VkaXRvcl96b29tJywgMTApIC4gJywgbWFwVHlwZUlkOiBtYXBUeXBlfSk7CiAgICAgICAgICAgIGVkaXRNYXJrZXIgPSBuZXcgZ29vZ2xlLm1hcHMuTWFya2VyKHttYXA6IG1hcCwgcG9zaXRpb246IGluaXRpYWxQb3NpdGlvbiwgdGl0bGU6ICcgLiBNQVBTX2pzU3RyaW5nKCRtYXJrZXJbJ25hbWUnXSkgLiAnLCBkcmFnZ2FibGU6IHRydWUsIGFuaW1hdGlvbjogZ29vZ2xlLm1hcHMuQW5pbWF0aW9uID8gZ29vZ2xlLm1hcHMuQW5pbWF0aW9uLkRST1AgOiBudWxsfSk7CiAgICAgICAgICAgIGdvb2dsZS5tYXBzLmV2ZW50LmFkZExpc3RlbmVyKGVkaXRNYXJrZXIsICJkcmFnZW5kIiwgZnVuY3Rpb24gKGV2dCkgeyB1cGRhdGVNYXJrZXJDb29yZGluYXRlcyhldnQubGF0TG5nKTsgfSk7CiAgICAgICAgICAgIGdvb2dsZS5tYXBzLmV2ZW50LmFkZExpc3RlbmVyKG1hcCwgImNsaWNrIiwgZnVuY3Rpb24gKGV2dCkgeyBtb3ZlRWRpdE1hcmtlcihldnQubGF0TG5nLCBmYWxzZSk7IH0pOwogICAgICAgIH0KICAgICAgICB3aW5kb3cuY29kZUFkZHJlc3MgPSBmdW5jdGlvbiAoKSB7CiAgICAgICAgICAgIHZhciBhZGRyZXNzSW5wdXQgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgiZ2VvYWRkcmVzcyIpLCBhZGRyZXNzID0gYWRkcmVzc0lucHV0ID8gYWRkcmVzc0lucHV0LnZhbHVlIDogIiI7CiAgICAgICAgICAgIGlmICghYWRkcmVzcykgeyByZXR1cm47IH0KICAgICAgICAgICAgaWYgKCFnb29nbGVSZWFkeSB8fCAhZ2VvY29kZXIpIHsgaW5pdGlhbGl6ZUdNYXAoMCk7IHJldHVybjsgfQogICAgICAgICAgICBnZW9jb2Rlci5nZW9jb2RlKHthZGRyZXNzOiBhZGRyZXNzfSwgZnVuY3Rpb24gKHJlc3VsdHMsIHN0YXR1cykgewogICAgICAgICAgICAgICAgaWYgKHN0YXR1cyA9PT0gZ29vZ2xlLm1hcHMuR2VvY29kZXJTdGF0dXMuT0sgJiYgcmVzdWx0cyAmJiByZXN1bHRzLmxlbmd0aCA+IDApIHsKICAgICAgICAgICAgICAgICAgICBtb3ZlRWRpdE1hcmtlcihyZXN1bHRzWzBdLmdlb21ldHJ5LmxvY2F0aW9uLCB0cnVlKTsKICAgICAgICAgICAgICAgICAgICBpZiAocmVzdWx0c1swXS5nZW9tZXRyeS52aWV3cG9ydCAmJiBtYXApIHsgbWFwLmZpdEJvdW5kcyhyZXN1bHRzWzBdLmdlb21ldHJ5LnZpZXdwb3J0KTsgfQogICAgICAgICAgICAgICAgICAgIGlmIChhZGRyZXNzSW5wdXQpIHsgYWRkcmVzc0lucHV0LnZhbHVlID0gcmVzdWx0c1swXS5mb3JtYXR0ZWRfYWRkcmVzczsgfQogICAgICAgICAgICAgICAgICAgIHZhciBzdG9yZWRBZGRyZXNzID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoImFkZHJlc3MiKTsgaWYgKHN0b3JlZEFkZHJlc3MpIHsgc3RvcmVkQWRkcmVzcy52YWx1ZSA9IHJlc3VsdHNbMF0uZm9ybWF0dGVkX2FkZHJlc3M7IH0KICAgICAgICAgICAgICAgIH0gZWxzZSB7IGFsZXJ0KCJHZW9jb2RlIHdhcyBub3Qgc3VjY2Vzc2Z1bCBmb3IgdGhlIGZvbGxvd2luZyByZWFzb246ICIgKyBzdGF0dXMpOyB9CiAgICAgICAgICAgIH0pOwogICAgICAgIH07CiAgICAgICAgd2luZG93LmNvcHlUZXh0ID0gZnVuY3Rpb24gKCkgewogICAgICAgICAgICB2YXIgc291cmNlID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoImdlb2FkZHJlc3MiKSwgdGFyZ2V0ID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoImFkZHJlc3MiKTsKICAgICAgICAgICAgaWYgKHNvdXJjZSAmJiB0YXJnZXQpIHsgdGFyZ2V0LnZhbHVlID0gc291cmNlLnZhbHVlOyB9CiAgICAgICAgfTsKICAgICAgICBmdW5jdGlvbiB1cGRhdGVJY29uUHJldmlldygpIHsKICAgICAgICAgICAgdmFyIGNoZWNrZWRJY29uID0gZG9jdW1lbnQucXVlcnlTZWxlY3RvcigiaW5wdXRbbmFtZT1cXCJta19pY29uXFwiXTpjaGVja2VkIiksIHByZXZpZXcgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgibWFwcy1pY29uLXByZXZpZXciKTsKICAgICAgICAgICAgaWYgKCFwcmV2aWV3IHx8ICFjaGVja2VkSWNvbikgeyByZXR1cm47IH0KICAgICAgICAgICAgdmFyIGFsbENob2ljZXMgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCIubWFwcy1pY29uLWNob2ljZSIpOwogICAgICAgICAgICBmb3IgKHZhciBpID0gMDsgaSA8IGFsbENob2ljZXMubGVuZ3RoOyBpKyspIHsgYWxsQ2hvaWNlc1tpXS5jbGFzc0xpc3QucmVtb3ZlKCJpcy1zZWxlY3RlZCIpOyB9CiAgICAgICAgICAgIGlmIChjaGVja2VkSWNvbi5wYXJlbnROb2RlICYmIGNoZWNrZWRJY29uLnBhcmVudE5vZGUuY2xhc3NMaXN0KSB7IGNoZWNrZWRJY29uLnBhcmVudE5vZGUuY2xhc3NMaXN0LmFkZCgiaXMtc2VsZWN0ZWQiKTsgfQogICAgICAgICAgICB2YXIgc3JjID0gY2hlY2tlZEljb24uZ2V0QXR0cmlidXRlKCJkYXRhLWljb24tc3JjIikgfHwgIiI7IHByZXZpZXcuaW5uZXJIVE1MID0gIiI7CiAgICAgICAgICAgIGlmIChzcmMpIHsgdmFyIGltYWdlID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgiaW1nIik7IGltYWdlLnNyYyA9IHNyYzsgaW1hZ2UuYWx0ID0gIiI7IHByZXZpZXcuYXBwZW5kQ2hpbGQoaW1hZ2UpOyB9CiAgICAgICAgICAgIGVsc2UgeyB2YXIgdGV4dCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoInNwYW4iKTsgdGV4dC50ZXh0Q29udGVudCA9ICcgLiBNQVBTX2pzU3RyaW5nKCRMQU5HX01BUFNfMVsnbm9faWNvbiddKSAuICc7IHByZXZpZXcuYXBwZW5kQ2hpbGQodGV4dCk7IH0KICAgICAgICB9CiAgICAgICAgcmVhZHkoZnVuY3Rpb24gKCkgewogICAgICAgICAgICB3aW5kb3cuY2hhbmdlVmFsaWRpdHkoKTsgaW5pdGlhbGl6ZUdNYXAoMCk7CiAgICAgICAgICAgIHZhciBpY29uQ2hvaWNlcyA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoImlucHV0W25hbWU9XFwibWtfaWNvblxcIl0iKTsKICAgICAgICAgICAgZm9yICh2YXIgaSA9IDA7IGkgPCBpY29uQ2hvaWNlcy5sZW5ndGg7IGkrKykgeyBpY29uQ2hvaWNlc1tpXS5hZGRFdmVudExpc3RlbmVyKCJjaGFuZ2UiLCB1cGRhdGVJY29uUHJldmlldyk7IH0KICAgICAgICAgICAgdXBkYXRlSWNvblByZXZpZXcoKTsKICAgICAgICAgICAgdmFyIGRlbGV0ZUJ1dHRvbnMgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCIubWFwcy1kZWxldGUtbWFya2VyIik7CiAgICAgICAgICAgIGZvciAodmFyIGQgPSAwOyBkIDwgZGVsZXRlQnV0dG9ucy5sZW5ndGg7IGQrKykgewogICAgICAgICAgICAgICAgZGVsZXRlQnV0dG9uc1tkXS5hZGRFdmVudExpc3RlbmVyKCJjbGljayIsIGZ1bmN0aW9uIChldmVudCkgewogICAgICAgICAgICAgICAgICAgIGV2ZW50LnByZXZlbnREZWZhdWx0KCk7IGlmICghd2luZG93LmNvbmZpcm0oJyAuICRkZWxldGVDb25maXJtSnMgLiAnKSkgeyByZXR1cm47IH0KICAgICAgICAgICAgICAgICAgICB2YXIgZm9ybSA9IHRoaXMuZm9ybTsgaWYgKCFmb3JtKSB7IHJldHVybjsgfQogICAgICAgICAgICAgICAgICAgIHZhciBtb2RlID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgiaW5wdXQiKTsgbW9kZS50eXBlID0gImhpZGRlbiI7IG1vZGUubmFtZSA9ICJtb2RlIjsgbW9kZS52YWx1ZSA9ICJkZWxldGUiOyBmb3JtLmFwcGVuZENoaWxkKG1vZGUpOyBmb3JtLnN1Ym1pdCgpOwogICAgICAgICAgICAgICAgfSk7CiAgICAgICAgICAgIH0KICAgICAgICB9KTsKICAgIH0oKSk7CiAgICA8L3NjcmlwdD4nIC4gTEIgLiBMQjsKICAgICRfU0NSSVBUUy0+c2V0SmF2YVNjcmlwdCgkanMsIGZhbHNlKTsKJycnCnM9c1s6c3RhcnRdK25ldytzW2VuZDpdCnAud3JpdGVfdGV4dChzLGVuY29kaW5nPSJ1dGYtOCIpCg==' | base64 -d > /tmp/fix-marker.py
-          python3 /tmp/fix-marker.py
-      - name: Lint changed PHP files
+          python3 <<'PY'
+          from pathlib import Path
+
+          # 1. Compact map list: map name already points to the public map.
+          p = Path('admin/index.php')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace("    $viewLabel = isset($LANG_ADMIN['view']) ? $LANG_ADMIN['view'] : 'View';\n", '')
+          s = s.replace("        array('text' => $viewLabel, 'field' => 'view', 'sort' => false),\n", '')
+          start = s.find('        case "view":')
+          end = s.find('        case "name":', start)
+          if start >= 0 and end > start:
+              s = s[:start] + s[end:]
+          p.write_text(s, encoding='utf-8')
+
+          # 2. Native date controls remove the jQuery UI dependency.
+          p = Path('templates/marker_form.thtml')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('type="text" id="from" name="from"', 'type="date" id="from" name="from"')
+          s = s.replace('type="text" id="to" name="to"', 'type="date" id="to" name="to"')
+          p.write_text(s, encoding='utf-8')
+
+          # 3. Make Google Maps initialization tolerant of async loading.
+          p = Path('admin/marker_edit.php')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace("date(\"m/d/Y\", strtotime($marker['validity_start']))", "date(\"Y-m-d\", strtotime($marker['validity_start']))")
+          s = s.replace("date(\"m/d/Y\", strtotime($marker['validity_end']))", "date(\"Y-m-d\", strtotime($marker['validity_end']))")
+          s = s.replace('date("m/d/Y")', 'date("Y-m-d")')
+
+          old_datepicker = '''\tjQuery(document).ready(
+        function()
+        {
+\t\t\t$( "#from" ).datepicker();
+\t\t    $( "#to" ).datepicker();
+        });
+\t\t
+'''
+          s = s.replace(old_datepicker, '')
+
+          old_datepicker2 = '''\t\tjQuery(function() {
+\t\t\tjQuery(\'#from\').datepicker({
+\t\t\t\taltFormat:\'m/d/Y\'
+\t\t\t});
+\t\t\tjQuery(\'#to\').datepicker({
+\t\t\t\taltFormat:\'m/d/Y\',
+\t\t\t});
+\t\t});
+\t\t
+\t\t
+'''
+          s = s.replace(old_datepicker2, '')
+
+          s = s.replace('\t\tvar geocoder = new google.maps.Geocoder();', '\t\tvar geocoder = null;')
+
+          old_init = '''\t\tfunction initializeGMap() {
+\t\t\tvar initialPosition = {lat:Number('''
+          new_init = '''\t\tfunction initializeGMap(attempt) {
+\t\t\tif (typeof window.google === "undefined" || !google.maps
+\t\t\t    || typeof google.maps.Map !== "function"
+\t\t\t    || typeof google.maps.Marker !== "function"
+\t\t\t    || typeof google.maps.Geocoder !== "function"
+\t\t\t    || !google.maps.MapTypeId || !google.maps.event) {
+\t\t\t\tif (attempt < 120) {
+\t\t\t\t\twindow.setTimeout(function () { initializeGMap(attempt + 1); }, 100);
+\t\t\t\t}
+\t\t\t\treturn;
+\t\t\t}
+\t\t\tif (map) { return; }
+\t\t\tgeocoder = new google.maps.Geocoder();
+\t\t\tvar initialPosition = {lat:Number('''
+          if old_init not in s:
+              raise SystemExit('initializeGMap anchor not found')
+          s = s.replace(old_init, new_init, 1)
+
+          s = s.replace(
+              'if (document.readyState === "complete") { initializeGMap(); } else { window.addEventListener("load", initializeGMap); }',
+              'if (document.readyState === "complete") { initializeGMap(0); } else { window.addEventListener("load", function () { initializeGMap(0); }); }'
+          )
+
+          old_code = '''\t\t  geocoder.geocode({"address": address}, function(results, status) {'''
+          new_code = '''\t\t  if (!geocoder) {
+\t\t\tinitializeGMap(0);
+\t\t\treturn;
+\t\t  }
+\t\t  geocoder.geocode({"address": address}, function(results, status) {'''
+          if old_code not in s:
+              raise SystemExit('codeAddress anchor not found')
+          s = s.replace(old_code, new_code, 1)
+
+          s = s.replace("\t$_SCRIPTS->setJavaScriptFile('ui_core', '/javascript/jquery_ui/jquery.ui.core.min.js');\n", '')
+          s = s.replace("\t$_SCRIPTS->setJavaScriptFile('datepicker', '/javascript/jquery_ui/jquery.ui.datepicker.min.js');\n", '')
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Verify changes
         run: |
           php -l admin/index.php
           php -l admin/marker_edit.php
+          grep -q 'type="date" id="from"' templates/marker_form.thtml
+          grep -q 'typeof google.maps.Geocoder !== "function"' admin/marker_edit.php
+          ! grep -q '\.datepicker' admin/marker_edit.php
+          ! grep -q "field' => 'view'" admin/index.php
+
       - name: Commit fixes
         run: |
           git config user.name 'github-actions[bot]'
