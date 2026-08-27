@@ -24,7 +24,7 @@ s = s.replace("date(\"m/d/Y\", strtotime($marker['validity_start']))", "date(\"Y
 s = s.replace("date(\"m/d/Y\", strtotime($marker['validity_end']))", "date(\"Y-m-d\", strtotime($marker['validity_end']))")
 s = s.replace('date("m/d/Y")', 'date("Y-m-d")')
 
-# Remove both legacy datepicker initializers.
+# Remove both legacy datepicker initializers, including the remaining block.
 s = s.replace('''\tjQuery(document).ready(
         function()
         {
@@ -42,6 +42,16 @@ s = s.replace('''\t\tjQuery(function() {
 \t\t\t});
 \t\t});
 \t\t
+\t\t
+''', '')
+s = s.replace('''\t\tjQuery(function() {
+\t\t\tjQuery(\'#from\').datepicker({
+\t\t\t\taltFormat:\'m/d/Y\'
+\t\t\t});
+\t\t\tjQuery(\'#to\').datepicker({
+\t\t\t\taltFormat:\'m/d/Y\',
+\t\t\t});
+\t\t});
 \t\t
 ''', '')
 
@@ -63,15 +73,17 @@ new_init = '''\t\tfunction initializeGMap(attempt) {
 \t\t\tif (map) { return; }
 \t\t\tgeocoder = new google.maps.Geocoder();
 \t\t\tvar initialPosition = {lat:Number('''
-if old_init not in s:
+if old_init in s:
+    s = s.replace(old_init, new_init, 1)
+elif 'function initializeGMap(attempt)' not in s:
     raise SystemExit('initializeGMap anchor not found')
-s = s.replace(old_init, new_init, 1)
 
 old_ready = 'if (document.readyState === "complete") { initializeGMap(); } else { window.addEventListener("load", initializeGMap); }'
 new_ready = 'if (document.readyState === "complete") { initializeGMap(0); } else { window.addEventListener("load", function () { initializeGMap(0); }); }'
-if old_ready not in s:
+if old_ready in s:
+    s = s.replace(old_ready, new_ready, 1)
+elif new_ready not in s:
     raise SystemExit('Google Maps ready anchor not found')
-s = s.replace(old_ready, new_ready, 1)
 
 old_geocode = '''\t\t  geocoder.geocode({"address": address}, function(results, status) {'''
 new_geocode = '''\t\t  if (!geocoder) {
@@ -79,9 +91,10 @@ new_geocode = '''\t\t  if (!geocoder) {
 \t\t\treturn;
 \t\t  }
 \t\t  geocoder.geocode({"address": address}, function(results, status) {'''
-if old_geocode not in s:
-    raise SystemExit('geocoder call anchor not found')
-s = s.replace(old_geocode, new_geocode, 1)
+if '\t\t  if (!geocoder) {' not in s:
+    if old_geocode not in s:
+        raise SystemExit('geocoder call anchor not found')
+    s = s.replace(old_geocode, new_geocode, 1)
 
 s = s.replace("\t$_SCRIPTS->setJavaScriptFile('ui_core', '/javascript/jquery_ui/jquery.ui.core.min.js');\n", '')
 s = s.replace("\t$_SCRIPTS->setJavaScriptFile('datepicker', '/javascript/jquery_ui/jquery.ui.datepicker.min.js');\n", '')
