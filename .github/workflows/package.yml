@@ -25,6 +25,7 @@ jobs:
         run: |
           cd source
           python3 tools/polish-marker-footer-160.py
+          python3 tools/repair-marker-language-160.py
 
       - name: Lint release files
         shell: bash
