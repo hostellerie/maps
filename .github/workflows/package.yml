@@ -80,13 +80,16 @@ jobs:
           php -l source/maps.php
           php -l source/functions.inc
           php -l source/admin/edit_functions.php
+          php -l source/admin/index.php
           php -l source/admin/map_edit.php
           php -l source/admin/marker_edit.php
+          php -l source/admin/markers.php
           php -l source/admin/import_export.php
           php -l source/admin/overlay_edit.php
           php -l source/admin/overlay_group_edit.php
           php -l source/admin/overlays.php
           php -l source/admin/icons.php
+          php -l source/admin/geocoder.php
           php -l source/admin/ajax.php
 
       - name: Build installable archive
