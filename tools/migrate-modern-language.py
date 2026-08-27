@@ -76,7 +76,20 @@ for filename, body in [
         s = s.rstrip() + addition
     p.write_text(s, encoding='utf-8')
 
-# Remove any explicit load of language/modern.php from PHP sources.
+# Remove the known indirect loader from maps.php.
+maps = Path('maps.php')
+maps_text = maps.read_text(encoding='utf-8')
+loader = """$modernLanguageFile = $_CONF['path'] . 'plugins/maps/language/modern.php';
+if (file_exists($modernLanguageFile)) {
+    require_once $modernLanguageFile;
+}
+
+"""
+if loader not in maps_text:
+    raise SystemExit('Expected modern language loader not found in maps.php')
+maps.write_text(maps_text.replace(loader, '', 1), encoding='utf-8')
+
+# Defensive cleanup for any remaining direct require/include reference.
 for p in Path('.').rglob('*.php'):
     if p == modern:
         continue
