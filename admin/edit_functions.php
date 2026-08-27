@@ -1,6 +1,6 @@
 <?php
 // +--------------------------------------------------------------------------+
-// | Maps Plugin 1.5.6                                                        |
+// | Maps Plugin 1.5.7                                                        |
 // +--------------------------------------------------------------------------+
 // | edit_functions.php                                                       |
 // +--------------------------------------------------------------------------+
@@ -9,6 +9,54 @@ require_once '../../../lib-common.php';
 
 if (!SEC_hasRights('maps.admin')) {
     exit;
+}
+
+/**
+ * Return one Geeklog CSRF token for the overlay editor during this request.
+ *
+ * @return string
+ */
+function MAPS_overlayCsrfToken()
+{
+    static $token = null;
+
+    if ($token === null) {
+        $token = SEC_createToken();
+    }
+
+    return $token;
+}
+
+/**
+ * JavaScript used by both the initial map editor and AJAX-refreshed overlay
+ * lists. Event delegation avoids re-binding handlers after each replacement.
+ *
+ * @return string
+ */
+function MAPS_overlayAjaxScript()
+{
+    static $rendered = false;
+
+    if ($rendered) {
+        return '';
+    }
+    $rendered = true;
+
+    $tokenName = htmlspecialchars(CSRF_TOKEN, ENT_QUOTES, 'UTF-8');
+    $token = htmlspecialchars(MAPS_overlayCsrfToken(), ENT_QUOTES, 'UTF-8');
+
+    return '<script type="text/javascript">'
+        . 'jQuery(function($){'
+        . '$(document).off("click.mapsOverlay", "#overlays_actions a.add, #overlays_actions a.delete")'
+        . '.on("click.mapsOverlay", "#overlays_actions a.add, #overlays_actions a.delete", function(e){'
+        . 'e.preventDefault();'
+        . 'var link=$(this), action=link.hasClass("delete")?"delete":"add";'
+        . '$.ajax({type:"POST",url:"ajax.php",data:{action:action,id:link.attr("id"),mid:link.attr("mid"),'
+        . json_encode($tokenName) . ':' . json_encode($token) . '},cache:false})'
+        . '.done(function(result){$("#overlays_actions").replaceWith(result);});'
+        . '});'
+        . '});'
+        . '</script>';
 }
 
 function MAPS_displayOverlays($mid)
@@ -38,8 +86,8 @@ function MAPS_getListField_maps_displayOverlays($fieldname, $fieldvalue, $a, $ic
     if ($fieldname === 'edit') {
         return COM_createLink($icon_arr['enabled'], '#', array(
             'class' => 'delete',
-            'id' => $a['mo_id'],
-            'mid' => $a['mo_mid'],
+            'id' => (int) $a['mo_id'],
+            'mid' => (int) $a['mo_mid'],
             'title' => $LANG_MAPS_1['remove_overlay']
         ));
     }
@@ -66,7 +114,8 @@ function MAPS_displayOverlaysToAdd($mid)
     $text = array('has_extras' => true);
     $sort = array('field' => 'o_name', 'direction' => 'asc');
     return '<h2>' . $LANG_MAPS_1['overlays_to_add'] . '</h2>'
-        . ADMIN_list('maps_overlaysToAdd', 'MAPS_getListField_maps_displayOverlaysToAdd', $header, $text, $query, $sort);
+        . ADMIN_list('maps_overlaysToAdd', 'MAPS_getListField_maps_displayOverlaysToAdd', $header, $text, $query, $sort)
+        . MAPS_overlayAjaxScript();
 }
 
 function MAPS_getListField_maps_displayOverlaysToAdd($fieldname, $fieldvalue, $a, $icon_arr)
@@ -76,8 +125,8 @@ function MAPS_getListField_maps_displayOverlaysToAdd($fieldname, $fieldvalue, $a
     if ($fieldname === 'edit') {
         return COM_createLink($icon_arr['disabled'], '#', array(
             'class' => 'add',
-            'id' => $a['oid'],
-            'mid' => $a['mid'],
+            'id' => (int) $a['oid'],
+            'mid' => (int) $a['mid'],
             'title' => $LANG_MAPS_1['add_overlay']
         ));
     }
