@@ -38,5 +38,11 @@ jobs:
           git add functions.inc CUSTOM-FIELDS-AUDIT-1.5.8.md RELEASE-NOTES-1.5.8.md
           if git diff --cached --quiet; then exit 0; fi
           git commit -m 'Normalize public Maps custom field rendering [skip ci]'
-          git pull --rebase origin modernize/maps-1.5
-          git push origin HEAD:modernize/maps-1.5
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin modernize/maps-1.5
+            if git push origin HEAD:modernize/maps-1.5; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
