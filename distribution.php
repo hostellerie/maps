@@ -1,7 +1,8 @@
 <?php
 // +--------------------------------------------------------------------------+
-// | Maps Plugin 1.5.7                                                        |
+// | Maps Plugin 1.6.0                                                        |
 // +--------------------------------------------------------------------------+
+// | Maintainer: ::Ben                                                         |
 // | distribution.php                                                         |
 // |                                                                          |
 // | Native Geeklog distribution and discovery callbacks.                     |
@@ -87,7 +88,6 @@ function plugin_getfeedcontent_maps($feed, &$link, &$update, $feedType = '', $fe
     if ($feedId <= 0) {
         return array();
     }
-
     $result = DB_query(
         "SELECT topic,limits,content_length FROM {$_TABLES['syndication']} WHERE fid=" . $feedId
     );

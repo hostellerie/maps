@@ -2,7 +2,7 @@
 
 Maps is a Geeklog plugin for creating Google Maps, markers, overlays, profile maps, Calendar event maps and map autotags.
 
-## Maps 1.5.8 compatibility target
+## Maps 1.6.0 compatibility target
 
 - Geeklog 2.1.1 through 2.2.2
 - PHP 5.6 through 8.3
@@ -31,13 +31,13 @@ In Geeklog's Maps configuration set:
 - **Google Map ID**: optional in Maps 1.5 and reserved for migration toward Advanced Markers.
 - **Google Maps language** and **region**: optional Google Maps localization hints.
 
-Maps 1.5 no longer uses the retired `sensor` parameter or the removed Google Maps AdSense library.
+Maps 1.6 no longer uses the retired `sensor` parameter or the removed Google Maps AdSense library.
 
 ## Markers and clustering
 
-Maps 1.5 keeps `google.maps.Marker` for compatibility with existing maps and custom icons. Google has deprecated that class, so the `google_map_id` setting prepares a future migration to Advanced Markers without forcing it into this compatibility release.
+Maps 1.6 keeps `google.maps.Marker` for compatibility with existing maps and custom icons. Google has deprecated that class, so the `google_map_id` setting prepares a future migration to Advanced Markers without forcing it into this compatibility release.
 
-The obsolete bundled MarkerClusterer 1.0.1 has been removed. Maps 1.5 uses the pinned UMD build of `@googlemaps/markerclusterer` 2.6.2.
+The obsolete bundled MarkerClusterer 1.0.1 has been removed. Maps 1.6 uses the pinned UMD build of `@googlemaps/markerclusterer` 2.6.2.
 
 Colored markers no longer depend on the retired Google Image Charts service. They are generated as SVG data URIs. Uploaded marker icons continue to use the plugin's shared image directory.
 
@@ -52,7 +52,7 @@ This behavior is suitable for both mono-site and multisite installations when th
 
 ## Removed legacy dependencies
 
-Maps 1.5 removes:
+Maps 1.6 removes:
 
 - TimThumb
 - FCKeditor-specific integration
@@ -64,7 +64,7 @@ Maps 1.5 removes:
 
 ## Upgrade
 
-The supported modernization path is to reach Maps 1.4.0 first, then run Geeklog's normal plugin upgrade to Maps 1.5.8. The 1.5.8 upgrader applies the complete 1.5.x configuration and public-folder migrations in sequence, including repairs introduced in 1.5.1 through 1.5.8.
+The supported modernization path is to reach Maps 1.4.0 first, then run Geeklog's normal plugin upgrade to Maps 1.6.0. The 1.6.0 upgrader applies the complete 1.5.x/1.6.0 configuration and public-folder migrations in sequence, including repairs introduced in 1.5.1 through 1.5.8.
 
 Older Maps installations should therefore be upgraded to 1.4.0 before installing the 1.5.8 files. Back up the database and the shared `images/maps/` directory before upgrading a production site.
 

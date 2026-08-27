@@ -2,13 +2,13 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.5.7                                                         |
+// | Maps Plugin 1.6.0                                                         |
 // +---------------------------------------------------------------------------+
 // | index.php                                                                 |
 // |                                                                           |
 // | Plugin administration page                                                |
 // +---------------------------------------------------------------------------+
-// | Copyright (C) 2010 by the following authors:                              |
+// | Copyright (C) 2010-2026 by the following authors:                              |
 // |                                                                           |
 // | Authors: ::Ben                                                            |
 // +---------------------------------------------------------------------------+
@@ -87,7 +87,6 @@ function MAPS_listmaps()
     if (DB_count($_TABLES['maps_maps']) == 0){
         return $retval = '';
     }
-
     $header_arr = array(      // display 'text' and use table field 'field'
         array('text' => $LANG_ADMIN['edit'], 'field' => 'edit', 'sort' => false),
         array('text' => $LANG_MAPS_1['id'], 'field' => 'mid', 'sort' => true),

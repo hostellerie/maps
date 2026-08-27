@@ -1,7 +1,8 @@
 <?php
 // +--------------------------------------------------------------------------+
-// | Maps Plugin 1.5.7                                                        |
+// | Maps Plugin 1.6.0                                                        |
 // +--------------------------------------------------------------------------+
+// | Maintainer: ::Ben                                                         |
 // | integrations.php                                                         |
 // |                                                                          |
 // | Geeklog integration, What's New and usage statistics.                    |

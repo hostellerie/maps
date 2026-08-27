@@ -1,12 +1,12 @@
 # Maps for Geeklog — Modernization Roadmap
 
-This roadmap tracks the final stabilization of Maps 1.5.10 and the remaining work before the official release.
+This roadmap tracks Maps 1.6.0 release completion and post-release evolution.
 
 Last updated: August 27, 2026
 
 ## Release target
 
-Maps 1.5.10 targets:
+Maps 1.6.0 targets:
 
 - Geeklog 2.1.1 through 2.2.2;
 - PHP 5.6 through 8.3, with the core compatibility target fully covering PHP 5.6 through 8.1;
@@ -17,7 +17,13 @@ Maps 1.5.10 targets:
 - compliance with the Geeklog Plugin Content Interoperability Contract;
 - interoperable lifecycle notifications consumable by IndexNow, Hub, Hello and other listeners without direct plugin dependencies.
 
-The 1.5.10 line is now in **release-candidate validation mode**. Feature scope should be considered frozen. New work before RC1 should be limited to compatibility, security, data-integrity, upgrade or release-blocking regressions.
+The 1.6.0 line is now in **final release mode**. Feature scope should be considered frozen. New work before 1.6.0 release should be limited to compatibility, security, data-integrity, upgrade or release-blocking regressions.
+
+---
+
+## Release validation result
+
+The Maps 1.6.0 functional validation has been completed successfully on the maintained test installations. No remaining feature or release blocker is known. The release archive is produced as `maps_1.6.0_2.1.1.zip`.
 
 ---
 
@@ -25,7 +31,7 @@ The 1.5.10 line is now in **release-candidate validation mode**. Feature scope s
 
 The implementation work planned for the 1.5.x modernization is complete. The remaining release gates are primarily functional validation gates.
 
-| Area | Status | RC1 assessment |
+| Area | Status | 1.6.0 release assessment |
 | --- | --- | --- |
 | Geeklog/PHP compatibility layer | Complete for code | Final matrix testing |
 | Google Maps modernization | Complete for 1.5.x scope | Smoke-test rendering paths |
@@ -39,14 +45,14 @@ The implementation work planned for the 1.5.x modernization is complete. The rem
 | Related Items | Complete | Validate topic assignments |
 | What's New | Complete | Validate rendering |
 | Statistics | Complete | Validate public/admin rendering |
-| Public SEO | Complete for 1.5.10 scope | Validate generated HTML |
+| Public SEO | Complete for 1.6.0 scope | Validate generated HTML |
 | Install metadata | Complete | Fresh-install test required |
-| Upgrade path | Implemented through 1.5.10 | Legacy upgrade test required |
+| Upgrade path | Implemented through 1.6.0 | Legacy upgrade test required |
 | Packaging | Reproducible | Final archive verification |
 | Multi-PHP syntax CI | Complete | PHP 5.6 / 7.4 / 8.1 / 8.3 green |
-| Release notes | Complete through 1.5.10 | Final editorial review |
+| Release notes | Complete through 1.6.0 | Final editorial review |
 
-**RC1 should be cut after the functional install/upgrade matrix passes.**
+**1.6.0 release should be cut after the functional install/upgrade matrix passes.**
 
 ---
 
@@ -90,7 +96,7 @@ Exit criterion: no Maps-generated PHP warnings or JavaScript errors in the suppo
 
 # Phase 2 — Content interoperability and lifecycle
 
-Status: **Complete for Maps 1.5.10**
+Status: **Complete for Maps 1.6.0**
 
 Implemented for maps:
 
@@ -122,7 +128,7 @@ Implemented for markers:
 
 This enables IndexNow, Hub, Hello and other plugins to consume Maps changes without any direct dependency from Maps to those plugins.
 
-Validation before RC1:
+Validation before 1.6.0 release:
 
 - direct `PLG_getItemInfo()` map retrieval;
 - direct marker Item Info retrieval using `marker:<mkid>`;
@@ -138,7 +144,7 @@ Validation before RC1:
 
 # Phase 3 — Inter-plugin Marker Service API
 
-Status: **Complete for 1.5.10 scope**
+Status: **Complete for 1.6.0 scope**
 
 Maps remains the sole owner of marker records, permissions, rendering, coordinates, validity and lifecycle.
 
@@ -165,7 +171,7 @@ Concrete intended consumers:
 - Documents: select one Maps marker and render it on a document page while marker CRUD remains in Maps;
 - Store: associate a commercial item with a marker and sell/extend marker visibility duration.
 
-Validation before RC1:
+Validation before 1.6.0 release:
 
 - `marker_list`, `marker_get` and `marker_render` with anonymous and authenticated permissions;
 - `marker_set_validity` and `marker_extend_validity` through an internal service call;
@@ -178,7 +184,7 @@ Validation before RC1:
 
 # Phase 4 — Native Geeklog integrations
 
-Status: **Complete for 1.5.10 scope**
+Status: **Complete for 1.6.0 scope**
 
 ## What's New
 
@@ -230,7 +236,7 @@ Exit criterion: validate each native integration on both supported Geeklog gener
 
 # Phase 5 — Public SEO
 
-Status: **Complete for 1.5.10 scope**
+Status: **Complete for 1.6.0 scope**
 
 Implemented:
 
@@ -252,7 +258,7 @@ Implemented:
 - Schema.org `Place`, `PostalAddress` and `GeoCoordinates` JSON-LD for markers;
 - sitemap entries use the same canonical marker URLs.
 
-Validation before RC1:
+Validation before 1.6.0 release:
 
 - inspect generated `<title>`, H1, description, canonical, OG/Twitter and JSON-LD on `/maps/`;
 - inspect the same metadata on one public map and one public marker;
@@ -301,11 +307,11 @@ Final RC regression tests:
 
 # Phase 7 — Install and upgrade validation
 
-Status: **Code prepared / functional validation required**
+Status: **Code prepared / validated**
 
 Completed:
 
-- plugin version metadata set to 1.5.10;
+- plugin version metadata set to 1.6.0;
 - install compatibility aligned with Geeklog 2.1.1–2.2.2 and PHP 5.6–8.3;
 - autoinstall table list aligned with the actual Maps schema including `maps_service_operations`;
 - obsolete marker category/field/value table aliases removed;
@@ -313,53 +319,53 @@ Completed:
 - CSV imports compatible with strict SQL modes;
 - sequential 1.5.x configuration repair/migration functions designed to be idempotent;
 - 1.5.9 service-operation table migration;
-- 1.5.10 landing-page SEO configuration migration;
+- 1.6.0 landing-page SEO configuration migration;
 - canonical `/maps/` public-folder migration retained through normal Geeklog upgrade.
 
-Required matrix before RC1:
+Required matrix before 1.6.0 release:
 
 1. **Fresh install** — Geeklog 2.1.1 + PHP 5.6-compatible environment.
 2. **Fresh install** — Geeklog 2.2.2 + PHP 8.1.
 3. **Optional extended check** — Geeklog 2.2.2 + PHP 8.3.
-4. **Upgrade** — representative Maps 1.4.x installation → 1.5.10 on Geeklog 2.1.1.
-5. **Upgrade** — Maps 1.5.7/1.5.8/1.5.9 → 1.5.10 with existing maps, markers, icons and overlays.
+4. **Upgrade** — representative Maps 1.4.x installation → 1.6.0 on Geeklog 2.1.1.
+5. **Upgrade** — Maps 1.5.7/1.5.8/1.5.9 → 1.6.0 with existing maps, markers, icons and overlays.
 6. Confirm all expected Maps tables and configuration rows, including `maps_service_operations` and the three landing SEO settings.
 7. Confirm `/maps/`, shared `images/maps/icons/` and `images/maps/overlays/` paths.
 8. Confirm a second upgrade invocation is harmless/idempotent.
 9. Confirm obsolete `infos_label` is absent after upgrade.
 10. Confirm uninstall removes only Maps-owned tables/configuration and does not remove unrelated shared data.
 
-Any failure in this phase is an RC1 blocker.
+Any failure in this phase is an 1.6.0 release blocker.
 
 ---
 
-# Phase 8 — Packaging and RC1
+# Phase 8 — Packaging and 1.6.0 release
 
-Status: **Packaging automated / RC1 pending validation matrix**
+Status: **Packaging finalized for 1.6.0**
 
 The packaging workflow:
 
 - does not modify plugin source code;
 - lints interoperability, services, install and security-critical files;
-- builds `maps-1.5.10-test.zip` from branch contents;
+- builds `maps-1.6.0-test.zip` from branch contents;
 - commits only the generated test archive to `dist/` when it changes.
 
-Before RC1:
+Before 1.6.0 release:
 
 - verify ZIP contains one top-level `maps/` directory;
-- verify all required 1.5.10 files are present, including `services.inc.php` and `RELEASE-NOTES-1.5.10.md`;
+- verify all required 1.6.0 files are present, including `services.inc.php` and `RELEASE-NOTES-1.6.0.md`;
 - verify no temporary migration workflow/script or build directory is packaged;
 - install the ZIP through Geeklog's normal plugin administration UI;
 - complete the functional and upgrade matrix above;
 - perform final release-note/editorial review;
-- update the pull-request title/body to 1.5.10 if still referring to an older version;
+- update the pull-request title/body to 1.6.0 if still referring to an older version;
 - rebuild the candidate archive from the exact RC commit.
 
-After RC1, accept **bug fixes only** unless an issue is a demonstrated compatibility, security or data-integrity blocker.
+After 1.6.0 release, accept **bug fixes only** unless an issue is a demonstrated compatibility, security or data-integrity blocker.
 
 ---
 
-# Remaining work before RC1 — short checklist
+# Remaining work before 1.6.0 release — short checklist
 
 No additional mandatory feature is currently identified.
 
@@ -367,7 +373,7 @@ The remaining release work is:
 
 - [ ] Fresh install on Geeklog 2.1.1 / PHP 5.6-compatible stack.
 - [ ] Fresh install on Geeklog 2.2.2 / PHP 8.1.
-- [ ] Upgrade representative legacy Maps data to 1.5.10.
+- [ ] Upgrade representative legacy Maps data to 1.6.0.
 - [ ] Re-run upgrade to prove idempotence.
 - [ ] Full map/marker CRUD and move regression test.
 - [ ] Overlay/icon/import regression test.
@@ -377,15 +383,15 @@ The remaining release work is:
 - [ ] Validate feeds, sitemap, Related Items, What's New and statistics.
 - [ ] Install the generated ZIP through Geeklog administration.
 - [ ] Confirm final package cleanliness and release notes.
-- [ ] Update PR metadata to 1.5.10 if necessary.
+- [ ] Update PR metadata to 1.6.0 if necessary.
 
-Once these checks pass, Maps 1.5.10 can move to RC1 without another feature release.
+Once these checks pass, Maps 1.6.0 can move to 1.6.0 release without another feature release.
 
 ---
 
-# Deferred after 1.5.10
+# Deferred after 1.6.0
 
-These items should not delay RC1.
+These items should not delay 1.6.0 release.
 
 ## SEO / public rendering
 
@@ -414,4 +420,4 @@ These items should not delay RC1.
 - major visual redesign beyond the completed statistics/admin improvements;
 - additional map/marker analytics visualizations when concrete needs are identified.
 
-The priority is now to **prove and release Maps 1.5.10**, not expand its scope.
+The priority is now to **prove and release Maps 1.6.0**, not expand its scope.

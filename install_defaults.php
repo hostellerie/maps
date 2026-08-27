@@ -2,7 +2,8 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.5.6                                                         |
+// | Maintainer: ::Ben                                                         |
+// | Maps Plugin 1.6.0                                                         |
 // +---------------------------------------------------------------------------+
 // | install_defaults.php                                                      |
 // +---------------------------------------------------------------------------+
@@ -87,7 +88,6 @@ $_MAPS_DEFAULT['map_label_color'] = 0;
 /* Event map */
 $_MAPS_DEFAULT['events_map_zoom'] = 8;
 $_MAPS_DEFAULT['events_map_height'] = '300px';
-
 /* Marker defaults */
 $_MAPS_DEFAULT['marker_active'] = 1;
 $_MAPS_DEFAULT['marker_hidden'] = 0;

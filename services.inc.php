@@ -1,4 +1,11 @@
 <?php
+// +---------------------------------------------------------------------------+
+// | Maps Plugin 1.6.0                                                         |
+// +---------------------------------------------------------------------------+
+// | services.inc.php                                                           |
+// | Copyright (C) 2010-2026                                                   |
+// | Maintainer: ::Ben                                                         |
+// +---------------------------------------------------------------------------+
 /**
  * Maps marker services for trusted inter-plugin calls through PLG_invokeService().
  * HTTP/Atom webservice calls are deliberately rejected: these services are an

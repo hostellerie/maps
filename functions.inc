@@ -2,14 +2,14 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.5.6                                                         |
+// | Maps Plugin 1.6.0                                                         |
 // +---------------------------------------------------------------------------+
 // | functions.inc                                                             |
 // |                                                                           |
 // | Geeklog plugin API and common Maps functions.                             |
 // +---------------------------------------------------------------------------+
 // | Copyright (C) 2010-2026                                                   |
-// | Original author: Ben                                                      |
+// | Original author: ::Ben                                                      |
 // +---------------------------------------------------------------------------+
 
 if (strpos(strtolower(isset($_SERVER['PHP_SELF']) ? $_SERVER['PHP_SELF'] : ''), 'functions.inc') !== false) {
