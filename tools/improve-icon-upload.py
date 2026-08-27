@@ -15,7 +15,7 @@ old = """    $template->set_var('image', $LANG_MAPS_1['image']);
 new = """    $template->set_var('image', $LANG_MAPS_1['image']);
     $isFrench = isset($_CONF['language']) && strpos(strtolower($_CONF['language']), 'french') === 0;
     $uploadHelp = $isFrench
-        ? 'Formats autorisés : GIF, JPG/JPEG, PNG et WebP. Dimensions maximales : 128 × 128 px. Les images plus grandes sont redimensionnées automatiquement si une bibliothèque d\'images Geeklog est configurée.'
+        ? 'Formats autorisés : GIF, JPG/JPEG, PNG et WebP. Dimensions maximales : 128 × 128 px. Les images plus grandes sont redimensionnées automatiquement si une bibliothèque d\\'images Geeklog est configurée.'
         : 'Allowed formats: GIF, JPG/JPEG, PNG and WebP. Maximum dimensions: 128 × 128 px. Larger images are resized automatically when a Geeklog image library is configured.';
     $template->set_var(
         'image_message',
