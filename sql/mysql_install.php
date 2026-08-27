@@ -2,7 +2,7 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.4                                                           |
+// | Maps Plugin 1.5.7                                                         |
 // +---------------------------------------------------------------------------+
 // | mysql_install.php                                                         |
 // |                                                                           |
@@ -103,8 +103,8 @@ CREATE TABLE {$_TABLES['maps_markers']} (
   validity_end datetime NOT NULL,
   active tinyint(1) unsigned NOT NULL default '1',
   hidden tinyint(1) unsigned NOT NULL default '0',
-  remark text NOT NULL default '',
-  description TEXT NOT NULL default '',
+  remark text NOT NULL,
+  description TEXT NOT NULL,
   street varchar(255) NOT NULL default '',
   code varchar(10) NOT NULL default '',
   city varchar(255) NOT NULL default '',
@@ -154,8 +154,8 @@ CREATE TABLE {$_TABLES['maps_submission']} (
   validity_end datetime NOT NULL,
   active tinyint(1) unsigned NOT NULL default '1',
   hidden tinyint(1) unsigned NOT NULL default '0',
-  remark text NOT NULL default '',
-  description TEXT NOT NULL default '',
+  remark text NOT NULL,
+  description TEXT NOT NULL,
   street varchar(255) NOT NULL default '',
   code varchar(10) NOT NULL default '',
   city varchar(255) NOT NULL default '',

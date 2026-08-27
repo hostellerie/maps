@@ -402,13 +402,19 @@ function MAPS_commitImportRows($rows, $mid)
     $now = date('Y-m-d H:i:s');
 
     foreach ($rows as $marker) {
-        $columns = array('mkid', 'mid', 'owner_id', 'created', 'modified');
+        $columns = array(
+            'mkid', 'mid', 'owner_id', 'created', 'modified',
+            'validity_start', 'validity_end', 'remark'
+        );
         $values = array(
             "'" . MAPS_dbEscape(MAPS_importMarkerId()) . "'",
             (string) $mid,
             (string) (int) $_USER['uid'],
             "'" . MAPS_dbEscape($now) . "'",
-            "'" . MAPS_dbEscape($now) . "'"
+            "'" . MAPS_dbEscape($now) . "'",
+            "'" . MAPS_dbEscape($now) . "'",
+            "'" . MAPS_dbEscape($now) . "'",
+            "''"
         );
 
         foreach ($validFields as $field) {
