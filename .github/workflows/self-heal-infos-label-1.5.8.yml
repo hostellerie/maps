@@ -1,0 +1,34 @@
+name: Self-heal Maps 1.5.8 infos_label
+
+on:
+  push:
+    branches:
+      - modernize/maps-1.5
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modernize/maps-1.5
+          fetch-depth: 0
+      - run: git pull --rebase origin modernize/maps-1.5
+      - run: python3 tools/self-heal-infos-label-1.5.8.py
+      - run: |
+          grep -q "Self-heal installations that were already marked as Maps 1.5.8" maps.php
+          php -l maps.php
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add maps.php
+          git commit -m 'Self-heal obsolete infos_label on existing 1.5.8 installs [skip ci]' || exit 0
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin modernize/maps-1.5
+            if git push origin HEAD:modernize/maps-1.5; then exit 0; fi
+            sleep 2
+          done
+          exit 1
