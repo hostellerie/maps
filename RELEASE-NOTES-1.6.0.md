@@ -29,7 +29,8 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - the `/maps/` statistics block is rendered after the map list so primary navigational content appears first;
 - canonical marker pages again display an individual map centered on the marker;
 - marker pages restore the driving-directions form and route panel using the modern Google Maps Directions API already maintained by Maps;
-- the dedicated marker map template avoids introducing a second H1 on the canonical marker page.
+- the dedicated marker map template avoids introducing a second H1 on the canonical marker page;
+- the site-members map now uses the same initial center as the global map: the coordinates of the first active map ordered by `mid`, while retaining the global zoom/type/size settings.
 
 ## Public layout polish
 
