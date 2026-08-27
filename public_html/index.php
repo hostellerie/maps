@@ -259,11 +259,15 @@ if ($mode === 'map' && $mid > 0) {
     } elseif ($addressFallback !== '') {
         $place['address'] = $addressFallback;
     }
-    if (MAPS_isValidCoordinatePair(MAPS_arrayGet($markerRow, 'lat', ''), MAPS_arrayGet($markerRow, 'lng', ''))) {
+    $markerLat = MAPS_arrayGet($markerRow, 'lat', '');
+    $markerLng = MAPS_arrayGet($markerRow, 'lng', '');
+    if (is_numeric($markerLat) && is_numeric($markerLng)
+        && (float) $markerLat >= -90.0 && (float) $markerLat <= 90.0
+        && (float) $markerLng >= -180.0 && (float) $markerLng <= 180.0) {
         $place['geo'] = array(
             '@type' => 'GeoCoordinates',
-            'latitude' => (float) MAPS_latitude($markerRow['lat']),
-            'longitude' => (float) MAPS_longitude($markerRow['lng'])
+            'latitude' => (float) $markerLat,
+            'longitude' => (float) $markerLng
         );
     }
     $telephone = trim(MAPS_decodeStoredText(MAPS_arrayGet($markerRow, 'tel', '')));
