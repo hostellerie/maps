@@ -223,6 +223,34 @@ function plugin_collectSitemapItems_maps($uid = 1, $limit = 0)
         );
     }
 
+    // Marker pages are indexable content too. Use the same canonical URL as
+    // public links and search results, and require both marker and parent-map
+    // visibility/permissions so the sitemap never advertises an inaccessible URL.
+    $markerSql = "SELECT mk.mkid,mk.modified FROM {$_TABLES['maps_markers']} mk "
+        . "INNER JOIN {$_TABLES['maps_maps']} m ON m.mid=mk.mid "
+        . "WHERE mk.active=1 AND mk.hidden=0 AND m.active=1 AND m.hidden=0"
+        . COM_getPermSQL('AND', $uid, 2, 'mk')
+        . COM_getPermSQL('AND', $uid, 2, 'm')
+        . " ORDER BY mk.modified DESC, mk.mkid DESC";
+    $markerResult = DB_query($markerSql);
+    while ($marker = DB_fetchArray($markerResult)) {
+        if (!is_array($marker) || !isset($marker['mkid']) || trim((string) $marker['mkid']) === '') {
+            continue;
+        }
+        $modified = isset($marker['modified']) ? strtotime($marker['modified']) : false;
+        $items[] = array(
+            'url' => MAPS_markerContentUrl($marker['mkid']),
+            'date-modified' => ($modified === false ? 0 : $modified)
+        );
+        if ($limit > 0 && count($items) >= $limit) {
+            break;
+        }
+    }
+
+    if ($limit > 0 && count($items) > $limit) {
+        $items = array_slice($items, 0, $limit);
+    }
+
     return $items;
 }
 

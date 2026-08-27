@@ -713,7 +713,7 @@ function plugin_dopluginsearch_maps($query, $datestart, $dateend, $topic, $type,
          . "ELSE {$markerAlias}.name END AS description, "
          . "UNIX_TIMESTAMP({$markerAlias}.created) AS date, "
          . $ownerSql . " AS uid, {$markerAlias}.hits AS hits, "
-         . "CONCAT('/maps/markers.php?mode=show&amp;mkid=', {$markerAlias}.mkid, '&amp;mid=', {$markerAlias}.mid) AS url "
+         . "CONCAT('/maps/index.php?mode=marker&amp;mkid=', {$markerAlias}.mkid) AS url "
          . "FROM {$_TABLES['maps_markers']} AS {$markerAlias} "
          . "LEFT JOIN {$_TABLES['maps_maps']} AS {$mapAlias} ON {$mapAlias}.mid = {$markerAlias}.mid "
          . "LEFT JOIN {$_TABLES['users']} AS {$markerOwnerAlias} ON {$markerOwnerAlias}.uid = {$markerAlias}.owner_id "

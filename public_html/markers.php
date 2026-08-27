@@ -113,6 +113,19 @@ $vars = array('mode' => 'alpha',
 
 MAPS_filterVars($vars, $_REQUEST);
 
+// Maps 1.5.9 canonical marker URL. Preserve old inbound links but consolidate
+// all public marker detail signals on index.php?mode=marker&mkid=... .
+$legacyMode = isset($_REQUEST['mode']) ? (string) $_REQUEST['mode'] : '';
+$legacyMkid = isset($_REQUEST['mkid']) ? trim((string) $_REQUEST['mkid']) : '';
+if ($legacyMode === 'show' && $legacyMkid !== '') {
+    header('Location: ' . MAPS_markerContentUrl($legacyMkid), true, 301);
+    exit;
+}
+
+// Editing, submission and private marker-management pages are useful to users
+// but must not enter search indexes.
+header('X-Robots-Tag: noindex, follow');
+
 /**
 * List all markers that the user has access to
 *

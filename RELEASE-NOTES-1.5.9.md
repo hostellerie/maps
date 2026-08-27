@@ -15,3 +15,15 @@ Services available through `PLG_invokeService()`:
 Validity mutations support `operation_id` idempotency so payment callbacks cannot apply the same purchased duration twice. `source` and `source_id` are recorded for traceability.
 
 These services are deliberately internal. Requests arriving through Geeklog Webservices (`gl_svc`) are rejected. Maps remains the owner of marker storage, permissions, rendering and validity rules; consumer plugins must not write Maps tables directly.
+
+## Public SEO
+
+- Canonical marker URL is now `/maps/index.php?mode=marker&mkid=...`.
+- Legacy `markers.php?mode=show...` marker detail URLs permanently redirect to the canonical route.
+- Public map and marker pages emit canonical, meta description, Open Graph and Twitter metadata.
+- Marker pages emit Schema.org `Place`, `PostalAddress` and `GeoCoordinates` JSON-LD when data is available.
+- Invalid, hidden or inaccessible maps/markers return a real 404.
+- Map and marker pages now expose a clear H1 and marker pages link back to their parent map.
+- Private marker management pages are `noindex,follow`.
+- XML Sitemap collection includes canonical public marker pages in addition to maps.
+- Internal marker search/list links use the canonical marker URL.

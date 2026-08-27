@@ -103,7 +103,7 @@ function scrollToAnchor{gid}(id) {
 </script>
 
 {header}
-<h2>{name}</h2>
+<h1>{name}</h1>
 {description}
 <div id="map_contener_m{mid}">
     <div id="map_canvas_m{mid}"></div>

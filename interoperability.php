@@ -30,6 +30,25 @@ function MAPS_contentUrl($mid)
 }
 
 /**
+ * Return the canonical public URL for a marker.
+ *
+ * @param string|int $mkid
+ * @return string
+ */
+function MAPS_markerContentUrl($mkid)
+{
+    global $_MAPS_CONF;
+
+    $mkid = trim((string) $mkid);
+    if ($mkid === '') {
+        return '';
+    }
+
+    return rtrim($_MAPS_CONF['site_url'], '/') . '/index.php?mode=marker&mkid='
+        . rawurlencode($mkid);
+}
+
+/**
  * Normalize a requested Item Info field list.
  *
  * @param string|array $what
