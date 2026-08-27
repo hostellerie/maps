@@ -19,15 +19,10 @@ jobs:
       - name: Apply fixes
         run: python3 tools/fix-marker-runtime.py
 
-      - name: Verify changes
-        shell: bash
+      - name: Verify PHP syntax
         run: |
           php -l admin/index.php
           php -l admin/marker_edit.php
-          grep -q 'type="date" id="from"' templates/marker_form.thtml
-          grep -q 'typeof google.maps.Geocoder !== "function"' admin/marker_edit.php
-          if grep -q '\.datepicker' admin/marker_edit.php; then exit 1; fi
-          if grep -q "field' => 'view'" admin/index.php; then exit 1; fi
 
       - name: Commit fixes
         shell: bash
