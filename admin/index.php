@@ -148,22 +148,18 @@ function plugin_getListField_maps($fieldname, $fieldvalue, $A, $icon_arr)
             $safeTitle = htmlspecialchars($map_title, ENT_QUOTES, 'UTF-8');
             $url = $_MAPS_CONF['site_url']
                 . '/index.php?mode=map&mid=' . (int) $A['mid'];
-            $link = COM_createLink(
+            $linkTitle = $LANG_MAPS_1['title_display'];
+            if ($A['description'] != '') {
+                $description = trim(MAPS_decodeStoredText($A['description']));
+                if ($description !== '') {
+                    $linkTitle .= ' — ' . $description;
+                }
+            }
+            $retval = COM_createLink(
                 $safeTitle,
                 $url,
-                array('title' => htmlspecialchars($LANG_MAPS_1['title_display'], ENT_QUOTES, 'UTF-8'))
+                array('title' => htmlspecialchars($linkTitle, ENT_QUOTES, 'UTF-8'))
             );
-
-            if ($A['description'] != '') {
-                $safeDescription = htmlspecialchars(
-                    MAPS_decodeStoredText($A['description']),
-                    ENT_QUOTES,
-                    'UTF-8'
-                );
-                $retval = COM_getTooltip($safeTitle, $safeDescription, $url, $safeTitle, 'help');
-            } else {
-                $retval = $link;
-            }
             break;
         case "id":
             $retval = $A['mid'];

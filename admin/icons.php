@@ -66,7 +66,8 @@ function MAPS_getListField_icons($fieldname, $fieldvalue, $icon, $icon_arr)
             $filename = basename((string) $fieldvalue);
             $path = $_MAPS_CONF['path_icons_images'] . $filename;
             if ($filename !== '' && is_file($path)) {
-                $url = $_MAPS_CONF['images_icons_url'] . rawurlencode($filename);
+                $url = $_MAPS_CONF['images_icons_url'] . rawurlencode($filename)
+                    . '?v=' . (int) @filemtime($path);
                 return '<img src="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8')
                     . '" alt="' . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . '">';
             }
@@ -117,7 +118,8 @@ function MAPS_getIconForm($icon = array())
     $filename = basename((string) $icon['icon_image']);
     $path = $_MAPS_CONF['path_icons_images'] . $filename;
     if ($filename !== '' && is_file($path)) {
-        $url = $_MAPS_CONF['images_icons_url'] . rawurlencode($filename);
+        $url = $_MAPS_CONF['images_icons_url'] . rawurlencode($filename)
+            . '?v=' . (int) @filemtime($path);
         $template->set_var(
             'icon_image',
             '<p>' . htmlspecialchars($LANG_MAPS_1['image_replace'], ENT_QUOTES, 'UTF-8') . '</p>'

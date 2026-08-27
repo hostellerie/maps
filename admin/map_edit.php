@@ -127,7 +127,13 @@ function getMapForm($map = array())
     $radio .= '<label><input type="radio" name="mk_icon" value="0"' . ((int) $map['mmk_icon'] === 0 ? ' checked="checked"' : '') . '> ' . $LANG_MAPS_1['no_icon'] . '</label> ';
     $icons = DB_query("SELECT * FROM {$_TABLES['maps_map_icons']} ORDER BY icon_name");
     while ($icon = DB_fetchArray($icons)) {
-        $radio .= '<label><input type="radio" name="mk_icon" value="' . (int) $icon['icon_id'] . '"' . ((int) $map['mmk_icon'] === (int) $icon['icon_id'] ? ' checked="checked"' : '') . '> <img src="' . $_MAPS_CONF['images_icons_url'] . rawurlencode($icon['icon_image']) . '" alt="" style="max-width:32px;max-height:32px"></label> ';
+        $iconFile = basename((string) $icon['icon_image']);
+        $iconPath = $_MAPS_CONF['path_icons_images'] . $iconFile;
+        $iconUrl = $_MAPS_CONF['images_icons_url'] . rawurlencode($iconFile);
+        if ($iconFile !== '' && is_file($iconPath)) {
+            $iconUrl .= '?v=' . (int) @filemtime($iconPath);
+        }
+        $radio .= '<label><input type="radio" name="mk_icon" value="' . (int) $icon['icon_id'] . '"' . ((int) $map['mmk_icon'] === (int) $icon['icon_id'] ? ' checked="checked"' : '') . '> <img src="' . htmlspecialchars($iconUrl, ENT_QUOTES, 'UTF-8') . '" alt="" style="max-width:32px;max-height:32px"></label> ';
     }
     $template->set_var('icon', $radio);
 
