@@ -207,9 +207,10 @@ if ($msg !== '') {
 }
 
 if (!file_exists($_MAPS_CONF['path_overlay_images']) || !is_writable($_MAPS_CONF['path_overlay_images'])) {
-    $display .= COM_showMessageText(
+    $display .= MAPS_message(
         '>> ' . htmlspecialchars($_MAPS_CONF['path_overlay_images'], ENT_QUOTES, 'UTF-8')
-        . '<p>' . htmlspecialchars($LANG_MAPS_1['overlay_not_writable'], ENT_QUOTES, 'UTF-8') . '</p>'
+        . '<p>' . htmlspecialchars($LANG_MAPS_1['overlay_not_writable'], ENT_QUOTES, 'UTF-8') . '</p>',
+        $LANG_MAPS_1['error']
     );
 } else {
     $display .= '<br><h1>' . htmlspecialchars($LANG_MAPS_1['overlays_list'], ENT_QUOTES, 'UTF-8') . '</h1>';
@@ -225,7 +226,10 @@ if (!file_exists($_MAPS_CONF['path_overlay_images']) || !is_writable($_MAPS_CONF
     if ($mode === 'move') {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !SEC_checkToken()) {
             COM_accessLog('Invalid CSRF token on Maps overlay ordering action.');
-            $display .= COM_showMessageText($MESSAGE[29], $MESSAGE[30]);
+            $display .= MAPS_message(
+                'Invalid or expired security token.',
+                $LANG_MAPS_1['error']
+            );
         } else {
             $oid = isset($_POST['oid']) ? (int) $_POST['oid'] : 0;
             $where = isset($_POST['where']) ? COM_applyFilter($_POST['where']) : '';

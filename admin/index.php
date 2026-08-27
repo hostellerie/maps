@@ -339,7 +339,7 @@ function MAPS_adminDocumentation($collapsible = false)
     $html .= '</ol>';
     $html .= '<p><a href="' . htmlspecialchars($createMapUrl, ENT_QUOTES, 'UTF-8') . '"><strong>' . ucfirst($LANG_MAPS_1['create_map']) . '</strong></a></p>';
 
-    $html .= '<h3>' . $LANG_MAPS_1['admin_help_geo_title'] . '</h3>';
+    $html .= '<h3 id="maps-user-geolocation">' . $LANG_MAPS_1['admin_help_geo_title'] . '</h3>';
     $html .= '<p>' . $LANG_MAPS_1['admin_help_geo_intro'] . '</p>';
     $html .= '<ul>';
     $html .= '<li>' . $LANG_MAPS_1['admin_help_geo_1'] . '</li>';
@@ -425,9 +425,10 @@ switch ($mode) {
         $display .= MAPS_admin_menu();
 
         if (!empty($requestData['msg'])) {
-            $display .= COM_startBlock($LANG_MAPS_1['message'], '', 'blockheader-message.thtml');
-            $display .= htmlspecialchars((string) $requestData['msg'], ENT_QUOTES, 'UTF-8');
-            $display .= COM_endBlock('blockfooter-message.thtml');
+            $display .= MAPS_message(
+                htmlspecialchars((string) $requestData['msg'], ENT_QUOTES, 'UTF-8'),
+                $LANG_MAPS_1['message']
+            );
         }
 
         $display .= MAPS_adminGoogleApiStatus();

@@ -285,7 +285,8 @@ if (!empty($requestData['msg'])) {
 if (!file_exists($_MAPS_CONF['path_icons_images']) || !is_writable($_MAPS_CONF['path_icons_images'])) {
     $display .= MAPS_message(
         '>> ' . htmlspecialchars($_MAPS_CONF['path_icons_images'], ENT_QUOTES, 'UTF-8')
-        . '<p>' . $LANG_MAPS_1['icons_not_writable'] . '</p>'
+        . '<p>' . htmlspecialchars($LANG_MAPS_1['icons_not_writable'], ENT_QUOTES, 'UTF-8') . '</p>',
+        $LANG_MAPS_1['error']
     );
 } else {
     if (in_array($mode, array('save', 'delete'), true)) {
@@ -332,9 +333,10 @@ if (!file_exists($_MAPS_CONF['path_icons_images']) || !is_writable($_MAPS_CONF['
             $post = is_array($_POST) ? $_POST : array();
             $name = trim(isset($post['icon_name']) ? (string) $post['icon_name'] : '');
             if ($name === '') {
-                $display .= COM_startBlock($LANG_MAPS_1['error'], '', 'blockheader-message.thtml');
-                $display .= $LANG_MAPS_1['missing_field'];
-                $display .= COM_endBlock('blockfooter-message.thtml');
+                $display .= MAPS_message(
+                    htmlspecialchars($LANG_MAPS_1['missing_field'], ENT_QUOTES, 'UTF-8'),
+                    $LANG_MAPS_1['error']
+                );
                 $display .= MAPS_getIconForm(array_merge($post, array('icon_id' => $id)));
                 break;
             }
