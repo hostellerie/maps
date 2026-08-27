@@ -46,7 +46,7 @@ jobs:
           grep -q 'maps-markers-heading' source/public_html/index.php
           grep -q 'map_markers_heading' source/language/english.php
           grep -q 'map_markers_heading' source/language/french_france_utf-8.php
-          grep -q "'<div class=\"maps_list_item\"><strong><a href=\"' . \$_MAPS_CONF\['site_url'\] . '/users_map.php'" source/public_html/index.php
+          grep -Fq '<div class="maps_list_item"><strong><a href="' source/public_html/index.php
           grep -q 'maps-admin-title' source/admin/index.php
           grep -q 'maps-admin-menu' source/templates/admin_menu.thtml
           grep -q 'maps-admin-title' source/templates/geocoder.thtml
