@@ -329,17 +329,6 @@ function MAPS_arrayGet($array, $key, $default = '')
 }
 
 /**
- * Render configured marker custom fields for public output.
- *
- * A field is public only when both its configured label and stored value are
- * non-empty. Values keep Maps' historical autotag support through
- * PLG_replaceTags(), while labels are always escaped.
- *
- * @param array  $marker
- * @param string $layout compact for info windows, detail for marker pages
- * @return string
- */
-/**
  * Return whether a configurable marker custom field should be shown in forms.
  *
  * Default placeholder labels do not activate a field. Existing stored values
@@ -378,6 +367,17 @@ function MAPS_shouldShowCustomField($index, $marker = array())
     return !in_array($label, $defaultLabels, true);
 }
 
+/**
+ * Render configured marker custom fields for public output.
+ *
+ * A field is public only when both its configured label and stored value are
+ * non-empty. Values keep Maps' historical autotag support through
+ * PLG_replaceTags(), while labels are always escaped.
+ *
+ * @param array  $marker
+ * @param string $layout compact for info windows, detail for marker pages
+ * @return string
+ */
 function MAPS_renderPublicCustomFields($marker, $layout = 'detail')
 {
     global $_MAPS_CONF;
