@@ -24,36 +24,11 @@ s = s.replace("date(\"m/d/Y\", strtotime($marker['validity_start']))", "date(\"Y
 s = s.replace("date(\"m/d/Y\", strtotime($marker['validity_end']))", "date(\"Y-m-d\", strtotime($marker['validity_end']))")
 s = s.replace('date("m/d/Y")', 'date("Y-m-d")')
 
-# Remove both legacy datepicker initializers, including the remaining block.
-s = s.replace('''\tjQuery(document).ready(
-        function()
-        {
-\t\t\t$( "#from" ).datepicker();
-\t\t    $( "#to" ).datepicker();
-        });
-\t\t
-''', '')
-s = s.replace('''\t\tjQuery(function() {
-\t\t\tjQuery(\'#from\').datepicker({
-\t\t\t\taltFormat:\'m/d/Y\'
-\t\t\t});
-\t\t\tjQuery(\'#to\').datepicker({
-\t\t\t\taltFormat:\'m/d/Y\',
-\t\t\t});
-\t\t});
-\t\t
-\t\t
-''', '')
-s = s.replace('''\t\tjQuery(function() {
-\t\t\tjQuery(\'#from\').datepicker({
-\t\t\t\taltFormat:\'m/d/Y\'
-\t\t\t});
-\t\t\tjQuery(\'#to\').datepicker({
-\t\t\t\taltFormat:\'m/d/Y\',
-\t\t\t});
-\t\t});
-\t\t
-''', '')
+# Remove all legacy datepicker initialization between its wrapper and Google setup.
+dp_start = s.find('\t\tjQuery(function() {')
+dp_end = s.find('\t\tvar geocoder', dp_start)
+if dp_start >= 0 and dp_end > dp_start:
+    s = s[:dp_start] + s[dp_end:]
 
 # Never instantiate Geocoder before Google Maps has fully loaded.
 s = s.replace('\t\tvar geocoder = new google.maps.Geocoder();', '\t\tvar geocoder = null;')
@@ -98,5 +73,4 @@ if '\t\t  if (!geocoder) {' not in s:
 
 s = s.replace("\t$_SCRIPTS->setJavaScriptFile('ui_core', '/javascript/jquery_ui/jquery.ui.core.min.js');\n", '')
 s = s.replace("\t$_SCRIPTS->setJavaScriptFile('datepicker', '/javascript/jquery_ui/jquery.ui.datepicker.min.js');\n", '')
-
 p.write_text(s, encoding='utf-8')
