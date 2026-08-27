@@ -2,14 +2,14 @@
 
 Maps is a Geeklog plugin for creating Google Maps, markers, overlays, profile maps, Calendar event maps and map autotags.
 
-## Maps 1.5 compatibility target
+## Maps 1.5.7 compatibility target
 
 - Geeklog 2.1.1 through 2.2.2
-- PHP 5.6 through 8.1
+- PHP 5.6 through 8.3
 - MySQL/MariaDB versions supported by the corresponding Geeklog release
 - Google Maps Platform as available in 2026
 
-PHP syntax is checked on PHP 5.6, 7.4 and 8.1 with GitHub Actions.
+PHP syntax is checked on PHP 5.6, 7.4, 8.1 and 8.3 with GitHub Actions. The install compatibility gate accepts PHP 5.6 through 8.3 and Geeklog 2.1.1 through 2.2.2.
 
 ## Modernization roadmap
 
@@ -64,9 +64,11 @@ Maps 1.5 removes:
 
 ## Upgrade
 
-The supported direct upgrade path is Maps 1.4.0 to Maps 1.5.0. Older Maps installations should first be upgraded to 1.4.0 so the historical database migrations are applied before installing 1.5.0.
+The supported modernization path is to reach Maps 1.4.0 first, then run Geeklog's normal plugin upgrade to Maps 1.5.7. The 1.5.7 upgrader applies the complete 1.5.x configuration and public-folder migrations in sequence, including repairs introduced in 1.5.1 through 1.5.7.
 
-Back up the database and the shared `images/maps/` directory before upgrading a production site.
+Older Maps installations should therefore be upgraded to 1.4.0 before installing the 1.5.7 files. Back up the database and the shared `images/maps/` directory before upgrading a production site.
+
+After copying or uploading the 1.5.7 package, run the normal Geeklog plugin upgrade from the Plugin Administration screen before opening the Maps administration page.
 
 ## Autotags
 
