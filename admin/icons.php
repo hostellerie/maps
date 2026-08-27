@@ -161,6 +161,17 @@ function MAPS_getMapsUsingIcon($iconId)
             $maps[$mid] = true;
         }
     }
+
+    $result = DB_query(
+        "SELECT mid FROM {$_TABLES['maps_maps']} WHERE mmk_icon=" . $iconId
+    );
+    while ($row = DB_fetchArray($result)) {
+        $mid = isset($row['mid']) ? (int) $row['mid'] : 0;
+        if ($mid > 0) {
+            $maps[$mid] = true;
+        }
+    }
+
     return $maps;
 }
 
@@ -295,6 +306,9 @@ if (!file_exists($_MAPS_CONF['path_icons_images']) || !is_writable($_MAPS_CONF['
             if ($id > 0 && (int) DB_count($_TABLES['maps_map_icons'], 'icon_id', $id) === 1) {
                 DB_query(
                     "UPDATE {$_TABLES['maps_markers']} SET mk_icon=0, mk_default=1 WHERE mk_icon=" . $id
+                );
+                DB_query(
+                    "UPDATE {$_TABLES['maps_maps']} SET mmk_icon=0, mmk_default=1 WHERE mmk_icon=" . $id
                 );
                 DB_delete($_TABLES['maps_map_icons'], 'icon_id', $id);
             }
