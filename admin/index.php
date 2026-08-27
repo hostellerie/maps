@@ -145,12 +145,22 @@ function plugin_getListField_maps($fieldname, $fieldvalue, $A, $icon_arr)
             break;
         case "name":
             $map_title = MAPS_decodeStoredText($A['name']);
-            $url = $_MAPS_CONF['site_url'] .
-                                 '/index.php?mode=map&mid=' . $A['mid'];
-            $link = COM_createLink($map_title, $url, array('title'=>$LANG_MAPS_1['title_display']));
+            $safeTitle = htmlspecialchars($map_title, ENT_QUOTES, 'UTF-8');
+            $url = $_MAPS_CONF['site_url']
+                . '/index.php?mode=map&mid=' . (int) $A['mid'];
+            $link = COM_createLink(
+                $safeTitle,
+                $url,
+                array('title' => htmlspecialchars($LANG_MAPS_1['title_display'], ENT_QUOTES, 'UTF-8'))
+            );
 
             if ($A['description'] != '') {
-                $retval = COM_getTooltip($map_title, MAPS_decodeStoredText($A['description']), $url, $map_title, 'help');
+                $safeDescription = htmlspecialchars(
+                    MAPS_decodeStoredText($A['description']),
+                    ENT_QUOTES,
+                    'UTF-8'
+                );
+                $retval = COM_getTooltip($safeTitle, $safeDescription, $url, $safeTitle, 'help');
             } else {
                 $retval = $link;
             }
@@ -175,7 +185,7 @@ function plugin_getListField_maps($fieldname, $fieldvalue, $A, $icon_arr)
             );
             break;
         default:
-            $retval = stripslashes($fieldvalue);
+            $retval = htmlspecialchars(stripslashes((string) $fieldvalue), ENT_QUOTES, 'UTF-8');
             break;
     }
     return $retval;
@@ -336,7 +346,15 @@ function MAPS_adminDocumentation($collapsible = false)
     $html .= '<li>' . $LANG_MAPS_1['admin_help_geo_2'] . '</li>';
     $html .= '<li>' . $LANG_MAPS_1['admin_help_geo_3'] . '</li>';
     $html .= '</ul>';
-    $html .= '<p><a href="' . $_CONF['site_admin_url'] . '/plugins/maps/index.php?mode=setgeolocation"><strong>' . $LANG_MAPS_1['set_user_geo'] . '</strong></a></p>';
+    $geoToken = SEC_createToken();
+    $html .= '<form method="post" action="' . htmlspecialchars($_CONF['site_admin_url'], ENT_QUOTES, 'UTF-8')
+        . '/plugins/maps/index.php" class="maps-inline-action">'
+        . '<input type="hidden" name="mode" value="setgeolocation">'
+        . '<input type="hidden" name="' . CSRF_TOKEN . '" value="'
+        . htmlspecialchars($geoToken, ENT_QUOTES, 'UTF-8') . '">'
+        . '<button type="submit"><strong>'
+        . htmlspecialchars($LANG_MAPS_1['set_user_geo'], ENT_QUOTES, 'UTF-8')
+        . '</strong></button></form>';
 
     $html .= '<h3>' . $LANG_MAPS_1['admin_help_overlays_title'] . '</h3>';
     $html .= '<p>' . $LANG_MAPS_1['admin_help_overlays_intro'] . '</p>';
@@ -372,7 +390,9 @@ function MAPS_adminDocumentation($collapsible = false)
     return $html;
 }
 
-$mode = isset($_REQUEST['mode']) ? $_REQUEST['mode'] : '';
+$requestMethod = isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
+$requestData = $requestMethod === 'POST' ? $_POST : $_GET;
+$mode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode']) : '';
 
 switch ($mode) {
     case 'edit':
@@ -385,17 +405,28 @@ switch ($mode) {
         exit;
 
     case 'setgeolocation':
+        if ($requestMethod !== 'POST' || !SEC_checkToken()) {
+            COM_accessLog('Rejected Maps geolocation mutation because of missing or invalid CSRF token.');
+            echo COM_refresh(
+                $_CONF['site_admin_url'] . '/plugins/maps/index.php?msg='
+                . urlencode('Invalid or expired security token.')
+            );
+            exit;
+        }
         MAPS_setGeoLocation();
-        echo COM_refresh($_CONF['site_admin_url'] . '/plugins/maps/index.php?msg=' . urlencode($LANG_MAPS_1['set_geo_location']));
+        echo COM_refresh(
+            $_CONF['site_admin_url'] . '/plugins/maps/index.php?msg='
+            . urlencode($LANG_MAPS_1['set_geo_location'])
+        );
         exit;
 
     default:
         $display = MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
         $display .= MAPS_admin_menu();
 
-        if (!empty($_REQUEST['msg'])) {
+        if (!empty($requestData['msg'])) {
             $display .= COM_startBlock($LANG_MAPS_1['message'], '', 'blockheader-message.thtml');
-            $display .= htmlspecialchars((string) $_REQUEST['msg'], ENT_QUOTES, 'UTF-8');
+            $display .= htmlspecialchars((string) $requestData['msg'], ENT_QUOTES, 'UTF-8');
             $display .= COM_endBlock('blockfooter-message.thtml');
         }
 
