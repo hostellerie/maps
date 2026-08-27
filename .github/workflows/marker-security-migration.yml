@@ -1,0 +1,34 @@
+name: Marker security migration
+
+on:
+  push:
+    branches:
+      - modernize/maps-1.5
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-marker-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modernize/maps-1.5
+      - name: Apply marker security patch
+        shell: bash
+        run: python3 -c "$(printf '%s' 'CmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aApwID0gUGF0aCgiYWRtaW4vbWFya2VyX2VkaXQucGhwIikKcyA9IHAucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpCgpmb3JtX2FuY2hvciA9ICIkdGVtcGxhdGUtPnNldF9maWxlKGFycmF5KCdtYXAnID0+ICdtYXJrZXJfZm9ybS50aHRtbCcpKTtcbiIKZm9ybV9pbnNlcnQgPSAiIiIkdGVtcGxhdGUtPnNldF9maWxlKGFycmF5KCdtYXAnID0+ICdtYXJrZXJfZm9ybS50aHRtbCcpKTsKICAgICAgICAkdG9rZW4gPSBTRUNfY3JlYXRlVG9rZW4oKTsKICAgICAgICAkdGVtcGxhdGUtPnNldF92YXIoCiAgICAgICAgICAgICdjc3JmX3Rva2VuJywKICAgICAgICAgICAgJzxpbnB1dCB0eXBlPSJoaWRkZW4iIG5hbWU9IicgLiBDU1JGX1RPS0VOIC4gJyIgdmFsdWU9IicKICAgICAgICAgICAgLiBodG1sc3BlY2lhbGNoYXJzKCR0b2tlbiwgRU5UX1FVT1RFUywgJ1VURi04JykgLiAnIj4nCiAgICAgICAgKTsKIiIiCmlmICIkdGVtcGxhdGUtPnNldF92YXIoXG4gICAgICAgICAgICAnY3NyZl90b2tlbiciIG5vdCBpbiBzOgogICAgaWYgZm9ybV9hbmNob3Igbm90IGluIHM6CiAgICAgICAgcmFpc2UgU3lzdGVtRXhpdCgibWFya2VyIGZvcm0gYW5jaG9yIG5vdCBmb3VuZCIpCiAgICBzID0gcy5yZXBsYWNlKGZvcm1fYW5jaG9yLCBmb3JtX2luc2VydCwgMSkKCm1haW5fYW5jaG9yID0gIiIiLy8gTUFJTgokbWtpZCA9IGlzc2V0KCRfUkVRVUVTVFsnbWtpZCddKSA/IHByZWdfcmVwbGFjZSgnL1teMC05XS8nLCAnJywgKHN0cmluZykgJF9SRVFVRVNUWydta2lkJ10pIDogJyc7CiRkaXNwbGF5IC49IE1BUFNfY29tcGF0U2l0ZUhlYWRlcignbWVudScsICRMQU5HX01BUFNfMVsncGx1Z2luX25hbWUnXSk7CiRkaXNwbGF5IC49IG1hcHNfYWRtaW5fbWVudSgpOwoKJHJlcXVlc3RNb2RlID0gaXNzZXQoJF9SRVFVRVNUWydtb2RlJ10pID8gJF9SRVFVRVNUWydtb2RlJ10gOiAnJzsKJG1hcmtlck1hcEJlZm9yZSA9IDA7CiIiIgptYWluX2luc2VydCA9ICIiIi8vIE1BSU4KJHJlcXVlc3RNZXRob2QgPSBpc3NldCgkX1NFUlZFUlsnUkVRVUVTVF9NRVRIT0QnXSkgPyBzdHJ0b3VwcGVyKCRfU0VSVkVSWydSRVFVRVNUX01FVEhPRCddKSA6ICdHRVQnOwokcmVxdWVzdERhdGEgPSAkcmVxdWVzdE1ldGhvZCA9PT0gJ1BPU1QnID8gJF9QT1NUIDogJF9HRVQ7CiRyZXF1ZXN0TW9kZSA9IGlzc2V0KCRyZXF1ZXN0RGF0YVsnbW9kZSddKSA/IENPTV9hcHBseUZpbHRlcigkcmVxdWVzdERhdGFbJ21vZGUnXSkgOiAnJzsKJG1raWQgPSBpc3NldCgkcmVxdWVzdERhdGFbJ21raWQnXSkgPyBwcmVnX3JlcGxhY2UoJy9bXjAtOV0vJywgJycsIChzdHJpbmcpICRyZXF1ZXN0RGF0YVsnbWtpZCddKSA6ICcnOwokZGlzcGxheSAuPSBNQVBTX2NvbXBhdFNpdGVIZWFkZXIoJ21lbnUnLCAkTEFOR19NQVBTXzFbJ3BsdWdpbl9uYW1lJ10pOwokZGlzcGxheSAuPSBtYXBzX2FkbWluX21lbnUoKTsKCmlmIChpbl9hcnJheSgkcmVxdWVzdE1vZGUsIGFycmF5KCdzYXZlJywgJ2RlbGV0ZScpLCB0cnVlKSkgewogICAgaWYgKCRyZXF1ZXN0TWV0aG9kICE9PSAnUE9TVCcgfHwgIVNFQ19jaGVja1Rva2VuKCkpIHsKICAgICAgICBDT01fYWNjZXNzTG9nKCdSZWplY3RlZCBNYXBzIG1hcmtlciBtdXRhdGlvbiBiZWNhdXNlIG9mIG1pc3Npbmcgb3IgaW52YWxpZCBDU1JGIHRva2VuLicpOwogICAgICAgICRkaXNwbGF5IC49IE1BUFNfbWVzc2FnZSgnSW52YWxpZCBvciBleHBpcmVkIHNlY3VyaXR5IHRva2VuLicsICRMQU5HX01BUFNfMVsnZXJyb3InXSk7CiAgICAgICAgJHJlcXVlc3RNb2RlID0gJyc7CiAgICB9IGVsc2UgewogICAgICAgICRfUkVRVUVTVCA9ICRfUE9TVDsKICAgICAgICAkbWtpZCA9IGlzc2V0KCRfUE9TVFsnbWtpZCddKSA/IHByZWdfcmVwbGFjZSgnL1teMC05XS8nLCAnJywgKHN0cmluZykgJF9QT1NUWydta2lkJ10pIDogJyc7CiAgICB9Cn0KCiRtYXJrZXJNYXBCZWZvcmUgPSAwOwoiIiIKaWYgIlJlamVjdGVkIE1hcHMgbWFya2VyIG11dGF0aW9uIiBub3QgaW4gczoKICAgIGlmIG1haW5fYW5jaG9yIG5vdCBpbiBzOgogICAgICAgIHJhaXNlIFN5c3RlbUV4aXQoIm1hcmtlciBtYWluIGFuY2hvciBub3QgZm91bmQiKQogICAgcyA9IHMucmVwbGFjZShtYWluX2FuY2hvciwgbWFpbl9pbnNlcnQsIDEpCgpwLndyaXRlX3RleHQocywgZW5jb2Rpbmc9InV0Zi04IikK' | base64 -d)"
+      - name: Lint marker editor
+        run: php -l admin/marker_edit.php
+      - name: Commit marker security patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add admin/marker_edit.php
+          git commit -m 'Protect marker mutations with CSRF [skip ci]'
+          git pull --rebase origin modernize/maps-1.5
+          git push origin HEAD:modernize/maps-1.5
