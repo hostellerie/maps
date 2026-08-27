@@ -46,3 +46,12 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - Reordered the administration dashboard to maps list, statistics, then Google Maps API status.
 - Added missing page titles to import/export and the main map/marker editors.
 - Modernized the geocoder form while preserving its menu/title hierarchy.
+
+## Marker footer and user-link hardening
+
+- Reworked marker metadata into consistent labelled items and actions.
+- Removed the duplicate parent-map link beneath canonical marker pages.
+- Replaced the legacy lowercase `from` label with localized `Added by` / `Ajouté par`.
+- User-entered website and custom-field values are rendered as non-clickable escaped text.
+- Marker info windows always link to the canonical Maps marker page instead of a user-provided URL.
+- User-entered websites are no longer emitted as schema.org `sameAs`.

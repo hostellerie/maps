@@ -283,10 +283,6 @@ if ($mode === 'map' && $mid > 0) {
     if ($telephone !== '') {
         $place['telephone'] = $telephone;
     }
-    $website = trim(MAPS_decodeStoredText(MAPS_arrayGet($markerRow, 'web', '')));
-    if (filter_var($website, FILTER_VALIDATE_URL)) {
-        $place['sameAs'] = $website;
-    }
     $jsonLd = $place;
 } elseif ($mode === 'markers') {
     // Marker list views are navigation helpers rather than canonical landing pages.
@@ -327,12 +323,6 @@ switch ($mode) {
                 $content .= MAPS_getMarkerDetail((int) $markerMapRow['mid'], $mkid);
             }
             $content .= MAPS_ViewMarkerInfos($mkid);
-            if (!empty($markerMapRow['mid'])) {
-                $mapName = MAPS_decodeStoredText(MAPS_arrayGet($markerMapRow, 'name', ''));
-                $content .= '<p class="maps-marker-map-link"><a href="'
-                    . htmlspecialchars(MAPS_contentUrl((int) $markerMapRow['mid']), ENT_QUOTES, 'UTF-8') . '">'
-                    . htmlspecialchars($mapName, ENT_QUOTES, 'UTF-8') . '</a></p>';
-            }
             $content .= '</article>';
         }
         break;

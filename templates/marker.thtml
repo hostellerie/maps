@@ -21,8 +21,7 @@
     </div>
     <div class="maps-marker-directions-result">{directions_table_result}</div>
     <footer class="maps-marker-meta">
-        <div class="maps-marker-meta-primary">{owner} {map}</div>
-        <div class="maps-marker-meta-secondary">{update}</div>
-        <div class="maps-marker-meta-actions">{report} {edit}</div>
+        <div class="maps-marker-meta-facts">{owner}{map}{update}</div>
+        <div class="maps-marker-meta-actions">{report}{edit}</div>
     </footer>
 </section>

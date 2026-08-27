@@ -344,13 +344,13 @@ $LANG_MAPS_1 = array(
 	'group_label'           => 'Groupe (optionnel)',
 	'choose_group'          => 'Choisir un group',
 	'group'                 => 'Groupe',
-	'from_owner'            => 'de',
+	'from_owner'            => 'Ajouté par :',
 	
 	//v1.3
 	'geo_fail'              => 'L\'adresse saisie de semble pas être valide',
 	'on_map'                => 'Sur la carte',
 	'read_more'             => 'Lire la suite',
-	'from_map'              => 'Sur la carte',
+	'from_map'              => 'Carte :',
 	'show_hide_overlays'    => 'Afficher / masquer les calques',
 	'fields_presentation'   => 'Editez une catégorie existante pour ajouter ou éditer un champ.',
 	'overlays_added'        => 'Overlays présents sur cette carte',

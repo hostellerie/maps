@@ -392,7 +392,9 @@ function MAPS_renderPublicCustomFields($marker, $layout = 'detail')
         }
 
         $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
-        $renderedValue = PLG_replaceTags(stripslashes($value));
+        $expandedValue = PLG_replaceTags(stripslashes($value));
+        $plainValue = trim(strip_tags((string) $expandedValue));
+        $renderedValue = nl2br(htmlspecialchars($plainValue, ENT_QUOTES, 'UTF-8'));
         if ($layout === 'compact') {
             $html .= '<div class="maps-custom-field maps-custom-field-compact">'
                 . '<strong>' . $safeLabel . '</strong> ' . $renderedValue . '</div>';
@@ -2267,7 +2269,7 @@ function MAPS_renderMarker($marker, $primaryColor, $strokecolor, $label, $label_
             }
             $template->set_var('description', $short !== '' ? '<p>' . nl2br(htmlspecialchars($short, ENT_QUOTES, 'UTF-8')) . (strlen($description) > strlen($short) ? '…' : '') . '</p>' : '');
             $template->set_var('ressources', MAPS_renderPublicCustomFields($marker, 'compact'));
-            $readMore = MAPS_arrayGet($marker, 'url', '') !== '' ? $_CONF['site_url'] . '/' . ltrim($marker['url'], '/') : MAPS_markerContentUrl($marker['mkid']);
+            $readMore = MAPS_markerContentUrl($marker['mkid']);
             $template->set_var('read_more', '<a href="' . htmlspecialchars($readMore, ENT_QUOTES, 'UTF-8') . '">' . $LANG_MAPS_1['read_more'] . '</a>');
             $template->set_var('map', '<p>' . $LANG_MAPS_1['on_map'] . ' <a href="' . $_MAPS_CONF['site_url'] . '/index.php?mode=map&mid=' . (int) $marker['mid'] . '">' . htmlspecialchars(stripslashes($mapname), ENT_QUOTES, 'UTF-8') . '</a></p>');
             $currentUid = isset($_USER['uid']) ? (int) $_USER['uid'] : 1;
@@ -2711,24 +2713,51 @@ function MAPS_ViewMarkerInfos($mkid)
         $value = MAPS_arrayGet($marker, $field, '');
         $template->set_var($field, $value !== '' && (int) MAPS_arrayGet($_MAPS_CONF, $field, 1) ? '<p><strong>' . $LANG_MAPS_1[$field . '_label'] . '</strong> ' . htmlspecialchars(stripslashes($value), ENT_QUOTES, 'UTF-8') . '</p>' : '');
     }
-    $template->set_var('web', MAPS_arrayGet($marker, 'web', '') !== '' ? '<p><strong>' . $LANG_MAPS_1['web_label'] . '</strong> ' . MAPS_convertLinkToUrl($marker['web']) . '</p>' : '');
+    $webValue = trim((string) MAPS_arrayGet($marker, 'web', ''));
+    $template->set_var(
+        'web',
+        $webValue !== ''
+            ? '<p><strong>' . htmlspecialchars($LANG_MAPS_1['web_label'], ENT_QUOTES, 'UTF-8') . '</strong> '
+                . '<span class="maps-marker-user-url">'
+                . htmlspecialchars(MAPS_decodeStoredText($webValue), ENT_QUOTES, 'UTF-8') . '</span></p>'
+            : ''
+    );
     $template->set_var('space', '');
     $template->set_var('ressources', MAPS_renderPublicCustomFields($marker, 'detail'));
     $ownerUid = MAPS_resolveMarkerOwnerUid($marker);
     $uid = isset($_USER['uid']) ? (int) $_USER['uid'] : 1;
-    $template->set_var('edit', SEC_hasRights('maps.admin') || $uid === $ownerUid ? '<a href="' . $_MAPS_CONF['site_url'] . '/markers.php?mode=edit&amp;mkid=' . rawurlencode($marker['mkid']) . '">' . $LANG_MAPS_1['edit_button'] . '</a>' : '');
+    $template->set_var('edit', SEC_hasRights('maps.admin') || $uid === $ownerUid ? '<a class="maps-marker-secondary-action" href="' . $_MAPS_CONF['site_url'] . '/markers.php?mode=edit&amp;mkid=' . rawurlencode($marker['mkid']) . '">' . htmlspecialchars($LANG_MAPS_1['edit_button'], ENT_QUOTES, 'UTF-8') . '</a>' : '');
     $mapname = DB_getItem($_TABLES['maps_maps'], 'name', 'mid=' . (int) $marker['mid']);
-    $template->set_var('map', $LANG_MAPS_1['from_map'] . ' <a href="' . $_MAPS_CONF['site_url'] . '/index.php?mode=map&amp;mid=' . (int) $marker['mid'] . '">' . htmlspecialchars(stripslashes($mapname), ENT_QUOTES, 'UTF-8') . '</a>');
+    $template->set_var(
+        'map',
+        '<span class="maps-marker-meta-item"><strong>'
+        . htmlspecialchars($LANG_MAPS_1['from_map'], ENT_QUOTES, 'UTF-8') . '</strong> '
+        . '<a href="' . htmlspecialchars(MAPS_contentUrl((int) $marker['mid']), ENT_QUOTES, 'UTF-8') . '">'
+        . htmlspecialchars(stripslashes($mapname), ENT_QUOTES, 'UTF-8') . '</a></span>'
+    );
     if ($ownerUid > 1) {
         $profileUrl = $_CONF['site_url'] . '/users.php?mode=profile&amp;uid=' . $ownerUid;
-        $template->set_var('owner', $LANG_MAPS_1['from_owner'] . ' ' . COM_createLink(COM_getDisplayName($ownerUid), $profileUrl));
-        $template->set_var('report', '<a href="' . $_CONF['site_url'] . '/profiles.php?uid=' . $ownerUid . '&amp;subject=' . rawurlencode($LANG_MAPS_1['report_subject'] . $marker['mkid']) . '">' . $LANG_MAPS_1['report'] . '</a>');
+        $template->set_var(
+            'owner',
+            '<span class="maps-marker-meta-item"><strong>'
+            . htmlspecialchars($LANG_MAPS_1['from_owner'], ENT_QUOTES, 'UTF-8') . '</strong> '
+            . COM_createLink(COM_getDisplayName($ownerUid), $profileUrl) . '</span>'
+        );
+        $template->set_var('report', '<a class="maps-marker-secondary-action" href="' . $_CONF['site_url'] . '/profiles.php?uid=' . $ownerUid . '&amp;subject=' . rawurlencode($LANG_MAPS_1['report_subject'] . $marker['mkid']) . '">' . htmlspecialchars($LANG_MAPS_1['report'], ENT_QUOTES, 'UTF-8') . '</a>');
     } else {
         $template->set_var('owner', '');
         $template->set_var('report', '');
     }
     $update = COM_getUserDateTimeFormat($marker['modified']);
-    $template->set_var('update', $LANG_MAPS_1['last_modification'] . ' ' . $update[0] . ' · ' . (int) $marker['hits'] . ' ' . $LANG_MAPS_1['hits']);
+    $template->set_var(
+        'update',
+        '<span class="maps-marker-meta-item"><strong>'
+        . htmlspecialchars($LANG_MAPS_1['last_modification'], ENT_QUOTES, 'UTF-8') . '</strong> '
+        . htmlspecialchars($update[0], ENT_QUOTES, 'UTF-8') . '</span>'
+        . '<span class="maps-marker-meta-item"><strong>'
+        . htmlspecialchars($LANG_MAPS_1['hits'], ENT_QUOTES, 'UTF-8') . '</strong> '
+        . (int) $marker['hits'] . '</span>'
+    );
     $template->set_var('directions_table_result', '<a id="directions_' . htmlspecialchars($marker['mkid'], ENT_QUOTES, 'UTF-8') . '_table"></a><div id="directions' . htmlspecialchars($marker['mkid'], ENT_QUOTES, 'UTF-8') . '"></div>');
     hitMarker($mkid);
     return $template->parse('output', 'presentation');
