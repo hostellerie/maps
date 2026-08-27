@@ -147,3 +147,5 @@ After RC1, changes should be restricted to regression, compatibility, security a
 - Centralized public rendering of marker custom fields on marker detail pages and map info windows; fields are shown only when both label and value are present.
 
 - Marker edit forms now hide untouched custom-field placeholders; a field appears only after its label is customized, or when the marker already contains a value to preserve legacy data.
+
+- Fixed the 1.5.7 to 1.5.8 upgrade so the obsolete `infos_label` configuration row is removed and Geeklog configuration is reloaded immediately.

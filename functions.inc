@@ -1592,14 +1592,45 @@ function MAPS_repairConfig156()
     return true;
 }
 
-function plugin_upgrade_maps()
+/**
+ * Maps 1.5.8 configuration cleanup.
+ *
+ * Remove the obsolete Pro-only infos_label setting from existing installations
+ * and force Geeklog to reload the online configuration so the field disappears
+ * immediately after the upgrade. Safe to run more than once.
+ *
+ * @return bool
+ */
+function MAPS_cleanupConfig158()
 {
     global $_CONF, $_TABLES;
 
-    // Maps 1.5.8 removes the obsolete Pro-version infos_label option.
-    if (isset($_TABLES['conf_values']) && $_TABLES['conf_values'] !== '') {
-        DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='maps' AND name='infos_label'");
+    if (!isset($_TABLES['conf_values']) || $_TABLES['conf_values'] === '') {
+        COM_errorLog('Maps 1.5.8 upgrade: Geeklog configuration table is unavailable.');
+        return false;
     }
+
+    $groupSql = MAPS_dbEscape('maps');
+    $nameSql = MAPS_dbEscape('infos_label');
+    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='" . $groupSql
+        . "' AND name='" . $nameSql . "'");
+
+    require_once rtrim($_CONF['path_system'], '/\\') . DIRECTORY_SEPARATOR . 'classes'
+        . DIRECTORY_SEPARATOR . 'config.class.php';
+    if (class_exists('config')) {
+        $config = config::get_instance();
+        if (method_exists($config, 'initConfig')) {
+            $config->initConfig();
+        }
+    }
+
+    COM_errorLog('Maps 1.5.8 upgrade: obsolete infos_label configuration removed.', 1);
+    return true;
+}
+
+function plugin_upgrade_maps()
+{
+    global $_CONF, $_TABLES;
 
     $installed = (string) DB_getItem($_TABLES['plugins'], 'pi_version', "pi_name='maps'");
     $code = plugin_chkVersion_maps();
@@ -1661,6 +1692,14 @@ function plugin_upgrade_maps()
     if (version_compare($installed, '1.5.6', '<')) {
         if (!MAPS_repairConfig156()) {
             COM_errorLog('Maps 1.5.6 upgrade stopped: configuration metadata repair failed.');
+            return false;
+        }
+    }
+
+    /* Maps 1.5.8 removes the obsolete Pro-version infos_label option. */
+    if (version_compare($installed, '1.5.8', '<')) {
+        if (!MAPS_cleanupConfig158()) {
+            COM_errorLog('Maps 1.5.8 upgrade stopped: configuration cleanup failed.');
             return false;
         }
     }
