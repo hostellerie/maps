@@ -31,4 +31,4 @@ These services are deliberately internal. Requests arriving through Geeklog Webs
 ## Administration and menu integration
 
 - Saving a map in administration now redirects to its public map page so the administrator can immediately validate the result.
-- Maps now implements Geeklog's native `plugin_getmenuitems_maps()` callback and always exposes `/maps/index.php` as its plugin-menu destination, preventing empty `#` menu links.
+- Maps already exposes `/maps/index.php` through Geeklog's native `plugin_getmenuitems_maps()` callback when `hide_maps_menu` is disabled. A `#` fallback from a custom Menu element therefore points to a Menu-side fallback/configuration issue rather than a missing Maps callback.
