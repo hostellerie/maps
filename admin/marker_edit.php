@@ -155,6 +155,12 @@ function getMarkerForm($marker = array()) {
 	} else {
 		$template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
 		$template->set_file(array('map' => 'marker_form.thtml'));
+        $token = SEC_createToken();
+        $template->set_var(
+            'csrf_token',
+            '<input type="hidden" name="' . CSRF_TOKEN . '" value="'
+            . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
+        );
         $template->set_var('marker_editor_width', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_width', '100%'), '100%'));
         $template->set_var('marker_editor_height', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_height', '400px'), '400px'));
 		$template->set_var('site_url', $_CONF['site_url']);
@@ -668,11 +674,24 @@ function getMarkerForm($marker = array()) {
 }
 
 // MAIN
-$mkid = isset($_REQUEST['mkid']) ? preg_replace('/[^0-9]/', '', (string) $_REQUEST['mkid']) : '';
+$requestMethod = isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
+$requestData = $requestMethod === 'POST' ? $_POST : $_GET;
+$requestMode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode']) : '';
+$mkid = isset($requestData['mkid']) ? preg_replace('/[^0-9]/', '', (string) $requestData['mkid']) : '';
 $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
 $display .= maps_admin_menu();
 
-$requestMode = isset($_REQUEST['mode']) ? $_REQUEST['mode'] : '';
+if (in_array($requestMode, array('save', 'delete'), true)) {
+    if ($requestMethod !== 'POST' || !SEC_checkToken()) {
+        COM_accessLog('Rejected Maps marker mutation because of missing or invalid CSRF token.');
+        $display .= MAPS_message('Invalid or expired security token.', $LANG_MAPS_1['error']);
+        $requestMode = '';
+    } else {
+        $_REQUEST = $_POST;
+        $mkid = isset($_POST['mkid']) ? preg_replace('/[^0-9]/', '', (string) $_POST['mkid']) : '';
+    }
+}
+
 $markerMapBefore = 0;
 if ($requestMode === 'delete' && !empty($mkid)) {
     $markerMapBefore = (int) DB_getItem($_TABLES['maps_markers'], 'mid', "mkid='" . MAPS_dbEscape($mkid) . "'");
