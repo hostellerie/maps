@@ -46,6 +46,12 @@ function getMapForm($map = array())
     $template->set_file(array('map' => 'map_form.thtml'));
 
     $template->set_var('site_admin_url', $_CONF['site_admin_url']);
+    $token = SEC_createToken();
+    $template->set_var(
+        'csrf_token',
+        '<input type="hidden" name="' . CSRF_TOKEN . '" value="'
+        . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
+    );
     $template->set_var('map_tab', $LANG_MAPS_1['map_tab']);
     $template->set_var('overlays_tab', $LANG_MAPS_1['overlays_tab']);
     $template->set_var('informations', $LANG_MAPS_1['informations']);
@@ -168,7 +174,6 @@ function getMapForm($map = array())
     $template->set_var('overlays', $map['mid'] !== '' ? MAPS_displayOverlays($map['mid']) : '');
     $template->set_var('add_overlay', $map['mid'] !== '' ? MAPS_displayOverlaysToAdd($map['mid']) : '<p>' . $LANG_MAPS_1['add_overlay'] . '</p>');
 
-
     $editorScript = "<script type=\"text/javascript\">\n"
         . '(function(){'
         . 'function ready(fn){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",fn);}else{fn();}}'
@@ -203,9 +208,19 @@ function getMapForm($map = array())
         . $template->parse('output', 'map') . $editorScript . COM_endBlock();
 }
 
-$mode = isset($_REQUEST['mode']) ? COM_applyFilter($_REQUEST['mode']) : 'new';
-$mid = isset($_REQUEST['mid']) ? (int) $_REQUEST['mid'] : 0;
+$requestMethod = isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
+$requestData = $requestMethod === 'POST' ? $_POST : $_GET;
+$mode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode']) : 'new';
+$mid = isset($requestData['mid']) ? (int) $requestData['mid'] : 0;
 $content = MAPS_admin_menu();
+
+if (in_array($mode, array('save', 'delete'), true)) {
+    if ($requestMethod !== 'POST' || !SEC_checkToken()) {
+        COM_accessLog('Rejected Maps map mutation because of missing or invalid CSRF token.');
+        $content .= MAPS_message('Invalid or expired security token.', $LANG_MAPS_1['error']);
+        $mode = $mid > 0 ? 'edit' : 'new';
+    }
+}
 
 if ($mode === 'delete' && $mid > 0) {
     $mapExisted = (int) DB_count($_TABLES['maps_maps'], 'mid', $mid) > 0;
@@ -222,11 +237,6 @@ if ($mode === 'delete' && $mid > 0) {
 }
 
 if ($mode === 'save') {
-    /*
-     * Read editor values from POST only. Using $_REQUEST here can merge GET
-     * and COOKIE values depending on PHP request_order and may overwrite form
-     * values on some installations.
-     */
     $post = is_array($_POST) ? $_POST : array();
     $mid = isset($post['mid']) ? (int) $post['mid'] : $mid;
     $name = trim(isset($post['name']) ? (string) $post['name'] : '');
@@ -238,11 +248,6 @@ if ($mode === 'save') {
         $content .= MAPS_message($LANG_MAPS_1['missing_field'], $LANG_MAPS_1['error']);
         $content .= getMapForm($post);
     } else {
-        /*
-         * Preserve the center explicitly chosen in the visual editor. Legacy
-         * forms/installations without valid coordinates still fall back to
-         * server-side geocoding of the address.
-         */
         if (!MAPS_isValidCoordinatePair($lat, $lng)) {
             $lat = 0;
             $lng = 0;
@@ -264,7 +269,6 @@ if ($mode === 'save') {
             list($permOwner, $permGroup, $permMembers, $permAnon) = SEC_getPermissionValues($permOwner, $permGroup, $permMembers, $permAnon);
         }
 
-        /* Keep raw values here and escape exactly once when building SQL. */
         $data = array(
             'name' => $name,
             'description' => isset($post['description']) ? (string) $post['description'] : '',
@@ -336,7 +340,6 @@ if ($mode === 'save') {
             }
         }
 
-        /* Verify the row before redirecting so a failed write never looks like success. */
         $verify = array();
         if ($mid > 0) {
             $verifyResult = DB_query("SELECT * FROM {$_TABLES['maps_maps']} WHERE mid=" . (int) $mid . ' LIMIT 1');
