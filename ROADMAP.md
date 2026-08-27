@@ -1,12 +1,12 @@
 # Maps for Geeklog — Modernization Roadmap
 
-This roadmap tracks the final stabilization of Maps 1.5.7 and the work required before the official release.
+This roadmap tracks the final stabilization of Maps 1.5.8 and the work required before the official release.
 
 Last updated: August 27, 2026
 
 ## Release target
 
-Maps 1.5.7 targets:
+Maps 1.5.8 targets:
 
 - Geeklog 2.1.1 through 2.2.2
 - PHP 5.6 through 8.3
@@ -16,7 +16,7 @@ Maps 1.5.7 targets:
 - safe upgrade from Maps 1.4.0 through Geeklog's normal plugin upgrade mechanism
 - compliance with the Geeklog Plugin Content Interoperability Contract
 
-The 1.5.7 line is now in **release-candidate validation mode**. New features should be deferred unless they fix a release blocker. A future 2.0 may introduce deeper architectural changes.
+The 1.5.8 line is now in **release-candidate validation mode**. New features should be deferred unless they fix a release blocker. A future 2.0 may introduce deeper architectural changes.
 
 ---
 
@@ -30,7 +30,7 @@ The principal implementation work required for RC1 is complete. The remaining re
 | Google Maps modernization | Complete for 1.5.x scope | Smoke-test all rendering paths |
 | Security hardening | Substantially complete | Final regression testing |
 | Runtime/lifecycle consistency | Substantially complete | Final regression testing |
-| Content interoperability | Complete for 1.5.7 scope | Validate consumers |
+| Content interoperability | Complete for 1.5.8 scope | Validate consumers |
 | Content Syndication | Complete | Validate feed generation |
 | XML Sitemap | Complete | Validate generated entries |
 | Related Items | Complete | Validate topic assignments |
@@ -85,7 +85,7 @@ Exit criterion: no Maps-generated PHP warnings or JavaScript errors in the suppo
 
 # Phase 2 — Content interoperability
 
-Status: **Complete for Maps 1.5.7**
+Status: **Complete for Maps 1.5.8**
 
 Implemented:
 
@@ -102,7 +102,7 @@ Implemented:
 - dependency lifecycle propagation from markers, imports, overlays and icons to parent maps;
 - centralized `updateMap()` lifecycle semantics.
 
-Markers remain internal/non-first-class content in 1.5.7. Making markers first-class interoperable objects is deferred until a concrete consumer requires it.
+Markers remain internal/non-first-class content in 1.5.8. Making markers first-class interoperable objects is deferred until a concrete consumer requires it.
 
 Validation before RC1:
 
@@ -117,7 +117,7 @@ Validation before RC1:
 
 # Phase 3 — Native Geeklog integrations
 
-Status: **Complete for 1.5.7 scope**
+Status: **Complete for 1.5.8 scope**
 
 ## What’s New
 
@@ -198,7 +198,7 @@ Status: **Code prepared / functional validation required**
 
 Completed:
 
-- plugin version metadata set to 1.5.7;
+- plugin version metadata set to 1.5.8;
 - install compatibility aligned with Geeklog 2.1.1–2.2.2 and PHP 5.6–8.3;
 - autoinstall table list aligned with the eight tables actually created by Maps;
 - obsolete/nonexistent marker category/field/value table aliases removed from runtime metadata;
@@ -211,7 +211,7 @@ Required matrix before RC1:
 
 1. **Fresh install** — Geeklog 2.1.1 + supported PHP environment.
 2. **Fresh install** — Geeklog 2.2.2 + PHP 8.1/8.3.
-3. **Upgrade** — Maps 1.4.0 → 1.5.7 on Geeklog 2.1.1.
+3. **Upgrade** — Maps 1.4.0 → 1.5.8 on Geeklog 2.1.1.
 4. **Upgrade/migration** — representative existing Maps data on Geeklog 2.2.2.
 5. Confirm all eight expected Maps tables and configuration rows.
 6. Confirm `/maps/`, shared `images/maps/icons/` and `images/maps/overlays/` paths.
@@ -230,13 +230,13 @@ The packaging workflow is intentionally reproducible:
 
 - it does not modify plugin source code;
 - it lints interoperability and security-critical files;
-- it builds `maps-1.5.7-test.zip` from the branch contents;
+- it builds `maps-1.5.8-test.zip` from the branch contents;
 - only the generated test archive is committed to `dist/`.
 
 Before RC1:
 
 - verify the ZIP contains a single top-level `maps/` directory;
-- verify all required 1.5.7 files are present;
+- verify all required 1.5.8 files are present;
 - verify no development workflows, build directories or temporary files are packaged;
 - install the ZIP through Geeklog's normal plugin administration UI;
 - complete the test matrix above;
@@ -247,7 +247,7 @@ After RC1, accept **bug fixes only** unless a new issue is a demonstrated compat
 
 ---
 
-# Deferred beyond 1.5.7
+# Deferred beyond 1.5.8
 
 The following items should not delay RC1:
 

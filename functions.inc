@@ -1516,6 +1516,11 @@ function plugin_upgrade_maps()
 {
     global $_CONF, $_TABLES;
 
+    // Maps 1.5.8 removes the obsolete Pro-version infos_label option.
+    if (isset($_TABLES['conf_values']) && $_TABLES['conf_values'] !== '') {
+        DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='maps' AND name='infos_label'");
+    }
+
     $installed = (string) DB_getItem($_TABLES['plugins'], 'pi_version', "pi_name='maps'");
     $code = plugin_chkVersion_maps();
 

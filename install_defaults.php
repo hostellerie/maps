@@ -116,12 +116,11 @@ $_MAPS_DEFAULT['fax'] = 1;
 $_MAPS_DEFAULT['web'] = 1;
 
 for ($i = 1; $i <= 10; $i++) {
-    $_MAPS_DEFAULT['item_' . $i] = 'Ressource #' . $i;
+    $_MAPS_DEFAULT['item_' . $i] = 'Custom field ' . $i;
 }
-$_MAPS_DEFAULT['infos_label'] = 'Infos';
 
 /**
- * Return the complete Maps 1.5.6 configuration presentation definition.
+ * Return the complete Maps 1.5.8 configuration presentation definition.
  *
  * Each entry is: value, type, subgroup, fieldset, selectionArray, sort_order, tab.
  * Geeklog renders entries of type 'tab' as the visible configuration tabs.
@@ -242,7 +241,6 @@ function MAPS_configDefinition155()
         $rows[$name] = array($_MAPS_DEFAULT[$name], 'text', 0, 0, 0, $order, 4);
         $order += 10;
     }
-    $rows['infos_label'] = array($_MAPS_DEFAULT['infos_label'], 'text', 0, 0, 0, $order, 4);
 
     return $rows;
 }

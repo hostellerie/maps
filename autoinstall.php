@@ -2,7 +2,7 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.5.7                                                         |
+// | Maps Plugin 1.5.8                                                         |
 // +---------------------------------------------------------------------------+
 // | autoinstall.php                                                           |
 // +---------------------------------------------------------------------------+
@@ -22,7 +22,7 @@ function plugin_autoinstall_maps($pi_name)
     $info = array(
         'pi_name' => $pi_name,
         'pi_display_name' => $pi_display_name,
-        'pi_version' => '1.5.7',
+        'pi_version' => '1.5.8',
         'pi_gl_version' => '2.1.1',
         'pi_homepage' => 'https://github.com/Geeklog-Plugins/maps'
     );
@@ -62,7 +62,7 @@ function plugin_autoinstall_maps($pi_name)
 /**
  * Check runtime compatibility before installation or upgrade.
  *
- * Official support target for Maps 1.5.7:
+ * Official support target for Maps 1.5.8:
  * - Geeklog 2.1.1 through 2.2.2
  * - PHP 5.6 through 8.3
  * - MySQL-compatible DBMS as supported by this plugin's SQL installer

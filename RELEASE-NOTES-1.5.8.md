@@ -1,6 +1,6 @@
-# Maps 1.5.7 — Release Notes
+# Maps 1.5.8 — Release Notes
 
-Maps 1.5.7 is a major stabilization and modernization release for the Geeklog Maps plugin. It preserves the historical Maps data model and URLs where practical while bringing the plugin forward for current Geeklog, PHP and Google Maps Platform environments.
+Maps 1.5.8 is a major stabilization and modernization release for the Geeklog Maps plugin. It preserves the historical Maps data model and URLs where practical while bringing the plugin forward for current Geeklog, PHP and Google Maps Platform environments.
 
 ## Compatibility
 
@@ -34,7 +34,7 @@ The source is syntax-checked in CI on PHP 5.6, 7.4, 8.1 and 8.3.
 
 ## Content interoperability
 
-Maps are first-class interoperable content in 1.5.7.
+Maps are first-class interoperable content in 1.5.8.
 
 Implemented:
 
@@ -46,11 +46,11 @@ Implemented:
 - centralized lifecycle events after successful content mutations;
 - propagation of marker, CSV import, overlay and icon changes to affected parent maps.
 
-Markers remain internal/non-first-class objects in 1.5.7 and may be exposed in a future release when a concrete consumer requires them.
+Markers remain internal/non-first-class objects in 1.5.8 and may be exposed in a future release when a concrete consumer requires them.
 
 ## Native Geeklog integrations
 
-Maps 1.5.7 integrates with:
+Maps 1.5.8 integrates with:
 
 - What's New;
 - Content Syndication / feeds;
@@ -106,10 +106,10 @@ The supported modernization path is:
 
 1. upgrade older Maps installations to Maps 1.4.0 first;
 2. back up the Geeklog database and shared `images/maps/` directory;
-3. upload/copy the Maps 1.5.7 package;
+3. upload/copy the Maps 1.5.8 package;
 4. run Geeklog's normal plugin upgrade from Plugin Administration before opening Maps administration.
 
-The 1.5.7 upgrader sequentially applies the 1.5.x configuration and public-folder repair steps and normalizes the canonical public plugin folder to `/maps/`.
+The 1.5.8 upgrader sequentially applies the 1.5.x configuration and public-folder repair steps and normalizes the canonical public plugin folder to `/maps/`.
 
 ## Shared resources and multisite
 
@@ -122,11 +122,11 @@ This preserves the historical behavior and remains suitable for installations sh
 
 ## Release-candidate validation
 
-Before the final 1.5.7 release, RC testing must cover:
+Before the final 1.5.8 release, RC testing must cover:
 
 - fresh install on Geeklog 2.1.1;
 - fresh install on Geeklog 2.2.2 with PHP 8.1/8.3;
-- representative Maps 1.4.0 to 1.5.7 upgrade;
+- representative Maps 1.4.0 to 1.5.8 upgrade;
 - map/marker/overlay/icon CRUD;
 - CSV import/export;
 - public maps, profiles, Calendar integration and autotags;
@@ -137,3 +137,9 @@ Before the final 1.5.7 release, RC testing must cover:
 - final installable ZIP inspection.
 
 After RC1, changes should be restricted to regression, compatibility, security and data-integrity fixes.
+
+## Configuration cleanup in 1.5.8
+
+- Renamed marker resource configuration labels to `Custom field N label` / `Libellé du champ personnalisé N`.
+- Removed the obsolete `infos_label` / `Infos label (Pro version)` configuration option.
+- Kept `item_1` through `item_10` as supported marker custom fields.
