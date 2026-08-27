@@ -1,0 +1,110 @@
+<style type="text/css">
+#map_canvas_m{mid} {
+    width: {map_width};
+    height: {map_height};
+}
+#map_contener_m{mid} {
+    width: {map_width};
+    border: solid 1px #666;
+    background: #ccc;
+}
+</style>
+
+{markerclusterer}
+
+<script type="text/javascript">
+var map{mid};
+var directionsDisplay{gid};
+var current_address{gid} = {current_address_js};
+var alloverlays = [];
+var map = [];
+var zoommax = [];
+var zoommin = [];
+
+{overlays_js}
+
+function initialize{mid}() {
+    var element = document.getElementById('map_canvas_m{mid}');
+    if (!element || typeof google === 'undefined' || !google.maps) {
+        return;
+    }
+
+    try {
+        map{mid} = new google.maps.Map(element, {
+                center: {lat: Number({lat_js}), lng: Number({lng_js})},
+                zoom: Number({zoom_js}),
+                mapTypeId: google.maps.MapTypeId.{map_type}
+            });
+    } catch (error) {
+        if (window.console && console.error) {
+            console.error('Maps: initialization failed for map {mid}', error);
+        }
+        return;
+    }
+
+    map[{mid}] = map{mid};
+
+    {overlays}
+    {markers}
+
+    var directionsPanel = document.getElementById('directions{gid}');
+    if (directionsPanel) {
+        directionsDisplay{gid} = new google.maps.DirectionsRenderer({
+            map: map{mid},
+            panel: directionsPanel
+        });
+    }
+}
+
+if (window.addEventListener) {
+    window.addEventListener('load', initialize{mid}, false);
+} else {
+    window.attachEvent('onload', initialize{mid});
+}
+
+function get_directions{gid}() {
+    var input = document.getElementById('from_address{gid}');
+    var panel = document.getElementById('directions{gid}');
+    if (!input || !directionsDisplay{gid}) {
+        return;
+    }
+
+    if (panel) {
+        panel.innerHTML = '';
+    }
+
+    var start = input.value;
+    if (!start) {
+        alert({error_address_empty_js});
+        return;
+    }
+
+    var directionsService = new google.maps.DirectionsService();
+    directionsService.route({
+        origin: start,
+        destination: current_address{gid},
+        travelMode: google.maps.TravelMode.DRIVING
+    }, function (response, status) {
+        if (status === 'OK' || status === google.maps.DirectionsStatus.OK) {
+            directionsDisplay{gid}.setDirections(response);
+            scrollToAnchor{gid}('directions_{gid}_table');
+        } else {
+            alert({error_google_error_js} + ' (' + status + ')');
+        }
+    });
+}
+
+function scrollToAnchor{gid}(id) {
+    var anchor = document.getElementById(id);
+    if (anchor && anchor.scrollIntoView) {
+        anchor.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+}
+</script>
+
+<div id="map_contener_m{mid}">
+    <div id="map_canvas_m{mid}"></div>
+    {directions_input}
+</div>
+
+{overlays_checkboxes}

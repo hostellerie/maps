@@ -23,3 +23,10 @@ Maps 1.6.0 is the stable release of the Maps modernization line validated on Gee
 ## Upgrade
 
 Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 files, then run Geeklog's normal plugin upgrade. Existing 1.5.x migrations remain sequential and idempotent.
+
+## Final public-page refinements
+
+- the `/maps/` statistics block is rendered after the map list so primary navigational content appears first;
+- canonical marker pages again display an individual map centered on the marker;
+- marker pages restore the driving-directions form and route panel using the modern Google Maps Directions API already maintained by Maps;
+- the dedicated marker map template avoids introducing a second H1 on the canonical marker page.

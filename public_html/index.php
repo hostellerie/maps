@@ -50,7 +50,6 @@ function MAPS_displayFrontPage()
         $retval .= MAPS_getGlobalMap('', '', true);
     }
 
-    $retval .= MAPS_renderStatistics(true);
     $retval .= '<p>' . $LANG_MAPS_1['user_maps_list'] . '</p>';
     $result = DB_query("SELECT mid,name,description,active,hidden,modified,hits FROM {$_TABLES['maps_maps']} ORDER BY name ASC");
     $count = 0;
@@ -86,6 +85,7 @@ function MAPS_displayFrontPage()
         $retval .= '<p class="maps_list_item"><strong><a href="' . $_MAPS_CONF['site_url'] . '/users_map.php">'
             . $LANG_MAPS_1['users_map'] . '</a></strong><br>' . $LANG_MAPS_1['info_users_map'] . '</p>';
     }
+    $retval .= MAPS_renderStatistics(true);
     if (SEC_hasRights('maps.admin')) {
         $retval .= '<p>' . $LANG_MAPS_1['admin_can'] . ' <a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=new">' . $LANG_MAPS_1['create_map'] . '</a></p>';
     }
@@ -319,6 +319,9 @@ switch ($mode) {
             $content .= '<article class="maps-marker-detail">';
             $content .= '<h1>' . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
             $content .= MAPS_ViewMarkerInfos($mkid);
+            if (!empty($markerMapRow['mid'])) {
+                $content .= MAPS_getMarkerDetail((int) $markerMapRow['mid'], $mkid);
+            }
             if (!empty($markerMapRow['mid'])) {
                 $mapName = MAPS_decodeStoredText(MAPS_arrayGet($markerMapRow, 'name', ''));
                 $content .= '<p class="maps-marker-map-link"><a href="'

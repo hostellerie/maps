@@ -2267,7 +2267,7 @@ function MAPS_renderMarker($marker, $primaryColor, $strokecolor, $label, $label_
             }
             $template->set_var('description', $short !== '' ? '<p>' . nl2br(htmlspecialchars($short, ENT_QUOTES, 'UTF-8')) . (strlen($description) > strlen($short) ? '…' : '') . '</p>' : '');
             $template->set_var('ressources', MAPS_renderPublicCustomFields($marker, 'compact'));
-            $readMore = MAPS_arrayGet($marker, 'url', '') !== '' ? $_CONF['site_url'] . '/' . ltrim($marker['url'], '/') : $_MAPS_CONF['site_url'] . '/markers.php?mode=show&mkid=' . rawurlencode($marker['mkid']) . '&mid=' . (int) $marker['mid'];
+            $readMore = MAPS_arrayGet($marker, 'url', '') !== '' ? $_CONF['site_url'] . '/' . ltrim($marker['url'], '/') : MAPS_markerContentUrl($marker['mkid']);
             $template->set_var('read_more', '<a href="' . htmlspecialchars($readMore, ENT_QUOTES, 'UTF-8') . '">' . $LANG_MAPS_1['read_more'] . '</a>');
             $template->set_var('map', '<p>' . $LANG_MAPS_1['on_map'] . ' <a href="' . $_MAPS_CONF['site_url'] . '/index.php?mode=map&mid=' . (int) $marker['mid'] . '">' . htmlspecialchars(stripslashes($mapname), ENT_QUOTES, 'UTF-8') . '</a></p>');
             $currentUid = isset($_USER['uid']) ? (int) $_USER['uid'] : 1;
@@ -2367,7 +2367,7 @@ function MAPS_getMarkerDetail($mid = 0, $mkid = '', $autotag = 0, $mapwidth = ''
 
     $id = (int) $mid > 0 ? preg_replace('/[^a-zA-Z0-9_]/', '_', (string) $list[0]['mkid']) : mt_rand(10000, 999999);
     $t = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
-    $t->set_file('page', $autotag ? 'map_autotag.thtml' : 'map.thtml');
+    $t->set_file('page', $autotag ? 'map_autotag.thtml' : 'marker_map.thtml');
     MAPS_fillMapCommon($t, $id, $lat, $lng, $mapzoom, MAPS_arrayGet($_MAPS_CONF, 'global_type', 'ROADMAP'), $mapwidth, $mapheight);
     $t->set_var('name', '');
     $t->set_var('description', '');
