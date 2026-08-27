@@ -20,9 +20,12 @@ jobs:
           git clone --depth 1 --branch modernize/maps-1.5 \
             https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
-      - name: Lint interoperability and security-critical files
+      - name: Lint interoperability, install and security-critical files
         shell: bash
         run: |
+          php -l source/autoinstall.php
+          php -l source/install_defaults.php
+          php -l source/sql/mysql_install.php
           php -l source/interoperability.php
           php -l source/integrations.php
           php -l source/distribution.php
