@@ -15,25 +15,134 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: modernize/maps-1.5
+
       - name: Apply admin index security patch
         shell: bash
         run: |
-          printf '%s' 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCnAgPSBQYXRoKCJhZG1pbi9pbmRleC5waHAiKQpzID0gcC5yZWFkX3RleHQoZW5jb2Rpbmc9InV0Zi04IikKCm9sZCA9ICIiIiAgICAgICAgICAgICRtYXBfdGl0bGUgPSBNQVBTX2RlY29kZVN0b3JlZFRleHQoJEFbJ25hbWUnXSk7CiAgICAgICAgICAgICR1cmwgPSAkX01BUFNfQ09ORlsnc2l0ZV91cmwnXSAuCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICcvaW5kZXgucGhwP21vZGU9bWFwJm1pZD0nIC4gJEFbJ21pZCddOwogICAgICAgICAgICAkbGluayA9IENPTV9jcmVhdGVMaW5rKCRtYXBfdGl0bGUsICR1cmwsIGFycmF5KCd0aXRsZSc9PiRMQU5HX01BUFNfMVsndGl0bGVfZGlzcGxheSddKSk7CgogICAgICAgICAgICBpZiAoJEFbJ2Rlc2NyaXB0aW9uJ10gIT0gJycpIHsKICAgICAgICAgICAgICAgICRyZXR2YWwgPSBDT01fZ2V0VG9vbHRpcCgkbWFwX3RpdGxlLCBNQVBTX2RlY29kZVN0b3JlZFRleHQoJEFbJ2Rlc2NyaXB0aW9uJ10pLCAkdXJsLCAkbWFwX3RpdGxlLCAnaGVscCcpOwogICAgICAgICAgICB9IGVsc2UgewogICAgICAgICAgICAgICAgJHJldHZhbCA9ICRsaW5rOwogICAgICAgICAgICB9IiIiCm5ldyA9ICIiIiAgICAgICAgICAgICRtYXBfdGl0bGUgPSBNQVBTX2RlY29kZVN0b3JlZFRleHQoJEFbJ25hbWUnXSk7CiAgICAgICAgICAgICRzYWZlVGl0bGUgPSBodG1sc3BlY2lhbGNoYXJzKCRtYXBfdGl0bGUsIEVOVF9RVU9URVMsICdVVEYtOCcpOwogICAgICAgICAgICAkdXJsID0gJF9NQVBTX0NPTkZbJ3NpdGVfdXJsJ10KICAgICAgICAgICAgICAgIC4gJy9pbmRleC5waHA/bW9kZT1tYXAmbWlkPScgLiAoaW50KSAkQVsnbWlkJ107CiAgICAgICAgICAgICRsaW5rID0gQ09NX2NyZWF0ZUxpbmsoCiAgICAgICAgICAgICAgICAkc2FmZVRpdGxlLAogICAgICAgICAgICAgICAgJHVybCwKICAgICAgICAgICAgICAgIGFycmF5KCd0aXRsZScgPT4gaHRtbHNwZWNpYWxjaGFycygkTEFOR19NQVBTXzFbJ3RpdGxlX2Rpc3BsYXknXSwgRU5UX1FVT1RFUywgJ1VURi04JykpCiAgICAgICAgICAgICk7CgogICAgICAgICAgICBpZiAoJEFbJ2Rlc2NyaXB0aW9uJ10gIT0gJycpIHsKICAgICAgICAgICAgICAgICRzYWZlRGVzY3JpcHRpb24gPSBodG1sc3BlY2lhbGNoYXJzKAogICAgICAgICAgICAgICAgICAgIE1BUFNfZGVjb2RlU3RvcmVkVGV4dCgkQVsnZGVzY3JpcHRpb24nXSksCiAgICAgICAgICAgICAgICAgICAgRU5UX1FVT1RFUywKICAgICAgICAgICAgICAgICAgICAnVVRGLTgnCiAgICAgICAgICAgICAgICApOwogICAgICAgICAgICAgICAgJHJldHZhbCA9IENPTV9nZXRUb29sdGlwKCRzYWZlVGl0bGUsICRzYWZlRGVzY3JpcHRpb24sICR1cmwsICRzYWZlVGl0bGUsICdoZWxwJyk7CiAgICAgICAgICAgIH0gZWxzZSB7CiAgICAgICAgICAgICAgICAkcmV0dmFsID0gJGxpbms7CiAgICAgICAgICAgIH0iIiIKaWYgb2xkIG5vdCBpbiBzOiByYWlzZSBTeXN0ZW1FeGl0KCJtYXAgbGlzdCBhbmNob3Igbm90IGZvdW5kIikKcyA9IHMucmVwbGFjZShvbGQsbmV3LDEpCgpvbGQgPSAiIiIgICAgICAgIGRlZmF1bHQ6CiAgICAgICAgICAgICRyZXR2YWwgPSBzdHJpcHNsYXNoZXMoJGZpZWxkdmFsdWUpOwogICAgICAgICAgICBicmVhazsiIiIKbmV3ID0gIiIiICAgICAgICBkZWZhdWx0OgogICAgICAgICAgICAkcmV0dmFsID0gaHRtbHNwZWNpYWxjaGFycyhzdHJpcHNsYXNoZXMoKHN0cmluZykgJGZpZWxkdmFsdWUpLCBFTlRfUVVPVEVTLCAnVVRGLTgnKTsKICAgICAgICAgICAgYnJlYWs7IiIiCmlmIG9sZCBub3QgaW4gczogcmFpc2UgU3lzdGVtRXhpdCgiZGVmYXVsdCBvdXRwdXQgYW5jaG9yIG5vdCBmb3VuZCIpCnM9cy5yZXBsYWNlKG9sZCxuZXcsMSkKCm9sZCA9ICIiIiAgICAkaHRtbCAuPSAnPHA+PGEgaHJlZj0iJyAuICRfQ09ORlsnc2l0ZV9hZG1pbl91cmwnXSAuICcvcGx1Z2lucy9tYXBzL2luZGV4LnBocD9tb2RlPXNldGdlb2xvY2F0aW9uIj48c3Ryb25nPicgLiAkTEFOR19NQVBTXzFbJ3NldF91c2VyX2dlbyddIC4gJzwvc3Ryb25nPjwvYT48L3A+JzsiIiIKbmV3ID0gIiIiICAgICRnZW9Ub2tlbiA9IFNFQ19jcmVhdGVUb2tlbigpOwogICAgJGh0bWwgLj0gJzxmb3JtIG1ldGhvZD0icG9zdCIgYWN0aW9uPSInIC4gaHRtbHNwZWNpYWxjaGFycygkX0NPTkZbJ3NpdGVfYWRtaW5fdXJsJ10sIEVOVF9RVU9URVMsICdVVEYtOCcpCiAgICAgICAgLiAnL3BsdWdpbnMvbWFwcy9pbmRleC5waHAiIGNsYXNzPSJtYXBzLWlubGluZS1hY3Rpb24iPicKICAgICAgICAuICc8aW5wdXQgdHlwZT0iaGlkZGVuIiBuYW1lPSJtb2RlIiB2YWx1ZT0ic2V0Z2VvbG9jYXRpb24iPicKICAgICAgICAuICc8aW5wdXQgdHlwZT0iaGlkZGVuIiBuYW1lPSInIC4gQ1NSRl9UT0tFTiAuICciIHZhbHVlPSInCiAgICAgICAgLiBodG1sc3BlY2lhbGNoYXJzKCRnZW9Ub2tlbiwgRU5UX1FVT1RFUywgJ1VURi04JykgLiAnIj4nCiAgICAgICAgLiAnPGJ1dHRvbiB0eXBlPSJzdWJtaXQiPjxzdHJvbmc+JwogICAgICAgIC4gaHRtbHNwZWNpYWxjaGFycygkTEFOR19NQVBTXzFbJ3NldF91c2VyX2dlbyddLCBFTlRfUVVPVEVTLCAnVVRGLTgnKQogICAgICAgIC4gJzwvc3Ryb25nPjwvYnV0dG9uPjwvZm9ybT4nOyIiIgppZiBvbGQgbm90IGluIHM6IHJhaXNlIFN5c3RlbUV4aXQoImdlbyBsaW5rIGFuY2hvciBub3QgZm91bmQiKQpzPXMucmVwbGFjZShvbGQsbmV3LDEpCgpvbGQgPSAiIiIkbW9kZSA9IGlzc2V0KCRfUkVRVUVTVFsnbW9kZSddKSA/ICRfUkVRVUVTVFsnbW9kZSddIDogJyc7Cgpzd2l0Y2ggKCRtb2RlKSB7IiIiCm5ldyA9ICIiIiRyZXF1ZXN0TWV0aG9kID0gaXNzZXQoJF9TRVJWRVJbJ1JFUVVFU1RfTUVUSE9EJ10pID8gc3RydG91cHBlcigkX1NFUlZFUlsnUkVRVUVTVF9NRVRIT0QnXSkgOiAnR0VUJzsKJHJlcXVlc3REYXRhID0gJHJlcXVlc3RNZXRob2QgPT09ICdQT1NUJyA/ICRfUE9TVCA6ICRfR0VUOwokbW9kZSA9IGlzc2V0KCRyZXF1ZXN0RGF0YVsnbW9kZSddKSA/IENPTV9hcHBseUZpbHRlcigkcmVxdWVzdERhdGFbJ21vZGUnXSkgOiAnJzsKCnN3aXRjaCAoJG1vZGUpIHsiIiIKaWYgb2xkIG5vdCBpbiBzOiByYWlzZSBTeXN0ZW1FeGl0KCJtYWluIG1vZGUgYW5jaG9yIG5vdCBmb3VuZCIpCnM9cy5yZXBsYWNlKG9sZCxuZXcsMSkKCm9sZCA9ICIiIiAgICBjYXNlICdzZXRnZW9sb2NhdGlvbic6CiAgICAgICAgTUFQU19zZXRHZW9Mb2NhdGlvbigpOwogICAgICAgIGVjaG8gQ09NX3JlZnJlc2goJF9DT05GWydzaXRlX2FkbWluX3VybCddIC4gJy9wbHVnaW5zL21hcHMvaW5kZXgucGhwP21zZz0nIC4gdXJsZW5jb2RlKCRMQU5HX01BUFNfMVsnc2V0X2dlb19sb2NhdGlvbiddKSk7CiAgICAgICAgZXhpdDsiIiIKbmV3ID0gIiIiICAgIGNhc2UgJ3NldGdlb2xvY2F0aW9uJzoKICAgICAgICBpZiAoJHJlcXVlc3RNZXRob2QgIT09ICdQT1NUJyB8fCAhU0VDX2NoZWNrVG9rZW4oKSkgewogICAgICAgICAgICBDT01fYWNjZXNzTG9nKCdSZWplY3RlZCBNYXBzIGdlb2xvY2F0aW9uIG11dGF0aW9uIGJlY2F1c2Ugb2YgbWlzc2luZyBvciBpbnZhbGlkIENTUkYgdG9rZW4uJyk7CiAgICAgICAgICAgIGVjaG8gQ09NX3JlZnJlc2goCiAgICAgICAgICAgICAgICAkX0NPTkZbJ3NpdGVfYWRtaW5fdXJsJ10gLiAnL3BsdWdpbnMvbWFwcy9pbmRleC5waHA/bXNnPScKICAgICAgICAgICAgICAgIC4gdXJsZW5jb2RlKCdJbnZhbGlkIG9yIGV4cGlyZWQgc2VjdXJpdHkgdG9rZW4uJykKICAgICAgICAgICAgKTsKICAgICAgICAgICAgZXhpdDsKICAgICAgICB9CiAgICAgICAgTUFQU19zZXRHZW9Mb2NhdGlvbigpOwogICAgICAgIGVjaG8gQ09NX3JlZnJlc2goCiAgICAgICAgICAgICRfQ09ORlsnc2l0ZV9hZG1pbl91cmwnXSAuICcvcGx1Z2lucy9tYXBzL2luZGV4LnBocD9tc2c9JwogICAgICAgICAgICAuIHVybGVuY29kZSgkTEFOR19NQVBTXzFbJ3NldF9nZW9fbG9jYXRpb24nXSkKICAgICAgICApOwogICAgICAgIGV4aXQ7IiIiCmlmIG9sZCBub3QgaW4gczogcmFpc2UgU3lzdGVtRXhpdCgic2V0Z2VvbG9jYXRpb24gYW5jaG9yIG5vdCBmb3VuZCIpCnM9cy5yZXBsYWNlKG9sZCxuZXcsMSkKCm9sZCA9ICIiIiAgICAgICAgaWYgKCFlbXB0eSgkX1JFUVVFU1RbJ21zZyddKSkgewogICAgICAgICAgICAkZGlzcGxheSAuPSBDT01fc3RhcnRCbG9jaygkTEFOR19NQVBTXzFbJ21lc3NhZ2UnXSwgJycsICdibG9ja2hlYWRlci1tZXNzYWdlLnRodG1sJyk7CiAgICAgICAgICAgICRkaXNwbGF5IC49IGh0bWxzcGVjaWFsY2hhcnMoKHN0cmluZykgJF9SRVFVRVNUWydtc2cnXSwgRU5UX1FVT1RFUywgJ1VURi04Jyk7IiIiCm5ldyA9ICIiIiAgICAgICAgaWYgKCFlbXB0eSgkcmVxdWVzdERhdGFbJ21zZyddKSkgewogICAgICAgICAgICAkZGlzcGxheSAuPSBDT01fc3RhcnRCbG9jaygkTEFOR19NQVBTXzFbJ21lc3NhZ2UnXSwgJycsICdibG9ja2hlYWRlci1tZXNzYWdlLnRodG1sJyk7CiAgICAgICAgICAgICRkaXNwbGF5IC49IGh0bWxzcGVjaWFsY2hhcnMoKHN0cmluZykgJHJlcXVlc3REYXRhWydtc2cnXSwgRU5UX1FVT1RFUywgJ1VURi04Jyk7IiIiCmlmIG9sZCBub3QgaW4gczogcmFpc2UgU3lzdGVtRXhpdCgibWVzc2FnZSBhbmNob3Igbm90IGZvdW5kIikKcz1zLnJlcGxhY2Uob2xkLG5ldywxKQoKcC53cml0ZV90ZXh0KHMsZW5jb2Rpbmc9InV0Zi04IikKCnA9UGF0aCgiLmdpdGh1Yi93b3JrZmxvd3MvcGFja2FnZS55bWwiKQpzPXAucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpCm9sZD0iIiIgICAgICAgICAgcGhwIC1sIHNvdXJjZS9hZG1pbi9pY29ucy5waHAKICAgICAgICAgIHBocCAtbCBzb3VyY2UvYWRtaW4vYWpheC5waHAiIiIKbmV3PSIiIiAgICAgICAgICBwaHAgLWwgc291cmNlL2FkbWluL2ljb25zLnBocAogICAgICAgICAgcGhwIC1sIHNvdXJjZS9hZG1pbi9pbmRleC5waHAKICAgICAgICAgIHBocCAtbCBzb3VyY2UvYWRtaW4vbWFya2Vycy5waHAKICAgICAgICAgIHBocCAtbCBzb3VyY2UvYWRtaW4vZ2VvY29kZXIucGhwCiAgICAgICAgICBwaHAgLWwgc291cmNlL2FkbWluL2FqYXgucGhwIiIiCmlmIG9sZCBub3QgaW4gczogcmFpc2UgU3lzdGVtRXhpdCgicGFja2FnZSBlbmRwb2ludCBsaW50IGFuY2hvciBub3QgZm91bmQiKQpzPXMucmVwbGFjZShvbGQsbmV3LDEpCnAud3JpdGVfdGV4dChzLGVuY29kaW5nPSJ1dGYtOCIpCg==' | base64 -d > /tmp/admin-index-security.py
-          python3 /tmp/admin-index-security.py
-      - name: Lint admin endpoints
-        run: |
-          php -l admin/index.php
-          php -l admin/markers.php
-          php -l admin/geocoder.php
-      - name: Commit admin endpoint hardening
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('admin/index.php')
+          s = p.read_text(encoding='utf-8')
+
+          old = """            $map_title = MAPS_decodeStoredText($A['name']);
+            $url = $_MAPS_CONF['site_url'] .
+                                 '/index.php?mode=map&mid=' . $A['mid'];
+            $link = COM_createLink($map_title, $url, array('title'=>$LANG_MAPS_1['title_display']));
+
+            if ($A['description'] != '') {
+                $retval = COM_getTooltip($map_title, MAPS_decodeStoredText($A['description']), $url, $map_title, 'help');
+            } else {
+                $retval = $link;
+            }"""
+          new = """            $map_title = MAPS_decodeStoredText($A['name']);
+            $safeTitle = htmlspecialchars($map_title, ENT_QUOTES, 'UTF-8');
+            $url = $_MAPS_CONF['site_url']
+                . '/index.php?mode=map&mid=' . (int) $A['mid'];
+            $link = COM_createLink(
+                $safeTitle,
+                $url,
+                array('title' => htmlspecialchars($LANG_MAPS_1['title_display'], ENT_QUOTES, 'UTF-8'))
+            );
+
+            if ($A['description'] != '') {
+                $safeDescription = htmlspecialchars(
+                    MAPS_decodeStoredText($A['description']),
+                    ENT_QUOTES,
+                    'UTF-8'
+                );
+                $retval = COM_getTooltip($safeTitle, $safeDescription, $url, $safeTitle, 'help');
+            } else {
+                $retval = $link;
+            }"""
+          if old not in s:
+              raise SystemExit('map list anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """        default:
+            $retval = stripslashes($fieldvalue);
+            break;"""
+          new = """        default:
+            $retval = htmlspecialchars(stripslashes((string) $fieldvalue), ENT_QUOTES, 'UTF-8');
+            break;"""
+          if old not in s:
+              raise SystemExit('default output anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """    $html .= '<p><a href="' . $_CONF['site_admin_url'] . '/plugins/maps/index.php?mode=setgeolocation"><strong>' . $LANG_MAPS_1['set_user_geo'] . '</strong></a></p>';"""
+          new = """    $geoToken = SEC_createToken();
+    $html .= '<form method="post" action="' . htmlspecialchars($_CONF['site_admin_url'], ENT_QUOTES, 'UTF-8')
+        . '/plugins/maps/index.php" class="maps-inline-action">'
+        . '<input type="hidden" name="mode" value="setgeolocation">'
+        . '<input type="hidden" name="' . CSRF_TOKEN . '" value="'
+        . htmlspecialchars($geoToken, ENT_QUOTES, 'UTF-8') . '">'
+        . '<button type="submit"><strong>'
+        . htmlspecialchars($LANG_MAPS_1['set_user_geo'], ENT_QUOTES, 'UTF-8')
+        . '</strong></button></form>';"""
+          if old not in s:
+              raise SystemExit('geo link anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """$mode = isset($_REQUEST['mode']) ? $_REQUEST['mode'] : '';
+
+switch ($mode) {"""
+          new = """$requestMethod = isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
+$requestData = $requestMethod === 'POST' ? $_POST : $_GET;
+$mode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode']) : '';
+
+switch ($mode) {"""
+          if old not in s:
+              raise SystemExit('main mode anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """    case 'setgeolocation':
+        MAPS_setGeoLocation();
+        echo COM_refresh($_CONF['site_admin_url'] . '/plugins/maps/index.php?msg=' . urlencode($LANG_MAPS_1['set_geo_location']));
+        exit;"""
+          new = """    case 'setgeolocation':
+        if ($requestMethod !== 'POST' || !SEC_checkToken()) {
+            COM_accessLog('Rejected Maps geolocation mutation because of missing or invalid CSRF token.');
+            echo COM_refresh(
+                $_CONF['site_admin_url'] . '/plugins/maps/index.php?msg='
+                . urlencode('Invalid or expired security token.')
+            );
+            exit;
+        }
+        MAPS_setGeoLocation();
+        echo COM_refresh(
+            $_CONF['site_admin_url'] . '/plugins/maps/index.php?msg='
+            . urlencode($LANG_MAPS_1['set_geo_location'])
+        );
+        exit;"""
+          if old not in s:
+              raise SystemExit('setgeolocation anchor not found')
+          s = s.replace(old, new, 1)
+
+          old = """        if (!empty($_REQUEST['msg'])) {
+            $display .= COM_startBlock($LANG_MAPS_1['message'], '', 'blockheader-message.thtml');
+            $display .= htmlspecialchars((string) $_REQUEST['msg'], ENT_QUOTES, 'UTF-8');"""
+          new = """        if (!empty($requestData['msg'])) {
+            $display .= COM_startBlock($LANG_MAPS_1['message'], '', 'blockheader-message.thtml');
+            $display .= htmlspecialchars((string) $requestData['msg'], ENT_QUOTES, 'UTF-8');"""
+          if old not in s:
+              raise SystemExit('message anchor not found')
+          s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Lint admin index
+        run: php -l admin/index.php
+
+      - name: Commit admin index hardening
         shell: bash
         run: |
-          if git diff --quiet; then
+          if git diff --quiet -- admin/index.php; then
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add admin/index.php .github/workflows/package.yml
+          git add admin/index.php
           git commit -m 'Protect admin geolocation action [skip ci]'
           git pull --rebase origin modernize/maps-1.5
           git push origin HEAD:modernize/maps-1.5
