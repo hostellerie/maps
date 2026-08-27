@@ -1,0 +1,247 @@
+name: Fix marker editor runtime compatibility
+
+on:
+  push:
+    branches:
+      - modernize/maps-1.5
+
+permissions:
+  contents: write
+
+jobs:
+  fix-marker-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modernize/maps-1.5
+      - name: Apply compatibility fixes
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          # Compact admin map list: the map name is already the canonical public link.
+          p = Path('admin/index.php')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace("    $viewLabel = isset($LANG_ADMIN['view']) ? $LANG_ADMIN['view'] : 'View';\n", '')
+          s = s.replace("        array('text' => $viewLabel, 'field' => 'view', 'sort' => false),\n", '')
+          start = s.find('        case "view":')
+          end = s.find('        case "name":', start)
+          if start != -1 and end != -1:
+              s = s[:start] + s[end:]
+          p.write_text(s, encoding='utf-8')
+
+          # Native date inputs remove the jQuery UI datepicker dependency entirely.
+          p = Path('templates/marker_form.thtml')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('type="text" id="from" name="from"', 'type="date" id="from" name="from"')
+          s = s.replace('type="text" id="to" name="to"', 'type="date" id="to" name="to"')
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('admin/marker_edit.php')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('date("m/d/Y", strtotime($marker[\'validity_start\']))', 'date("Y-m-d", strtotime($marker[\'validity_start\']))')
+          s = s.replace('date("m/d/Y")', 'date("Y-m-d")')
+          s = s.replace('date("m/d/Y", strtotime($marker[\'validity_end\']))', 'date("Y-m-d", strtotime($marker[\'validity_end\']))')
+
+          js_start = s.find("\t$_SCRIPTS->setJavaScriptLibrary('jquery');\n\t$deleteConfirmJs")
+          js_end_marker = "\n\t$_SCRIPTS->setJavaScriptFile('datepicker', '/javascript/jquery_ui/jquery.ui.datepicker.min.js');\n"
+          js_end = s.find(js_end_marker, js_start)
+          if js_start == -1 or js_end == -1:
+              raise SystemExit('marker editor JS block anchor not found')
+          js_end += len(js_end_marker)
+
+          replacement = r'''    $deleteConfirmJs = MAPS_jsString(isset($LANG_MAPS_1['delete_confirm']) ? $LANG_MAPS_1['delete_confirm'] : 'Delete this marker?');
+    $js = LB . '<script type="text/javascript">
+    (function () {
+        var geocoder = null;
+        var map = null;
+        var editMarker = null;
+        var googleReady = false;
+
+        function ready(fn) {
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", fn);
+            } else {
+                fn();
+            }
+        }
+
+        window.changeValidity = function () {
+            var validity = document.getElementById("validity");
+            var from = document.getElementById("from");
+            var to = document.getElementById("to");
+            var disabled = !validity || validity.value === "0";
+            if (from) { from.disabled = disabled; }
+            if (to) { to.disabled = disabled; }
+        };
+
+        function updateMarkerCoordinates(position) {
+            if (!position) { return; }
+            var latInput = document.getElementById("lat");
+            var lngInput = document.getElementById("lng");
+            if (latInput) { latInput.value = position.lat().toFixed(6); }
+            if (lngInput) { lngInput.value = position.lng().toFixed(6); }
+        }
+
+        function moveEditMarker(position, recenter) {
+            if (!editMarker || !position) { return; }
+            editMarker.setPosition(position);
+            updateMarkerCoordinates(position);
+            if (recenter && map) { map.panTo(position); }
+        }
+
+        function googleMapsIsReady() {
+            return typeof window.google !== "undefined"
+                && google.maps
+                && typeof google.maps.Map === "function"
+                && typeof google.maps.Marker === "function"
+                && typeof google.maps.Geocoder === "function"
+                && google.maps.MapTypeId
+                && google.maps.event;
+        }
+
+        function initializeGMap(attempt) {
+            if (!googleMapsIsReady()) {
+                if (attempt < 120) {
+                    window.setTimeout(function () { initializeGMap(attempt + 1); }, 100);
+                }
+                return;
+            }
+            if (googleReady) { return; }
+            googleReady = true;
+            geocoder = new google.maps.Geocoder();
+
+            var initialPosition = {lat:Number(' . MAPS_jsNumber($marker['lat'], 0) . '), lng:Number(' . MAPS_jsNumber($marker['lng'], 0) . ')};
+            var requestedType = ' . MAPS_jsString(MAPS_mapType(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_type', 'ROADMAP'))) . ';
+            var mapType = google.maps.MapTypeId[requestedType] || google.maps.MapTypeId.ROADMAP;
+            var mapCanvas = document.getElementById("map_canvas");
+            if (!mapCanvas) { return; }
+
+            map = new google.maps.Map(mapCanvas, {
+                center: initialPosition,
+                zoom: ' . (int) MAPS_arrayGet($_MAPS_CONF, 'marker_editor_zoom', 10) . ',
+                mapTypeId: mapType
+            });
+            editMarker = new google.maps.Marker({
+                map: map,
+                position: initialPosition,
+                title: ' . MAPS_jsString($marker['name']) . ',
+                draggable: true,
+                animation: google.maps.Animation ? google.maps.Animation.DROP : null
+            });
+            google.maps.event.addListener(editMarker, "dragend", function (evt) {
+                updateMarkerCoordinates(evt.latLng);
+            });
+            google.maps.event.addListener(map, "click", function (evt) {
+                moveEditMarker(evt.latLng, false);
+            });
+        }
+
+        window.codeAddress = function () {
+            var addressInput = document.getElementById("geoaddress");
+            var address = addressInput ? addressInput.value : "";
+            if (!address) { return; }
+            if (!googleReady || !geocoder) {
+                initializeGMap(0);
+                return;
+            }
+            geocoder.geocode({address: address}, function (results, status) {
+                if (status === google.maps.GeocoderStatus.OK && results && results.length > 0) {
+                    moveEditMarker(results[0].geometry.location, true);
+                    if (results[0].geometry.viewport && map) { map.fitBounds(results[0].geometry.viewport); }
+                    if (addressInput) { addressInput.value = results[0].formatted_address; }
+                    var storedAddress = document.getElementById("address");
+                    if (storedAddress) { storedAddress.value = results[0].formatted_address; }
+                } else {
+                    alert("Geocode was not successful for the following reason: " + status);
+                }
+            });
+        };
+
+        window.limitText = function (limitField, limitCount, limitNum) {
+            if (limitField.value.length > limitNum) {
+                limitField.value = limitField.value.substring(0, limitNum);
+            } else {
+                limitCount.value = limitNum - limitField.value.length;
+            }
+        };
+
+        window.copyText = function () {
+            var source = document.getElementById("geoaddress");
+            var target = document.getElementById("address");
+            if (source && target) { target.value = source.value; }
+        };
+
+        function updateIconPreview() {
+            var checkedIcon = document.querySelector("input[name=\"mk_icon\"]:checked");
+            var preview = document.getElementById("maps-icon-preview");
+            if (!preview || !checkedIcon) { return; }
+            var allChoices = document.querySelectorAll(".maps-icon-choice");
+            for (var choiceIndex = 0; choiceIndex < allChoices.length; choiceIndex++) {
+                allChoices[choiceIndex].classList.remove("is-selected");
+            }
+            if (checkedIcon.parentNode && checkedIcon.parentNode.classList) {
+                checkedIcon.parentNode.classList.add("is-selected");
+            }
+            var src = checkedIcon.getAttribute("data-icon-src") || "";
+            preview.innerHTML = "";
+            if (src) {
+                var image = document.createElement("img");
+                image.src = src;
+                image.alt = "";
+                preview.appendChild(image);
+            } else {
+                var text = document.createElement("span");
+                text.textContent = ' . MAPS_jsString($LANG_MAPS_1['no_icon']) . ';
+                preview.appendChild(text);
+            }
+        }
+
+        ready(function () {
+            window.changeValidity();
+            initializeGMap(0);
+            var iconChoices = document.querySelectorAll("input[name=\"mk_icon\"]");
+            for (var iconIndex = 0; iconIndex < iconChoices.length; iconIndex++) {
+                iconChoices[iconIndex].addEventListener("change", updateIconPreview);
+            }
+            updateIconPreview();
+
+            var deleteButtons = document.querySelectorAll(".maps-delete-marker");
+            for (var i = 0; i < deleteButtons.length; i++) {
+                deleteButtons[i].addEventListener("click", function (event) {
+                    event.preventDefault();
+                    if (!window.confirm(' . $deleteConfirmJs . ')) { return; }
+                    var form = this.form;
+                    if (!form) { return; }
+                    var mode = document.createElement("input");
+                    mode.type = "hidden";
+                    mode.name = "mode";
+                    mode.value = "delete";
+                    form.appendChild(mode);
+                    form.submit();
+                });
+            }
+        });
+    }());
+    </script>' . LB . LB;
+
+    $_SCRIPTS->setJavaScript($js, false);
+'''
+          s = s[:js_start] + replacement + s[js_end:]
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Lint changed PHP files
+        run: |
+          php -l admin/index.php
+          php -l admin/marker_edit.php
+      - name: Commit fixes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add admin/index.php admin/marker_edit.php templates/marker_form.thtml
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Fix marker editor runtime on Geeklog 2.1.1 and 2.2.2 [skip ci]'
+          git pull --rebase origin modernize/maps-1.5
+          git push origin HEAD:modernize/maps-1.5
