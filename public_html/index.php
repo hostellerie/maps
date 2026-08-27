@@ -82,8 +82,8 @@ function MAPS_displayFrontPage()
         $retval .= '<p>' . $LANG_MAPS_1['no_map_user'] . '</p>';
     }
     if ((int) MAPS_arrayGet($_MAPS_CONF, 'users_map', 1) === 1) {
-        $retval .= '<p class="maps_list_item"><strong><a href="' . $_MAPS_CONF['site_url'] . '/users_map.php">'
-            . $LANG_MAPS_1['users_map'] . '</a></strong><br>' . $LANG_MAPS_1['info_users_map'] . '</p>';
+        $retval .= '<div class="maps_list_item"><strong><a href="' . $_MAPS_CONF['site_url'] . '/users_map.php">'
+            . $LANG_MAPS_1['users_map'] . '</a></strong><br>' . $LANG_MAPS_1['info_users_map'] . '</div>';
     }
     $retval .= MAPS_renderStatistics(true);
     if (SEC_hasRights('maps.admin')) {
@@ -303,8 +303,11 @@ switch ($mode) {
     case 'map':
         if ($mid > 0) {
             $content .= MAPS_getMap($mid);
+            $markersHeading = isset($LANG_MAPS_1['map_markers_heading'])
+                ? $LANG_MAPS_1['map_markers_heading']
+                : $LANG_MAPS_1['markers_list'];
             $content .= '<h2 class="maps-markers-heading">'
-                . htmlspecialchars($LANG_MAPS_1['markers_list'], ENT_QUOTES, 'UTF-8') . '</h2>';
+                . htmlspecialchars($markersHeading, ENT_QUOTES, 'UTF-8') . '</h2>';
             $content .= MAPS_ListMarkers($mid);
             $content .= MAPS_renderMapStatistics($mid, true);
         } else {

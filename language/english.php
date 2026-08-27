@@ -156,6 +156,7 @@ $LANG_MAPS_1 = array(
     'you_can'               => 'You can ',
     'user_maps_list'        => 'List of the maps recorded in our database :',
     'markers_list'          => 'Markers list',
+    'map_markers_heading'   => 'Markers on this map',
     'no_map'                => 'There is no map in our database. You must create one to add markers',
     'no_map_user'           => 'Oups... There is no active map in our database.',
     'value_directions'      => 'e.g. number street name, city, country', // No quote here please

@@ -156,6 +156,7 @@ $LANG_MAPS_1 = array(
     'you_can'               => 'Vous pouvez ',
     'user_maps_list'        => 'Voici les cartes présentes dans notre base de données :',
     'markers_list'          => 'Liste des marqueurs',
+    'map_markers_heading'   => 'Marqueurs de cette carte',
     'no_map'                => 'Il n\'y a pas encore de carte dans notre base de données. Vous devez en créer une pour pouvoir ajouter des marqueurs.',
     'no_map_user'           => 'Oups... Il n\'y a pas de carte active.',
     'value_directions'      => 'Nom de la rue, commune, pays', // No quote here please
