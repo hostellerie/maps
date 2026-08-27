@@ -1,0 +1,49 @@
+name: Prepare Maps 1.5.8
+
+on:
+  push:
+    branches:
+      - modernize/maps-1.5
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modernize/maps-1.5
+          fetch-depth: 0
+
+      - name: Sync branch
+        run: git pull --rebase origin modernize/maps-1.5
+
+      - name: Apply 1.5.8 changes
+        run: python3 tools/prepare-1.5.8.py
+
+      - name: Validate cleanup and syntax
+        run: |
+          ! grep -R "infos_label" -n --include='*.php' --include='*.thtml' .
+          grep -q "'pi_version' => '1.5.8'" autoinstall.php
+          grep -q "Custom field 1 label" language/english.php
+          grep -q "Libellé du champ personnalisé 1" language/french_france_utf-8.php
+          test -f RELEASE-NOTES-1.5.8.md
+          test ! -f RELEASE-NOTES-1.5.7.md
+          php -l autoinstall.php
+          php -l install_defaults.php
+          php -l functions.inc
+          php -l language/english.php
+          php -l language/french_france_utf-8.php
+
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git reset -- tools/prepare-1.5.8.py .github/workflows/prepare-1.5.8.yml
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Prepare Maps 1.5.8 custom field configuration [skip ci]'
+          git pull --rebase origin modernize/maps-1.5
+          git push origin HEAD:modernize/maps-1.5
