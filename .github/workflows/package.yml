@@ -20,7 +20,7 @@ jobs:
           git clone --depth 1 --branch modernize/maps-1.5 \
             https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
-      - name: Complete lifecycle audit patches
+      - name: Complete lifecycle and security audit patches
         shell: bash
         run: |
           python3 - <<'PY'
@@ -48,10 +48,59 @@ jobs:
           marker_success_new = """\t\t\tif (DB_affectedRows('') == 1) {\n                if ($markerMapBefore > 0) {\n                    updateMap($markerMapBefore);\n                }\n\t\t\t\t$msg = $LANG_MAPS_1['deletion_succes'];"""
           if marker_success in s and 'updateMap($markerMapBefore);' not in s:
               s = s.replace(marker_success, marker_success_new, 1)
+
+          # Add a native Geeklog token to the marker form.
+          form_anchor = "$template->set_file(array('map' => 'marker_form.thtml'));\n"
+          form_insert = """$template->set_file(array('map' => 'marker_form.thtml'));
+        $token = SEC_createToken();
+        $template->set_var(
+            'csrf_token',
+            '<input type=\"hidden\" name=\"' . CSRF_TOKEN . '\" value=\"'
+            . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '\">'
+        );
+"""
+          if form_anchor in s and "$template->set_var(\n            'csrf_token'" not in s:
+              s = s.replace(form_anchor, form_insert, 1)
+
+          # State-changing marker operations must be POST-only and carry a
+          # valid token. Once accepted, only POST data is allowed to influence
+          # the mutation so GET/cookie values cannot override editor fields.
+          main_anchor = """// MAIN
+$mkid = isset($_REQUEST['mkid']) ? preg_replace('/[^0-9]/', '', (string) $_REQUEST['mkid']) : '';
+$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
+$display .= maps_admin_menu();
+
+$requestMode = isset($_REQUEST['mode']) ? $_REQUEST['mode'] : '';
+$markerMapBefore = 0;
+"""
+          main_insert = """// MAIN
+$requestMethod = isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
+$requestData = $requestMethod === 'POST' ? $_POST : $_GET;
+$requestMode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode']) : '';
+$mkid = isset($requestData['mkid']) ? preg_replace('/[^0-9]/', '', (string) $requestData['mkid']) : '';
+$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
+$display .= maps_admin_menu();
+
+if (in_array($requestMode, array('save', 'delete'), true)) {
+    if ($requestMethod !== 'POST' || !SEC_checkToken()) {
+        COM_accessLog('Rejected Maps marker mutation because of missing or invalid CSRF token.');
+        $display .= MAPS_message('Invalid or expired security token.', $LANG_MAPS_1['error']);
+        $requestMode = '';
+    } else {
+        $_REQUEST = $_POST;
+        $mkid = isset($_POST['mkid']) ? preg_replace('/[^0-9]/', '', (string) $_POST['mkid']) : '';
+    }
+}
+
+$markerMapBefore = 0;
+"""
+          if main_anchor in s and 'Rejected Maps marker mutation' not in s:
+              s = s.replace(main_anchor, main_insert, 1)
           p.write_text(s)
 
           # CSV import adds markers in bulk. Touch the map after each successful
-          # insert; updateMap() centralizes timestamp + lifecycle semantics.
+          # insert only on legacy source states; newer hardened imports already
+          # notify once after the batch and therefore do not match this anchor.
           p = Path('source/admin/import_export.php')
           s = p.read_text()
           import_old = """\t\t\t\tif ( $mkid_exists == '' and $mkid != '') {\n    \t\t\t\tDB_query ($sql, 0);\n\t\t\t\t} else {"""
@@ -98,7 +147,7 @@ jobs:
           cd build
           zip -r maps-1.5.7-test.zip maps >/dev/null
 
-      - name: Commit lifecycle patches and test archive
+      - name: Commit lifecycle and security patches and test archive
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -114,5 +163,5 @@ jobs:
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Complete Maps lifecycle propagation [skip ci]'
+          git commit -m 'Complete Maps lifecycle and security propagation [skip ci]'
           git push origin HEAD:modernize/maps-1.5
