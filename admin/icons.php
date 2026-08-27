@@ -104,7 +104,15 @@ function MAPS_getIconForm($icon = array())
     $template->set_var('name', htmlspecialchars(stripslashes((string) $icon['icon_name']), ENT_QUOTES, 'UTF-8'));
     $template->set_var('required_field', $LANG_MAPS_1['required_field']);
     $template->set_var('image', $LANG_MAPS_1['image']);
-    $template->set_var('image_message', $LANG_MAPS_1['image_message']);
+    $isFrench = isset($_CONF['language']) && strpos(strtolower($_CONF['language']), 'french') === 0;
+    $uploadHelp = $isFrench
+        ? 'Formats autorisés : GIF, JPG/JPEG, PNG et WebP. Dimensions maximales : 128 × 128 px. Les images plus grandes sont redimensionnées automatiquement si une bibliothèque d\'images Geeklog est configurée.'
+        : 'Allowed formats: GIF, JPG/JPEG, PNG and WebP. Maximum dimensions: 128 × 128 px. Larger images are resized automatically when a Geeklog image library is configured.';
+    $template->set_var(
+        'image_message',
+        htmlspecialchars($LANG_MAPS_1['image_message'], ENT_QUOTES, 'UTF-8')
+        . '<br><small>' . htmlspecialchars($uploadHelp, ENT_QUOTES, 'UTF-8') . '</small>'
+    );
 
     $filename = basename((string) $icon['icon_image']);
     $path = $_MAPS_CONF['path_icons_images'] . $filename;
@@ -190,17 +198,19 @@ function MAPS_deleteIconImage($image)
     }
 }
 
-function MAPS_saveIconImage($files, $id)
+function MAPS_saveIconImage($files, $id, &$errorMessage)
 {
     global $_CONF, $_MAPS_CONF, $_TABLES;
 
+    $errorMessage = '';
     $id = (int) $id;
     if ($id <= 0 || !isset($files['file']) || empty($files['file']['name'])) {
         return true;
     }
 
     $extension = strtolower(pathinfo((string) $files['file']['name'], PATHINFO_EXTENSION));
-    if (!in_array($extension, array('gif', 'jpg', 'jpeg', 'png'), true)) {
+    if (!in_array($extension, array('gif', 'jpg', 'jpeg', 'png', 'webp'), true)) {
+        $errorMessage = 'Unsupported image format. Allowed formats: GIF, JPG/JPEG, PNG, WebP.';
         COM_errorLog('MAPS icon upload rejected unsupported extension: ' . $extension);
         return false;
     }
@@ -233,15 +243,25 @@ function MAPS_saveIconImage($files, $id)
         'image/jpeg' => '.jpg,.jpeg',
         'image/pjpeg' => '.jpg,.jpeg',
         'image/x-png' => '.png',
-        'image/png' => '.png'
+        'image/png' => '.png',
+        'image/webp' => '.webp'
     ));
 
     if (!$upload->setPath($_MAPS_CONF['path_icons_images'])) {
+        $errorMessage = 'The icon image directory is not writable.';
         COM_errorLog('MAPS icon upload path is not writable: ' . $_MAPS_CONF['path_icons_images']);
         return false;
     }
 
-    $upload->setMaxDimensions($_MAPS_CONF['max_image_width'], $_MAPS_CONF['max_image_height']);
+    $iconMaxWidth = 128;
+    $iconMaxHeight = 128;
+    if (!empty($_MAPS_CONF['max_image_width']) && (int) $_MAPS_CONF['max_image_width'] < $iconMaxWidth) {
+        $iconMaxWidth = (int) $_MAPS_CONF['max_image_width'];
+    }
+    if (!empty($_MAPS_CONF['max_image_height']) && (int) $_MAPS_CONF['max_image_height'] < $iconMaxHeight) {
+        $iconMaxHeight = (int) $_MAPS_CONF['max_image_height'];
+    }
+    $upload->setMaxDimensions($iconMaxWidth, $iconMaxHeight);
     $upload->setMaxFileSize($_MAPS_CONF['max_image_size']);
     $upload->setPerms('0644');
 
@@ -251,7 +271,11 @@ function MAPS_saveIconImage($files, $id)
     $upload->uploadFiles();
 
     if ($upload->areErrors()) {
-        COM_errorLog('MAPS icon upload failed: ' . strip_tags($upload->printErrors(false)));
+        $uploadError = trim(strip_tags($upload->printErrors(false)));
+        $errorMessage = $uploadError !== ''
+            ? $uploadError
+            : 'The icon image could not be uploaded.';
+        COM_errorLog('MAPS icon upload failed: ' . $errorMessage);
         return false;
     }
 
@@ -260,6 +284,7 @@ function MAPS_saveIconImage($files, $id)
         . MAPS_dbEscape($filename) . "' WHERE icon_id=" . $id
     );
     if (DB_error()) {
+        $errorMessage = 'The icon image was uploaded but its filename could not be saved.';
         return false;
     }
 
@@ -369,11 +394,19 @@ if (!MAPS_ensureWritableDirectory($_MAPS_CONF['path_icons_images'])) {
                 break;
             }
 
-            if (!MAPS_saveIconImage($_FILES, $id)) {
+            $iconUploadError = '';
+            if (!MAPS_saveIconImage($_FILES, $id, $iconUploadError)) {
                 if ($createdNew) {
                     DB_delete($_TABLES['maps_map_icons'], 'icon_id', $id);
                 }
-                $display .= MAPS_message($LANG_MAPS_1['save_fail'], $LANG_MAPS_1['error']);
+                $message = $LANG_MAPS_1['save_fail'];
+                if ($iconUploadError !== '') {
+                    $message .= ' ' . $iconUploadError;
+                }
+                $display .= MAPS_message(
+                    htmlspecialchars($message, ENT_QUOTES, 'UTF-8'),
+                    $LANG_MAPS_1['error']
+                );
                 $display .= MAPS_getIconForm(array_merge($post, array('icon_id' => $id)));
                 break;
             }
