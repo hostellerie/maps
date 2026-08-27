@@ -317,11 +317,11 @@ switch ($mode) {
     case 'marker':
         if ($mkid !== '') {
             $content .= '<article class="maps-marker-detail">';
-            $content .= '<h1>' . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
-            $content .= MAPS_ViewMarkerInfos($mkid);
+            $content .= '<h1 class="maps-page-title">' . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
             if (!empty($markerMapRow['mid'])) {
                 $content .= MAPS_getMarkerDetail((int) $markerMapRow['mid'], $mkid);
             }
+            $content .= MAPS_ViewMarkerInfos($mkid);
             if (!empty($markerMapRow['mid'])) {
                 $mapName = MAPS_decodeStoredText(MAPS_arrayGet($markerMapRow, 'name', ''));
                 $content .= '<p class="maps-marker-map-link"><a href="'

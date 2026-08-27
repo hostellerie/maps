@@ -1,28 +1,28 @@
-<article class="maps-marker-card">
-    <h1 class="maps-marker-title">{name}</h1>
-
-    <div class="maps-marker-details">
-        <div class="maps-marker-address">
-            {street}
-            {code}
-            {city}
-            {state}
-            {country}
+<section class="maps-marker-card">
+    <div class="maps-marker-grid">
+        <div class="maps-marker-panel maps-marker-location">
+            <div class="maps-marker-address">
+                {street}
+                {code}
+                {city}
+                {state}
+                {country}
+            </div>
+            <div class="maps-marker-contact">
+                {tel}
+                {fax}
+                {web}
+            </div>
         </div>
-        <div class="maps-marker-contact">
-            {tel}
-            {fax}
-            {web}
+        <div class="maps-marker-panel maps-marker-content">
+            <div class="maps-marker-description">{description}</div>
+            <div class="maps-marker-resources">{ressources}</div>
         </div>
     </div>
-
-    <div class="maps-marker-description">{description}</div>
-    <div class="maps-marker-resources">{ressources}</div>
-    <div class="maps-marker-directions">{directions_table_result}</div>
-
+    <div class="maps-marker-directions-result">{directions_table_result}</div>
     <footer class="maps-marker-meta">
         <div class="maps-marker-meta-primary">{owner} {map}</div>
         <div class="maps-marker-meta-secondary">{update}</div>
         <div class="maps-marker-meta-actions">{report} {edit}</div>
     </footer>
-</article>
+</section>

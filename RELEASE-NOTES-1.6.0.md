@@ -30,3 +30,11 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - canonical marker pages again display an individual map centered on the marker;
 - marker pages restore the driving-directions form and route panel using the modern Google Maps Directions API already maintained by Maps;
 - the dedicated marker map template avoids introducing a second H1 on the canonical marker page.
+
+## Public layout polish
+
+- canonical marker pages now keep a single H1 and place the individual map directly below it;
+- route controls are displayed below the map in a responsive panel with explicit Starting point / Point de départ labels and placeholder text;
+- marker information uses a responsive card layout instead of the legacy 2010-era presentation;
+- public map pages use a cleaner map card, content hierarchy, metadata area and responsive spacing;
+- map listings use modern cards with separated title, description, metadata and actions.

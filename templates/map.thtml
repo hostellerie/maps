@@ -1,17 +1,18 @@
 <style type="text/css">
-#map_canvas_m{mid} {
-    width: {map_width};
-    height: {map_height};
-}
-#map_contener_m{mid} {
-    width: {map_width};
-    border: solid 1px #666;
-    background: #ccc;
-}
+.maps-public-map { margin: 0 0 1.5rem; }
+.maps-public-map-header { margin-bottom: 1rem; }
+.maps-public-map-header h1 { margin: 0 0 .55rem; line-height: 1.2; }
+.maps-public-map-description { max-width: 72ch; line-height: 1.65; }
+#map_contener_m{mid} { width: {map_width}; max-width: 100%; margin: 0; }
+#map_canvas_m{mid} { width: 100%; height: {map_height}; min-height: 320px; border-radius: 14px; overflow: hidden; background: #f2f2f2; box-shadow: 0 2px 14px rgba(0,0,0,.10); }
+.maps-map-overlays { margin-top: 1rem; }
+.maps-public-map-meta { margin-top: .8rem; font-size: .9em; opacity: .78; }
+.maps-public-map-footer { margin-top: 1.1rem; }
+.maps-public-map-actions { margin-top: .8rem; }
+@media (max-width: 680px) { #map_canvas_m{mid} { min-height: 280px; } }
 </style>
 
 {markerclusterer}
-
 <script type="text/javascript">
 var map{mid};
 var directionsDisplay{gid};
@@ -20,97 +21,35 @@ var alloverlays = [];
 var map = [];
 var zoommax = [];
 var zoommin = [];
-
 {overlays_js}
-
 function initialize{mid}() {
     var element = document.getElementById('map_canvas_m{mid}');
-    if (!element || typeof google === 'undefined' || !google.maps) {
-        return;
-    }
-
+    if (!element || typeof google === 'undefined' || !google.maps) { return; }
     try {
-        map{mid} = new google.maps.Map(element, {
-                center: {lat: Number({lat_js}), lng: Number({lng_js})},
-                zoom: Number({zoom_js}),
-                mapTypeId: google.maps.MapTypeId.{map_type}
-            });
+        map{mid} = new google.maps.Map(element, { center: {lat: Number({lat_js}), lng: Number({lng_js})}, zoom: Number({zoom_js}), mapTypeId: google.maps.MapTypeId.{map_type} });
     } catch (error) {
-        if (window.console && console.error) {
-            console.error('Maps: initialization failed for map {mid}', error);
-        }
+        if (window.console && console.error) { console.error('Maps: initialization failed for map {mid}', error); }
         return;
     }
-
     map[{mid}] = map{mid};
-
     {overlays}
     {markers}
-
-    var directionsPanel = document.getElementById('directions{gid}');
-    if (directionsPanel) {
-        directionsDisplay{gid} = new google.maps.DirectionsRenderer({
-            map: map{mid},
-            panel: directionsPanel
-        });
-    }
 }
-
-if (window.addEventListener) {
-    window.addEventListener('load', initialize{mid}, false);
-} else {
-    window.attachEvent('onload', initialize{mid});
-}
-
-function get_directions{gid}() {
-    var input = document.getElementById('from_address{gid}');
-    var panel = document.getElementById('directions{gid}');
-    if (!input || !directionsDisplay{gid}) {
-        return;
-    }
-
-    if (panel) {
-        panel.innerHTML = '';
-    }
-
-    var start = input.value;
-    if (!start) {
-        alert({error_address_empty_js});
-        return;
-    }
-
-    var directionsService = new google.maps.DirectionsService();
-    directionsService.route({
-        origin: start,
-        destination: current_address{gid},
-        travelMode: google.maps.TravelMode.DRIVING
-    }, function (response, status) {
-        if (status === 'OK' || status === google.maps.DirectionsStatus.OK) {
-            directionsDisplay{gid}.setDirections(response);
-            scrollToAnchor{gid}('directions_{gid}_table');
-        } else {
-            alert({error_google_error_js} + ' (' + status + ')');
-        }
-    });
-}
-
-function scrollToAnchor{gid}(id) {
-    var anchor = document.getElementById(id);
-    if (anchor && anchor.scrollIntoView) {
-        anchor.scrollIntoView({behavior: 'smooth', block: 'start'});
-    }
-}
+if (window.addEventListener) { window.addEventListener('load', initialize{mid}, false); }
+else { window.attachEvent('onload', initialize{mid}); }
 </script>
 
-{header}
-<h1>{name}</h1>
-{description}
-<div id="map_contener_m{mid}">
-    <div id="map_canvas_m{mid}"></div>
-    {directions_input}
-</div>
-
-{overlays_checkboxes}
-<small>{date_and_hits}</small>
-{footer}
-{edit_button}
+<article class="maps-public-map">
+    {header}
+    <header class="maps-public-map-header">
+        <h1>{name}</h1>
+        <div class="maps-public-map-description">{description}</div>
+    </header>
+    <div class="maps-public-map-shell">
+        <div id="map_contener_m{mid}"><div id="map_canvas_m{mid}"></div></div>
+    </div>
+    <div class="maps-map-overlays">{overlays_checkboxes}</div>
+    <div class="maps-public-map-meta">{date_and_hits}</div>
+    <div class="maps-public-map-footer">{footer}</div>
+    <div class="maps-public-map-actions">{edit_button}</div>
+</article>

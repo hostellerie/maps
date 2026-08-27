@@ -2391,9 +2391,16 @@ function MAPS_getMarkerDetail($mid = 0, $mkid = '', $autotag = 0, $mapwidth = ''
         $gid = $id;
         $address = MAPS_arrayGet($list[0], 'address', '');
         $value = htmlentities($LANG_MAPS_1['value_directions'], ENT_QUOTES, 'UTF-8');
+        $directionsTitle = isset($LANG_MAPS_1['directions_title']) ? $LANG_MAPS_1['directions_title'] : $LANG_MAPS_1['need_directions'];
+        $directionsStart = isset($LANG_MAPS_1['directions_start']) ? $LANG_MAPS_1['directions_start'] : $LANG_MAPS_1['from'];
         $t->set_var('current_address', htmlspecialchars($address, ENT_QUOTES, 'UTF-8'));
         $t->set_var('current_address_js', MAPS_jsString($address));
-        $t->set_var('directions_input', '<div id="map_directions"><small>' . $LANG_MAPS_1['need_directions'] . '<br><input type="text" id="from_address' . $gid . '" value="' . $value . '" size="30"><input type="button" value="' . htmlspecialchars($LANG_MAPS_1['get_directions'], ENT_QUOTES, 'UTF-8') . '" onclick="get_directions' . $gid . '();"></small></div><a id="directions_' . $gid . '_table"></a><div id="directions' . $gid . '"></div>');
+        $t->set_var('directions_input', '<section id="map_directions" class="maps-directions-panel"><h2>'
+            . htmlspecialchars($directionsTitle, ENT_QUOTES, 'UTF-8') . '</h2><label for="from_address' . $gid . '">'
+            . htmlspecialchars($directionsStart, ENT_QUOTES, 'UTF-8') . '</label><div class="maps-directions-form"><input type="text" id="from_address'
+            . $gid . '" value="" placeholder="' . $value . '" autocomplete="street-address"><input type="button" value="'
+            . htmlspecialchars(trim($LANG_MAPS_1['get_directions']), ENT_QUOTES, 'UTF-8') . '" onclick="get_directions' . $gid
+            . '();"></div></section><a id="directions_' . $gid . '_table"></a><div id="directions' . $gid . '" class="maps-directions-result"></div>');
     }
     $t->parse('output', 'page');
     return $t->finish($t->get_var('output'));
