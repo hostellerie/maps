@@ -31,6 +31,7 @@ if (!is_array($_MAPS_CONF)) {
     $_MAPS_CONF = array();
 }
 require_once $_CONF['path'] . 'plugins/maps/maps.php';
+require_once $_CONF['path'] . 'plugins/maps/services.inc.php';
 
 
 /**
@@ -1628,6 +1629,16 @@ function MAPS_cleanupConfig158()
     return true;
 }
 
+function MAPS_upgrade159()
+{
+    global $_TABLES;
+    if (!isset($_TABLES['maps_service_operations'])) {
+        return false;
+    }
+    DB_query("CREATE TABLE IF NOT EXISTS {$_TABLES['maps_service_operations']} (operation_key char(64) NOT NULL, operation_id varchar(255) NOT NULL default '', action varchar(32) NOT NULL default '', marker_id BIGINT NOT NULL, source varchar(64) NOT NULL default '', source_id varchar(255) NOT NULL default '', created datetime NOT NULL, PRIMARY KEY (operation_key), KEY marker_id (marker_id)) ENGINE=MyISAM");
+    return !DB_error();
+}
+
 function plugin_upgrade_maps()
 {
     global $_CONF, $_TABLES;
@@ -1704,6 +1715,14 @@ function plugin_upgrade_maps()
         }
     }
 
+    /* Maps 1.5.9 adds the internal marker service operation ledger. */
+    if (version_compare($installed, '1.5.9', '<')) {
+        if (!MAPS_upgrade159()) {
+            COM_errorLog('Maps 1.5.9 upgrade stopped: marker service operation table creation failed.');
+            return false;
+        }
+    }
+
     if (version_compare($installed, $code, '<')) {
         DB_query("UPDATE {$_TABLES['plugins']} SET pi_version='" . MAPS_dbEscape($code)
             . "', pi_gl_version='2.1.1' WHERE pi_name='maps'");
@@ -1733,7 +1752,7 @@ function MAPS_delTree($dir)
 function plugin_autouninstall_maps()
 {
     return array(
-        'tables' => array('maps_maps', 'maps_geo', 'maps_markers', 'maps_submission', 'maps_overlays', 'maps_map_overlay', 'maps_map_icons', 'maps_overlays_groups'),
+        'tables' => array('maps_maps', 'maps_geo', 'maps_markers', 'maps_submission', 'maps_overlays', 'maps_map_overlay', 'maps_map_icons', 'maps_overlays_groups', 'maps_service_operations'),
         'groups' => array('Maps Admin'),
         'features' => array('maps.admin'),
         'php_blocks' => array(),

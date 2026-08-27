@@ -233,3 +233,18 @@ CREATE TABLE {$_TABLES['maps_overlays_groups']} (
 
 $_SQL[] = "INSERT INTO {$_TABLES['vars']} (name, value) VALUES ('globalMapHits', '0')";
 ?>
+
+
+$_SQL[] = "
+CREATE TABLE {$_TABLES['maps_service_operations']} (
+  operation_key char(64) NOT NULL,
+  operation_id varchar(255) NOT NULL default '',
+  action varchar(32) NOT NULL default '',
+  marker_id BIGINT NOT NULL,
+  source varchar(64) NOT NULL default '',
+  source_id varchar(255) NOT NULL default '',
+  created datetime NOT NULL,
+  PRIMARY KEY (operation_key),
+  KEY marker_id (marker_id)
+) ENGINE=MyISAM
+";
