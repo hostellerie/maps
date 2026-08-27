@@ -223,7 +223,7 @@ function plugin_getListField_userMarkers($fieldname, $fieldvalue, $A, $icon_arr)
         case "name":
             $map_title = stripslashes ($A['name']);
             $url = $_MAPS_CONF['site_url'] .
-                                 '/markers.php?mode=show&mkid=' . $A['mkid'] . '&mid=' . $A['mid'];
+                                 '/index.php?mode=marker&mkid=' . $A['mkid'];
             $retval = COM_createLink($map_title, $url, array('title'=>$LANG_MAPS_1['title_display']));
             break;
 			
@@ -808,7 +808,9 @@ switch ($_REQUEST['mode']) {
                  . "WHERE mkid = '{$safeMkid}'";
         
         DB_query($sql);
-		updateMap($_REQUEST['mid']);
+        if (!DB_error()) {
+            MAPS_notifyMarkerSaved($safeMkid, (int) $_REQUEST['mid']);
+        }
 		
 		//Send notification to admin		
         MAPS_sendNotification ($_REQUEST, true);
@@ -819,7 +821,7 @@ switch ($_REQUEST['mode']) {
             $msg = $LANG_MAPS_1['save_success'];
         }
         // save complete, return to markers list
-        echo COM_refresh($_MAPS_CONF['site_url'] . '/markers.php?mode=show&mkid=' . $_REQUEST['mkid'] . '&mid=' . $_REQUEST['mid'] . '&msg=' . urlencode($msg));
+        echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php?mode=marker&mkid=' . $_REQUEST['mkid'] . '&msg=' . urlencode($msg));
         exit();
 		
         break;

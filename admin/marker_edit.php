@@ -692,7 +692,7 @@ if (in_array($requestMode, array('save', 'delete'), true)) {
 }
 
 $markerMapBefore = 0;
-if ($requestMode === 'delete' && !empty($mkid)) {
+if (in_array($requestMode, array('save', 'delete'), true) && !empty($mkid)) {
     $markerMapBefore = (int) DB_getItem($_TABLES['maps_markers'], 'mid', "mkid='" . MAPS_dbEscape($mkid) . "'");
 }
 switch ($requestMode) {
@@ -701,9 +701,7 @@ switch ($requestMode) {
 	    if ($isSubmission !== 1) {
 			DB_delete($_TABLES['maps_markers'], 'mkid', $mkid);
 			if (DB_affectedRows('') == 1) {
-                if ($markerMapBefore > 0) {
-                    updateMap($markerMapBefore);
-                }
+                MAPS_notifyMarkerDeleted($mkid, $markerMapBefore);
 				$msg = $LANG_MAPS_1['deletion_succes'];
 			} else {
 				$msg = $LANG_MAPS_1['deletion_fail'];
@@ -943,13 +941,14 @@ switch ($requestMode) {
             $sql = "INSERT INTO {$_TABLES['maps_markers']} SET $sql ";
         }
         DB_query($sql);
-		updateMap($_REQUEST['mid']);
+        $savedMarkerId = !empty($mkid) ? $mkid : (isset($newmkid) ? $newmkid : '');
 		if ($_REQUEST['submission'] == 0 ) {
 		    DB_delete($_TABLES['maps_submission'], 'mkid', $mkid);
 		}
         if (DB_error()) {
             $msg = $LANG_MAPS_1['save_fail'];
         } else {
+            MAPS_notifyMarkerSaved($savedMarkerId, (int) $_REQUEST['mid'], $markerMapBefore);
             $msg = $LANG_MAPS_1['save_success'];
 			//Delete marker submission
 			DB_delete($_TABLES['maps_submission'], 'mkid', $mkid);

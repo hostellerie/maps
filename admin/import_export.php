@@ -399,15 +399,17 @@ function MAPS_commitImportRows($rows, $mid)
 
     $validFields = MAPS_getFieldsImportExport();
     $inserted = 0;
+    $insertedMarkerIds = array();
     $now = date('Y-m-d H:i:s');
 
     foreach ($rows as $marker) {
+        $importMarkerId = MAPS_importMarkerId();
         $columns = array(
             'mkid', 'mid', 'owner_id', 'created', 'modified',
             'validity_start', 'validity_end', 'remark'
         );
         $values = array(
-            "'" . MAPS_dbEscape(MAPS_importMarkerId()) . "'",
+            "'" . MAPS_dbEscape($importMarkerId) . "'",
             (string) $mid,
             (string) (int) $_USER['uid'],
             "'" . MAPS_dbEscape($now) . "'",
@@ -428,10 +430,14 @@ function MAPS_commitImportRows($rows, $mid)
         );
         if (!DB_error()) {
             $inserted++;
+            $insertedMarkerIds[] = $importMarkerId;
         }
     }
 
     if ($inserted > 0) {
+        foreach ($insertedMarkerIds as $insertedMarkerId) {
+            MAPS_notifyMarkerSaved($insertedMarkerId, 0, 0, false);
+        }
         updateMap($mid);
     }
 

@@ -56,7 +56,7 @@ function MAPS_serviceMarkerData($row)
         'address' => MAPS_decodeStoredText($row['address']),
         'lat' => (float)MAPS_latitude($row['lat'], 0),
         'lng' => (float)MAPS_longitude($row['lng'], 0),
-        'url' => $_MAPS_CONF['site_url'] . '/markers.php?mode=show&mkid=' . rawurlencode($row['mkid']) . '&mid=' . (int)$row['mid'],
+        'url' => MAPS_markerContentUrl($row['mkid']),
         'active' => (int)$row['active'],
         'hidden' => (int)$row['hidden'],
         'payed' => (int)$row['payed'],
@@ -195,7 +195,7 @@ function MAPS_serviceApplyValidity($args, $extend, &$output, &$svc_msg)
     $paid = isset($args['payed']) ? ((int)$args['payed'] ? 1 : 0) : (int)$row['payed'];
     DB_query("UPDATE {$_TABLES['maps_markers']} SET validity=1,validity_start='".date('Y-m-d H:i:s',$start)."',validity_end='".date('Y-m-d H:i:s',$end)."',payed=".$paid.",modified='".date('Y-m-d H:i:s')."' WHERE mkid='".MAPS_dbEscape($markerId)."'");
     if (DB_error()) { MAPS_serviceOperationRollback($args); $svc_msg['error_desc']='Unable to update marker validity.'; return PLG_RET_ERROR; }
-    updateMap((int)$row['mid']);
+    MAPS_notifyMarkerSaved($markerId, (int)$row['mid']);
     $updated=MAPS_serviceMarkerRow($markerId,false,false);
     $output=MAPS_serviceMarkerData($updated);
     $output['idempotent']=false;

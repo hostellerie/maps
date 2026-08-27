@@ -48,6 +48,132 @@ function MAPS_markerContentUrl($mkid)
         . rawurlencode($mkid);
 }
 
+
+/**
+ * Normalize a marker row to the same Item Info contract used for maps.
+ *
+ * @param array $row
+ * @return array
+ */
+function MAPS_markerContentNormalizeRow($row)
+{
+    if (!is_array($row) || !isset($row['mkid']) || trim((string) $row['mkid']) === '') {
+        return array();
+    }
+
+    $mkid = trim((string) $row['mkid']);
+    $title = trim(MAPS_decodeStoredText(isset($row['name']) ? $row['name'] : ''));
+    $description = trim(MAPS_decodeStoredText(isset($row['description']) ? $row['description'] : ''));
+    if ($title === '') {
+        $title = '#' . $mkid;
+    }
+    $excerpt = trim(strip_tags($description));
+    if (function_exists('COM_truncate')) {
+        $excerpt = COM_truncate($excerpt, 255, '...');
+    } elseif (strlen($excerpt) > 255) {
+        $excerpt = substr($excerpt, 0, 252) . '...';
+    }
+    $created = isset($row['created']) ? strtotime($row['created']) : false;
+    $modified = isset($row['modified']) ? strtotime($row['modified']) : false;
+    $uid = isset($row['owner_id']) ? (int) $row['owner_id'] : 0;
+
+    return array(
+        'id' => 'marker:' . $mkid,
+        'title' => $title,
+        'url' => MAPS_markerContentUrl($mkid),
+        'description' => $description,
+        'excerpt' => $excerpt,
+        'date-created' => ($created === false ? 0 : $created),
+        'date-modified' => ($modified === false ? 0 : $modified),
+        'uid' => $uid,
+        'author' => ($uid > 0 && function_exists('COM_getDisplayName')) ? COM_getDisplayName($uid) : '',
+        'type' => 'maps',
+        'subtype' => 'marker'
+    );
+}
+
+/**
+ * Return one public/accessible marker for Item Info consumers.
+ *
+ * @param string $mkid
+ * @param int    $uid
+ * @return array
+ */
+function MAPS_markerContentQuery($mkid, $uid = 0)
+{
+    global $_TABLES;
+
+    $mkid = trim((string) $mkid);
+    if ($mkid === '') {
+        return array();
+    }
+    $sql = "SELECT mk.mkid,mk.mid,mk.name,mk.description,mk.created,mk.modified,mk.owner_id "
+        . "FROM {$_TABLES['maps_markers']} mk "
+        . "INNER JOIN {$_TABLES['maps_maps']} m ON m.mid=mk.mid "
+        . "WHERE mk.mkid='" . MAPS_dbEscape($mkid) . "' "
+        . "AND mk.active=1 AND mk.hidden=0 AND m.active=1 AND m.hidden=0"
+        . COM_getPermSQL('AND', (int) $uid, 2, 'mk')
+        . COM_getPermSQL('AND', (int) $uid, 2, 'm')
+        . " LIMIT 1";
+    $result = DB_query($sql);
+    if (!$result || DB_numRows($result) === 0) {
+        return array();
+    }
+    return MAPS_markerContentNormalizeRow(DB_fetchArray($result));
+}
+
+/**
+ * Emit a marker-save lifecycle event and refresh every affected parent map.
+ * The marker reference is namespaced so it can never collide with a map ID.
+ *
+ * @param string $mkid
+ * @param int    $mid
+ * @param int    $previousMid
+ * @param bool   $notifyParents
+ * @return void
+ */
+function MAPS_notifyMarkerSaved($mkid, $mid = 0, $previousMid = 0, $notifyParents = true)
+{
+    $mkid = trim((string) $mkid);
+    if ($mkid === '') {
+        return;
+    }
+    PLG_itemSaved('marker:' . $mkid, 'maps');
+    if (!$notifyParents) {
+        return;
+    }
+    $mid = (int) $mid;
+    $previousMid = (int) $previousMid;
+    if ($mid > 0) {
+        updateMap($mid);
+    }
+    if ($previousMid > 0 && $previousMid !== $mid) {
+        updateMap($previousMid);
+    }
+}
+
+/**
+ * Emit a marker-delete lifecycle event and refresh its former parent map.
+ * URL consumers can still resolve marker:<id> after deletion because the
+ * canonical URL is deterministic and does not require a database lookup.
+ *
+ * @param string $mkid
+ * @param int    $mid
+ * @return void
+ */
+function MAPS_notifyMarkerDeleted($mkid, $mid = 0)
+{
+    $mkid = trim((string) $mkid);
+    if ($mkid === '') {
+        return;
+    }
+    PLG_itemDeleted('marker:' . $mkid, 'maps');
+    $mid = (int) $mid;
+    if ($mid > 0) {
+        updateMap($mid);
+    }
+}
+
 /**
  * Normalize a requested Item Info field list.
  *
@@ -247,15 +373,20 @@ function plugin_getiteminfo_maps($id, $what, $uid = 0, $options = array())
         return array();
     }
 
+    $idText = trim((string) $id);
+    if (strncmp($idText, 'marker:', 7) === 0) {
+        $marker = MAPS_markerContentQuery(substr($idText, 7), $uid);
+        if (empty($marker)) {
+            return array();
+        }
+        return MAPS_contentSelectFields($marker, $fields, true);
+    }
+
     $items = MAPS_contentQuery($id, $uid, $options);
     if ((string) $id !== '*') {
         if (empty($items)) {
             return array();
         }
-        // Native Geeklog consumers (including XMLSitemap) expect a concrete
-        // PLG_getItemInfo() response to be numerically indexed in the exact
-        // order requested through $what. Collection records remain associative
-        // for the Maps interoperability contract.
         return MAPS_contentSelectFields($items[0], $fields, true);
     }
 
@@ -273,12 +404,28 @@ function plugin_getiteminfo_maps($id, $what, $uid = 0, $options = array())
  * @param int|string  $item_id
  * @return string
  */
-function plugin_idtourl_maps($sub_type, $item_id)
+function plugin_idtourl_maps($sub_type = '', $item_id = null)
 {
+    // Some Geeklog/plugin consumers call the callback with one identifier,
+    // while subtype-aware cores pass ($sub_type, $item_id). Support both.
+    if ($item_id === null) {
+        $item_id = $sub_type;
+        $sub_type = '';
+    }
+
     $subType = strtolower(trim((string) $sub_type));
+    $itemText = trim((string) $item_id);
+
+    if (strncmp($itemText, 'marker:', 7) === 0) {
+        return MAPS_markerContentUrl(substr($itemText, 7));
+    }
+    if ($subType === 'marker') {
+        return MAPS_markerContentUrl($itemText);
+    }
     if ($subType !== '' && $subType !== 'map' && $subType !== 'maps') {
         return '';
     }
 
-    return MAPS_contentUrl((int) $item_id);
+    return MAPS_contentUrl((int) $itemText);
 }
+
