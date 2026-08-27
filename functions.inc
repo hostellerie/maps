@@ -329,6 +329,48 @@ function MAPS_arrayGet($array, $key, $default = '')
 }
 
 /**
+ * Render configured marker custom fields for public output.
+ *
+ * A field is public only when both its configured label and stored value are
+ * non-empty. Values keep Maps' historical autotag support through
+ * PLG_replaceTags(), while labels are always escaped.
+ *
+ * @param array  $marker
+ * @param string $layout compact for info windows, detail for marker pages
+ * @return string
+ */
+function MAPS_renderPublicCustomFields($marker, $layout = 'detail')
+{
+    global $_MAPS_CONF;
+
+    $html = '';
+    for ($i = 1; $i <= 10; $i++) {
+        $label = trim((string) MAPS_arrayGet($_MAPS_CONF, 'item_' . $i, ''));
+        $value = trim((string) MAPS_arrayGet($marker, 'item_' . $i, ''));
+        if ($label === '' || $value === '') {
+            continue;
+        }
+
+        $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
+        $renderedValue = PLG_replaceTags(stripslashes($value));
+        if ($layout === 'compact') {
+            $html .= '<div class="maps-custom-field maps-custom-field-compact">'
+                . '<strong>' . $safeLabel . '</strong> ' . $renderedValue . '</div>';
+        } else {
+            $html .= '<div class="maps-custom-field">'
+                . '<strong class="maps-custom-field-label">' . $safeLabel . '</strong>'
+                . '<div class="maps-custom-field-value">' . $renderedValue . '</div></div>';
+        }
+    }
+
+    if ($html === '') {
+        return '';
+    }
+
+    return '<div class="maps-custom-fields">' . $html . '</div>';
+}
+
+/**
  * Normalize a configurable CSS size (for example 250px, 40em or 100%).
  *
  * @param mixed  $value
@@ -991,7 +1033,6 @@ function MAPS_repairConfig151()
         $rows[$name] = array($_MAPS_DEFAULT[$name], 'text', 1, 6, 0, $fieldOrder);
         $fieldOrder += 10;
     }
-    $rows['infos_label'] = array($_MAPS_DEFAULT['infos_label'], 'text', 1, 6, 0, $fieldOrder);
 
     foreach ($rows as $name => $def) {
         $nameSql = MAPS_dbEscape($name);
@@ -2067,17 +2108,7 @@ function MAPS_renderMarker($marker, $primaryColor, $strokecolor, $label, $label_
                 $short = substr($description, 0, 150);
             }
             $template->set_var('description', $short !== '' ? '<p>' . nl2br(htmlspecialchars($short, ENT_QUOTES, 'UTF-8')) . (strlen($description) > strlen($short) ? '…' : '') . '</p>' : '');
-            $resources = '';
-            for ($i = 1; $i <= 10; $i++) {
-                $cfg = MAPS_arrayGet($_MAPS_CONF, 'item_' . $i, '');
-                $val = MAPS_arrayGet($marker, 'item_' . $i, '');
-                $template->set_var('item_' . $i . '_label', $cfg);
-                $template->set_var('item_' . $i, PLG_replaceTags(stripslashes($val)));
-                if ($cfg !== '' && $val !== '') {
-                    $resources .= '<h3>' . htmlspecialchars($cfg, ENT_QUOTES, 'UTF-8') . '</h3><p>' . PLG_replaceTags(stripslashes($val)) . '</p>';
-                }
-            }
-            $template->set_var('ressources', $resources);
+            $template->set_var('ressources', MAPS_renderPublicCustomFields($marker, 'compact'));
             $readMore = MAPS_arrayGet($marker, 'url', '') !== '' ? $_CONF['site_url'] . '/' . ltrim($marker['url'], '/') : $_MAPS_CONF['site_url'] . '/markers.php?mode=show&mkid=' . rawurlencode($marker['mkid']) . '&mid=' . (int) $marker['mid'];
             $template->set_var('read_more', '<a href="' . htmlspecialchars($readMore, ENT_QUOTES, 'UTF-8') . '">' . $LANG_MAPS_1['read_more'] . '</a>');
             $template->set_var('map', '<p>' . $LANG_MAPS_1['on_map'] . ' <a href="' . $_MAPS_CONF['site_url'] . '/index.php?mode=map&mid=' . (int) $marker['mid'] . '">' . htmlspecialchars(stripslashes($mapname), ENT_QUOTES, 'UTF-8') . '</a></p>');
@@ -2517,15 +2548,7 @@ function MAPS_ViewMarkerInfos($mkid)
     }
     $template->set_var('web', MAPS_arrayGet($marker, 'web', '') !== '' ? '<p><strong>' . $LANG_MAPS_1['web_label'] . '</strong> ' . MAPS_convertLinkToUrl($marker['web']) . '</p>' : '');
     $template->set_var('space', '');
-    $resources = '';
-    for ($i = 1; $i <= 10; $i++) {
-        $label = MAPS_arrayGet($_MAPS_CONF, 'item_' . $i, '');
-        $value = MAPS_arrayGet($marker, 'item_' . $i, '');
-        if ($label !== '' && $value !== '') {
-            $resources .= '<p><strong>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</strong></p><p>' . PLG_replaceTags(stripslashes($value)) . '</p>';
-        }
-    }
-    $template->set_var('ressources', $resources);
+    $template->set_var('ressources', MAPS_renderPublicCustomFields($marker, 'detail'));
     $ownerUid = MAPS_resolveMarkerOwnerUid($marker);
     $uid = isset($_USER['uid']) ? (int) $_USER['uid'] : 1;
     $template->set_var('edit', SEC_hasRights('maps.admin') || $uid === $ownerUid ? '<a href="' . $_MAPS_CONF['site_url'] . '/markers.php?mode=edit&amp;mkid=' . rawurlencode($marker['mkid']) . '">' . $LANG_MAPS_1['edit_button'] . '</a>' : '');

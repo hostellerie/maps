@@ -143,3 +143,5 @@ After RC1, changes should be restricted to regression, compatibility, security a
 - Renamed marker resource configuration labels to `Custom field N label` / `Libellé du champ personnalisé N`.
 - Removed the obsolete `infos_label` / `Infos label (Pro version)` configuration option.
 - Kept `item_1` through `item_10` as supported marker custom fields.
+
+- Centralized public rendering of marker custom fields on marker detail pages and map info windows; fields are shown only when both label and value are present.
