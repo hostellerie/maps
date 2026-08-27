@@ -1,3 +1,5 @@
+![Maps 1.6.0 now available](docs/images/maps-1.6.0.webp)
+
 # Maps for Geeklog
 
 Maps is a Geeklog plugin for creating Google Maps, markers, overlays, profile maps, Calendar event maps and map autotags.
