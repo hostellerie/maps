@@ -20,6 +20,12 @@ jobs:
           git clone --depth 1 --branch modernize/maps-1.5 \
             https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
+      - name: Apply admin layout harmonization
+        shell: bash
+        run: |
+          cd source
+          python3 tools/harmonize-admin-layout-160.py
+
       - name: Lint release files
         shell: bash
         run: |
@@ -27,7 +33,7 @@ jobs:
             -not -path 'source/build/*' -not -path 'source/tools/*' -print0 \
             | xargs -0 -n1 php -l
 
-      - name: Verify release metadata and public layout
+      - name: Verify release metadata and layouts
         shell: bash
         run: |
           set -e
@@ -37,9 +43,11 @@ jobs:
           grep -q 'Maps 1.6.0' source/README.md
           test -f source/RELEASE-NOTES-1.6.0.md
           grep -q 'maps-page-title' source/public_html/index.php
+          grep -q 'maps-markers-heading' source/public_html/index.php
+          grep -q 'maps-admin-title' source/admin/index.php
+          grep -q 'maps-admin-menu' source/templates/admin_menu.thtml
+          grep -q 'maps-admin-title' source/templates/geocoder.thtml
           grep -q 'maps-directions-panel' source/functions.inc
-          grep -q 'maps-marker-map-shell' source/templates/marker_map.thtml
-          grep -q 'maps-public-map' source/templates/map.thtml
           ! grep -q '<h1' source/templates/marker.thtml
 
       - name: Build final installable archive
@@ -55,7 +63,7 @@ jobs:
           unzip -t maps_1.6.0_2.1.1.zip >/dev/null
           test "$(zipinfo -1 maps_1.6.0_2.1.1.zip | head -n 1)" = 'maps/'
 
-      - name: Commit final archive
+      - name: Commit source refinements and final archive
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -66,9 +74,10 @@ jobs:
           cp build/maps_1.6.0_2.1.1.zip dist/maps_1.6.0_2.1.1.zip
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public_html/index.php admin/index.php admin/markers.php admin/icons.php admin/overlays.php admin/import_export.php admin/map_edit.php admin/marker_edit.php templates/admin_menu.thtml templates/geocoder.thtml RELEASE-NOTES-1.6.0.md
           git add -f dist/maps_1.6.0_2.1.1.zip
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Build Maps 1.6.0 final archive [skip ci]'
+          git commit -m 'Harmonize Maps 1.6.0 admin hierarchy and navigation [skip ci]'
           git push origin HEAD:modernize/maps-1.5
