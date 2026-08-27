@@ -17,111 +17,20 @@ jobs:
           ref: modernize/maps-1.5
 
       - name: Apply fixes
-        shell: bash
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-
-          # 1. Compact map list: map name already points to the public map.
-          p = Path('admin/index.php')
-          s = p.read_text(encoding='utf-8')
-          s = s.replace("    $viewLabel = isset($LANG_ADMIN['view']) ? $LANG_ADMIN['view'] : 'View';\n", '')
-          s = s.replace("        array('text' => $viewLabel, 'field' => 'view', 'sort' => false),\n", '')
-          start = s.find('        case "view":')
-          end = s.find('        case "name":', start)
-          if start >= 0 and end > start:
-              s = s[:start] + s[end:]
-          p.write_text(s, encoding='utf-8')
-
-          # 2. Native date controls remove the jQuery UI dependency.
-          p = Path('templates/marker_form.thtml')
-          s = p.read_text(encoding='utf-8')
-          s = s.replace('type="text" id="from" name="from"', 'type="date" id="from" name="from"')
-          s = s.replace('type="text" id="to" name="to"', 'type="date" id="to" name="to"')
-          p.write_text(s, encoding='utf-8')
-
-          # 3. Make Google Maps initialization tolerant of async loading.
-          p = Path('admin/marker_edit.php')
-          s = p.read_text(encoding='utf-8')
-          s = s.replace("date(\"m/d/Y\", strtotime($marker['validity_start']))", "date(\"Y-m-d\", strtotime($marker['validity_start']))")
-          s = s.replace("date(\"m/d/Y\", strtotime($marker['validity_end']))", "date(\"Y-m-d\", strtotime($marker['validity_end']))")
-          s = s.replace('date("m/d/Y")', 'date("Y-m-d")')
-
-          old_datepicker = '''\tjQuery(document).ready(
-        function()
-        {
-\t\t\t$( "#from" ).datepicker();
-\t\t    $( "#to" ).datepicker();
-        });
-\t\t
-'''
-          s = s.replace(old_datepicker, '')
-
-          old_datepicker2 = '''\t\tjQuery(function() {
-\t\t\tjQuery(\'#from\').datepicker({
-\t\t\t\taltFormat:\'m/d/Y\'
-\t\t\t});
-\t\t\tjQuery(\'#to\').datepicker({
-\t\t\t\taltFormat:\'m/d/Y\',
-\t\t\t});
-\t\t});
-\t\t
-\t\t
-'''
-          s = s.replace(old_datepicker2, '')
-
-          s = s.replace('\t\tvar geocoder = new google.maps.Geocoder();', '\t\tvar geocoder = null;')
-
-          old_init = '''\t\tfunction initializeGMap() {
-\t\t\tvar initialPosition = {lat:Number('''
-          new_init = '''\t\tfunction initializeGMap(attempt) {
-\t\t\tif (typeof window.google === "undefined" || !google.maps
-\t\t\t    || typeof google.maps.Map !== "function"
-\t\t\t    || typeof google.maps.Marker !== "function"
-\t\t\t    || typeof google.maps.Geocoder !== "function"
-\t\t\t    || !google.maps.MapTypeId || !google.maps.event) {
-\t\t\t\tif (attempt < 120) {
-\t\t\t\t\twindow.setTimeout(function () { initializeGMap(attempt + 1); }, 100);
-\t\t\t\t}
-\t\t\t\treturn;
-\t\t\t}
-\t\t\tif (map) { return; }
-\t\t\tgeocoder = new google.maps.Geocoder();
-\t\t\tvar initialPosition = {lat:Number('''
-          if old_init not in s:
-              raise SystemExit('initializeGMap anchor not found')
-          s = s.replace(old_init, new_init, 1)
-
-          s = s.replace(
-              'if (document.readyState === "complete") { initializeGMap(); } else { window.addEventListener("load", initializeGMap); }',
-              'if (document.readyState === "complete") { initializeGMap(0); } else { window.addEventListener("load", function () { initializeGMap(0); }); }'
-          )
-
-          old_code = '''\t\t  geocoder.geocode({"address": address}, function(results, status) {'''
-          new_code = '''\t\t  if (!geocoder) {
-\t\t\tinitializeGMap(0);
-\t\t\treturn;
-\t\t  }
-\t\t  geocoder.geocode({"address": address}, function(results, status) {'''
-          if old_code not in s:
-              raise SystemExit('codeAddress anchor not found')
-          s = s.replace(old_code, new_code, 1)
-
-          s = s.replace("\t$_SCRIPTS->setJavaScriptFile('ui_core', '/javascript/jquery_ui/jquery.ui.core.min.js');\n", '')
-          s = s.replace("\t$_SCRIPTS->setJavaScriptFile('datepicker', '/javascript/jquery_ui/jquery.ui.datepicker.min.js');\n", '')
-          p.write_text(s, encoding='utf-8')
-          PY
+        run: python3 tools/fix-marker-runtime.py
 
       - name: Verify changes
+        shell: bash
         run: |
           php -l admin/index.php
           php -l admin/marker_edit.php
           grep -q 'type="date" id="from"' templates/marker_form.thtml
           grep -q 'typeof google.maps.Geocoder !== "function"' admin/marker_edit.php
-          ! grep -q '\.datepicker' admin/marker_edit.php
-          ! grep -q "field' => 'view'" admin/index.php
+          if grep -q '\.datepicker' admin/marker_edit.php; then exit 1; fi
+          if grep -q "field' => 'view'" admin/index.php; then exit 1; fi
 
       - name: Commit fixes
+        shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
