@@ -51,7 +51,7 @@ jobs:
           cd source
           rm -rf build
           mkdir -p build/maps
-          cp -a admin autoinstall.php functions.inc install_defaults.php integrations.php interoperability.php distribution.php language maps.php public_html sql templates README.md build/maps/
+          cp -a admin autoinstall.php functions.inc install_defaults.php integrations.php interoperability.php distribution.php language maps.php public_html sql templates README.md RELEASE-NOTES-1.5.7.md build/maps/
           cd build
           zip -r maps-1.5.7-test.zip maps >/dev/null
 
