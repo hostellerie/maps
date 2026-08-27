@@ -2,40 +2,10 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.2                                                           |
+// | Maps Plugin 1.5.7                                                         |
 // +---------------------------------------------------------------------------+
 // | import_export.php                                                         |
 // +---------------------------------------------------------------------------+
-// | Copyright (C) 2010 by the following authors:                              |
-// |                                                                           |
-// | Authors: ::Ben                                                            |
-// +---------------------------------------------------------------------------+
-// | Created with the Geeklog Plugin Toolkit.                                  |
-// +---------------------------------------------------------------------------+
-// |                                                                           |
-// | This program is free software; you can redistribute it and/or             |
-// | modify it under the terms of the GNU General Public License               |
-// | as published by the Free Software Foundation; either version 2            |
-// | of the License, or (at your option) any later version.                    |
-// |                                                                           |
-// | This program is distributed in the hope that it will be useful,           |
-// | but WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             |
-// | GNU General Public License for more details.                              |
-// |                                                                           |
-// | You should have received a copy of the GNU General Public License         |
-// | along with this program; if not, write to the Free Software Foundation,   |
-// | Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.           |
-// |                                                                           |
-// +---------------------------------------------------------------------------+
-
-/**
- * Displays a form for the editing maps
- *
- * Allows for the altering and deletion of existing maps as well as the
- * creation of new maps
- *
- */
 
 require_once '../../../lib-common.php';
 require_once '../../auth.inc.php';
@@ -43,410 +13,564 @@ require_once 'edit_functions.php';
 
 $display = '';
 
-// Ensure user even has the rights to access this page
-if (! SEC_hasRights('maps.admin')) {
+if (!SEC_hasRights('maps.admin')) {
     $display .= MAPS_compatSiteHeader('menu', $MESSAGE[30])
-             . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
-             . MAPS_compatSiteFooter();
-
-    // Log attempt to access.log
+        . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
+        . MAPS_compatSiteFooter();
     COM_accessLog("User {$_USER['username']} tried to illegally access the Maps plugin import screen.");
-
     MAPS_compatOutput($display);
     exit;
 }
 
-// Incoming variable filter
-$vars = array('mode' => 'alpha',
-              'mid' => 'number',
-			  'separator_in' => 'text',
-			  'separator_out' => 'text',
-			  'separator' => 'text',
-			  'filename' => 'text',
-			  'submit'  => 'alpha',
-			  'import_export[address]' => 'number'
-			  );
-
-MAPS_filterVars($vars, $_REQUEST);
+/**
+ * Escape text for safe HTML output.
+ *
+ * @param mixed $value
+ * @return string
+ */
+function MAPS_importHtml($value)
+{
+    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+}
 
 /**
- * This function creates an import Form
+ * Return the marker fields that may be imported/exported.
  *
- * @return string HTML string of form
+ * @return array
  */
-function getImportExportForm() {
+function MAPS_getFieldsImportExport()
+{
+    return array(
+        'address', 'lat', 'lng', 'name', 'description', 'mk_default',
+        'mk_pcolor', 'mk_scolor', 'mk_label', 'mk_label_color', 'street',
+        'code', 'city', 'state', 'country', 'tel', 'fax', 'web', 'item_1',
+        'item_2', 'item_3', 'item_4', 'item_5', 'item_6', 'item_7', 'item_8',
+        'item_9', 'item_10'
+    );
+}
 
-    global $_CONF, $_TABLES, $LANG_MAPS_1;
-	
-    $return = COM_startBlock($LANG_MAPS_1['import_export']);
+/**
+ * Keep only known import/export fields while preserving their submitted order.
+ *
+ * @param mixed $fields
+ * @return array
+ */
+function MAPS_filterImportExportFields($fields)
+{
+    $valid = MAPS_getFieldsImportExport();
+    $result = array();
+
+    if (!is_array($fields)) {
+        return $result;
+    }
+
+    foreach ($fields as $field) {
+        $field = (string) $field;
+        if (in_array($field, $valid, true) && !in_array($field, $result, true)) {
+            $result[] = $field;
+        }
+    }
+
+    return $result;
+}
+
+/**
+ * Normalize a supported CSV separator.
+ *
+ * @param mixed $separator
+ * @return string
+ */
+function MAPS_csvSeparator($separator)
+{
+    $separator = (string) $separator;
+    if ($separator === 'tab') {
+        return "\t";
+    }
+    if ($separator === ',') {
+        return ',';
+    }
+    return ';';
+}
+
+/**
+ * Resolve a generated CSV staging filename safely inside path_data.
+ *
+ * @param mixed $filename
+ * @return string|false
+ */
+function MAPS_importTempPath($filename)
+{
+    global $_CONF;
+
+    $filename = (string) $filename;
+    if ($filename === '' || basename($filename) !== $filename
+        || !preg_match('/^import_markers_[A-Za-z0-9_-]+\.csv$/D', $filename)
+    ) {
+        return false;
+    }
+
+    return rtrim($_CONF['path_data'], '/\\') . DIRECTORY_SEPARATOR . $filename;
+}
+
+/**
+ * Verify that the requested map exists.
+ *
+ * @param int $mid
+ * @return bool
+ */
+function MAPS_importMapExists($mid)
+{
+    global $_TABLES;
+
+    $mid = (int) $mid;
+    return $mid > 0 && (int) DB_count($_TABLES['maps_maps'], 'mid', $mid) === 1;
+}
+
+/**
+ * Build the import/export form.
+ *
+ * @return string
+ */
+function getImportExportForm()
+{
+    global $_CONF, $LANG_MAPS_1;
 
     $template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
     $template->set_file(array('import_export' => 'import_export_form.thtml'));
-	$template->set_var('site_admin_url', $_CONF['site_admin_url']);
-	
-	$template->set_var('import', $LANG_MAPS_1['import']);
-	$template->set_var('import_message', $LANG_MAPS_1['import_message']);
-	$template->set_var('export', $LANG_MAPS_1['export']);
-	$template->set_var('export_message', $LANG_MAPS_1['export_message']);
-	$template->set_var('select_file', $LANG_MAPS_1['select_file']);
-	
-	//delimiters
-	$template->set_var('separator_in', $LANG_MAPS_1['separator']);
-	$template->set_var('separator_out', $LANG_MAPS_1['separator']);
-	$separator_options = '<option value=";">;</option>' . LB;
-	$separator_options .= '<option value="tab">tab</option>' . LB;
-	$separator_options .= '<option value=",">,</option>' . LB;
-	$template->set_var('separator_options_in', $separator_options);
-	$template->set_var('separator_options_out', $separator_options);
-	//select map
-	$template->set_var('mid_label', $LANG_MAPS_1['name_label']);
-	$map_options = MAPS_recurseMaps(isset($_REQUEST['mid']) ? $_REQUEST['mid'] : '');
-	$template->set_var('map_options', $map_options);
-	//Fields to import or export
-	$template->set_var('choose_fields_import', $LANG_MAPS_1['choose_fields_import']);
-	$template->set_var('choose_fields_export', $LANG_MAPS_1['choose_fields_export']);
-	$template->set_var('checkall', $LANG_MAPS_1['checkall']);
-	$valid_fieds = MAPS_getFieldsImportExport();
-	$fields_selector = '';
-	foreach ( $valid_fieds as $value ) {
-		$fields_selector .= '<input type="checkbox" name="import_export[]" value="' . $value . '" />' . $value . '<br' . XHTML . '>' . LB;
-    } 
-	$template->set_var('fields_selector', $fields_selector);
-	//Form validation
-	$template->set_var('ok_button', $LANG_MAPS_1['ok_button']);
-	
-    $return .= $template->parse('output', 'import_export');
+    $template->set_var('site_admin_url', $_CONF['site_admin_url']);
 
-    $return .= COM_endBlock();
+    $token = SEC_createToken();
+    $template->set_var(
+        'csrf_token',
+        '<input type="hidden" name="' . MAPS_importHtml(CSRF_TOKEN)
+        . '" value="' . MAPS_importHtml($token) . '">'
+    );
 
-    return $return;
-}
+    $template->set_var('import', $LANG_MAPS_1['import']);
+    $template->set_var('import_message', $LANG_MAPS_1['import_message']);
+    $template->set_var('export', $LANG_MAPS_1['export']);
+    $template->set_var('export_message', $LANG_MAPS_1['export_message']);
+    $template->set_var('select_file', $LANG_MAPS_1['select_file']);
+    $template->set_var('separator_in', $LANG_MAPS_1['separator']);
+    $template->set_var('separator_out', $LANG_MAPS_1['separator']);
 
-function MAPS_importCSV ($FILES = '', $map_id, $separator=';', $fields, $valid = false, $filename='') {
-    
-	global $_CONF, $_TABLES, $LANG24, $LANG_MAPS_1, $_USER;	
-	
-	if($map_id == '') return MAPS_message('Map ID is missing');
-	
-	if ( !in_array($separator, array(',','tab',';')) ) {
-	    echo COM_refresh($_CONF['site_admin_url'] . '/plugins/maps/import_export.php');
-		exit();
-	}
+    $separatorOptions = '<option value=";">;</option>' . LB
+        . '<option value="tab">tab</option>' . LB
+        . '<option value=",">,</option>' . LB;
+    $template->set_var('separator_options_in', $separatorOptions);
+    $template->set_var('separator_options_out', $separatorOptions);
 
-	if ($valid == false) {
-     	// OK, let's upload csv file
-	    require_once($_CONF['path_system'] . 'classes/upload.class.php');
-	    $upload = new upload();
+    $selectedMid = isset($_REQUEST['mid']) ? (int) $_REQUEST['mid'] : 0;
+    $template->set_var('mid_label', $LANG_MAPS_1['name_label']);
+    $template->set_var('map_options', MAPS_recurseMaps($selectedMid));
+    $template->set_var('choose_fields_import', $LANG_MAPS_1['choose_fields_import']);
+    $template->set_var('choose_fields_export', $LANG_MAPS_1['choose_fields_export']);
+    $template->set_var('checkall', $LANG_MAPS_1['checkall']);
 
-	    //Debug with story debug function
-	    if (isset ($_CONF['debug_image_upload']) && $_CONF['debug_image_upload']) {
-		    $upload->setLogFile ($_CONF['path'] . 'logs/error.log');
-		    $upload->setDebug (true);
-	    }
-	    $upload->setMaxFileUploads (1);
-
-	    $upload->setAllowedMimeTypes (array (
-		    	'text/csv'   => '.csv',
-		    	'text/comma-separated-values'  => '.csv',
-		    	'application/vnd.ms-excel' => '.csv'
-		    	));
-	
-	    if (!$upload->setPath($_CONF['path_data'])) {
-		    $output = COM_siteHeader ('menu', $LANG24[30]);
-		    $output .= COM_startBlock ($LANG24[30], '', COM_getBlockTemplate ('_msg_block', 'header'));
-		    $output .= $upload->printErrors (false);
-		    $output .= COM_endBlock (COM_getBlockTemplate ('_msg_block', 'footer'));
-		    $output .= COM_siteFooter ();
-		    MAPS_compatOutput($output);
-		    exit;
-	    }
-
-	    // Set file permissions on file after it gets uploaded (number is in octal)
-	    $upload->setPerms('0644');
-
-		$curfile = current($FILES);
-		if (!empty($curfile['name'])) {
-			$pos = strrpos($curfile['name'],'.') + 1;
-			$fextension = substr($curfile['name'], $pos);
-			$filename = 'import_markers_' . COM_makesid()  . '.' . $fextension;
-		}
-		if ($filename == '') return MAPS_message('Houston, we have a problem.');
-		$upload->setFileNames($filename);
-		reset($FILES);
-		$upload->uploadFiles();
-
-		if ($upload->areErrors()) {
-			$msg = $upload->printErrors(false);
-			return MAPS_message($msg,$LANG24[30]);
-		}
-		$retval = '<p>'. $LANG_MAPS_1['markers_to_add'] . ' '. DB_getItem($_TABLES['maps_maps'], 'name', "mid=$map_id") . '</p><ul>';
-	} else {
-	    $retval = '<p>'. $LANG_MAPS_1['markers_added'] . ' '. DB_getItem($_TABLES['maps_maps'], 'name', "mid=$map_id") . '</p><ul>';
-	}
-		
-	//open file and record markers
-	$row = 1;
-	$marker = array();
-
-	$valid_fields = MAPS_getFieldsImportExport();
-	
-	if (($handle = fopen($_CONF['path_data'] . $filename, "r")) !== FALSE) {
-		if ($separator == 'tab') $separator = "\t";
-		$iteration = 0;
-		
-		while (($field_read = fgetcsv($handle, 0, $separator)) !== FALSE) {
-		    
-			$iteration ++;
-			for ($i = 27; $i > -1; $i=$i-1) {
-				if ( $fields[$i] == $valid_fields[$i]) {
-					$marker[$i] = $field_read[$i];
-				} else {
-					if (!isset($marker[$i])) $marker[$i] = '';
-					while ($position = current($valid_fields)) {
-						if ($position == $fields[$i]) {
-							$key = key($valid_fields);
-							$marker[$key] = $field_read[$i];
-						}
-						next($valid_fields);
-					}
-					reset($valid_fields);
-				}
-			}
-			
-			if ($marker[3] == '') {
-			    ksort($marker);
-			    $retval = '<table style="margin:20px;" border="1">';
-				foreach($marker as $key=>$val) { 
-				        $retval .= "<tr><td><font size=2>" . $key . "</td><td><font size=2>" . $val . "</td></tr>";
-					}
-				$retval .= "</table>";
-				return MAPS_message($LANG_MAPS_1['name_missing'] . ' | Line: ' . $iteration . $retval);
-			}
-			
-			if ($marker[0] == '' && $marker[1] == '') return MAPS_message($LANG_MAPS_1['need_address']);
-			
-			if ($valid == false) {
-				$retval .= '<li>#' . $iteration . ' Name: ' . $marker[3] . '<br'. XHTML . '>Address: ' . $marker[0] . '<br'. XHTML . '>Lat: ' . $marker[1] . ' | Lng: ' . $marker[2] . '<br'. XHTML . '>Description: ' . $marker[4] . '<br'. XHTML . '>mk_default: ' . $marker[5] . ' | mk_pcolor: ' . $marker[6] . ' | mk_scolor: ' . $marker[7] . ' | mk_label: ' . $marker[8] . ' | mk_label_color: ' . $marker[9] . '<br'. XHTML . '>street: ' . $marker[10] . '<br'. XHTML . '>code: ' . $marker[11] . ' | city: ' . $marker[12] . '<br'. XHTML . '>state: ' . $marker[13] . ' | country: ' . $marker[14] . '<br'. XHTML . '>tel: ' . $marker[15] . ' | fax: ' . $marker[16] . '<br'. XHTML . '>web: ' . $marker[17] . '<br'. XHTML . '>item_1: ' . $marker[18] . ' | item_2: ' . $marker[19] . ' | item_3: ' . $marker[20] . ' | item_4: ' . $marker[21] . ' | item_5: ' . $marker[22] . ' | item_6: ' . $marker[23] . ' | item_7: ' . $marker[24] . ' | item_8: ' . $marker[25] . ' | item_9: ' . $marker[26] . ' | item_10: |' . $marker[27] . '<br'. XHTML . '>Map id: ' . $map_id . ' | ' . 'Owner id: ' . $_USER['uid'] . '<br'. XHTML . '>&nbsp;';
-			} else {
-				ksort($marker);
-				$markers = '';
-
-				foreach($marker as $key => $value) {
-					if ($key != 0) $markers .=  ",";
-					// prepare strings for insertion
-					switch ($key) {
-						case '0': //address
-						    $val[0] = $value;
-				            $type = array(0 => 'text');
-					        MAPS_filterVars($type,$val);
-							//MAPS_convert_to ( $val[0], $_CONF['default_charset'] );
-							$address = $val[0];
-							break;
-						case '1': //lat
-							if ($value == '') {
-							$lat = $lng = '';
-							$coords = MAPS_getCoords($address, $lat, $lng);
-							$value = $lat;
-							}
-							break;
-						case '2': //lng
-							if ($value == '') {
-							$value = $lng;
-							}
-							break;
-						default :
-						    $val[0] = $value;
-				            $type = array(0 => 'text');
-					        MAPS_filterVars($type,$val); 
-							//MAPS_convert_to ( $val[0], $_CONF['default_charset'] );
-							$value = $val[0];
-							break;
-					}
-					$markers .= " '" . $value . "'";
-				}
-
-				//pause 1/10 second to avoid 
-				$nano = time_nanosleep(0, 100000);
-				
-				if ($nano === true) {
-				  $mkid = date( 'YmdHis' ) . $iteration;
-				}
-				
-				$created = $modified = date("Ymd");
-				
-				$sql = "INSERT INTO {$_TABLES['maps_markers']} (
-				  mkid,
-				  mid,
-				  owner_id,
-				  created, modified,
-				  address, lat, lng, name, description,  mk_default, mk_pcolor, mk_scolor, mk_label, mk_label_color,
-				  street, code, city, state, country, tel, fax, web, item_1, item_2, item_3, item_4, item_5, item_6,
-				  item_7, item_8, item_9, item_10) VALUES (
-				  $mkid,
-				  $map_id,
-				  {$_USER['uid']},
-				  $created, $modified,
-				  $markers)";
-				
-				$mkid_exists = DB_getItem($_TABLES['maps_markers'], 'mkid', "mkid=$mkid");
-				
-				DB_query("SET character_set_results = 'utf8', character_set_client = 'utf8', character_set_connection = 'utf8', character_set_database = 'utf8', character_set_server = 'utf8'");
-				
-				if ( $mkid_exists == '' and $mkid != '') {
-    				DB_query ($sql, 0);
-                    if (!DB_error()) {
-                        updateMap($map_id);
-                    }
-				} else {
-				    COM_errorLog('MAPS - Duplicate mkid during import from ' . $filename);
-				}
-				
-				$mkid = '';
-
-				$retval .= '<li>' . stripslashes($marker[3]) . ' | ' . stripslashes($marker[0]);
-			}
-		}
-
-		fclose($handle);
-	}
-	$retval .= '</ul>';
-	if ($valid == false) {
-		$validation = '<p><form name="import" action="' . $_CONF['site_url'] . '/admin/plugins/maps/import_export.php?mode=valid" method="POST">';
-		$validation .= '<input type="hidden" name="filename" value="' . $filename . '">';
-		$validation .= '<input type="hidden" name="mid" value="' . $map_id . '">';
-		$validation .= '<input type="hidden" name="separator_in" value="' . $separator . '">';
-		$validation .= '<input type="submit" name="submit" value="' . $LANG_MAPS_1['yes'] . '"> ';
-		foreach ($fields as $value) {
-			$validation .= '<input type="hidden" name="import_export[]" value="' . $value . '">';
-		}
-		$validation .= '<input type="submit" name="submit" value="' . $LANG_MAPS_1['no'] . '">';
-		$validation .= '</form></p>';
-		return MAPS_message($retval) . $validation;
-	} else {
-	   return $retval;
-	}
-}
-
-function MAPS_convert_to ( $source, $target_encoding )
-    {
-    // detect the character encoding of the incoming file
-    $encoding = mb_detect_encoding( $source, "auto" );
-      
-    // escape all of the question marks so we can remove artifacts from
-    // the unicode conversion process
-    $target = str_replace( "?", "[question_mark]", $source );
-      
-    // convert the string to the target encoding
-    $target = mb_convert_encoding( $target, $target_encoding, $encoding);
-      
-    // remove any question marks that have been introduced because of illegal characters
-    $target = str_replace( "?", "", $target );
-      
-    // replace the token string "[question_mark]" with the symbol "?"
-    $target = str_replace( "[question_mark]", "?", $target );
-  
-    return $target;
-}
-
-function MAPS_exportCSV ($map, $separator = ";", $fields=array()) {
-  
-	global $_CONF, $_MAPS_CONF, $_TABLES, $LANG_MAPS_1;
-	
-	$count = count($fields);
-	$i = 1;
-	$selected_fields = '';
-	$valid_fieds = MAPS_getFieldsImportExport();
-	
-	foreach ( $fields as $value ) {
-	    if( in_array( $value,$valid_fieds ) ) {
-            $selected_fields .= $value;
-	        if ($i < $count) {
-	        $selected_fields .= ', ';
-		    }
-		}
-		$i++;
+    $fieldsSelector = '';
+    foreach (MAPS_getFieldsImportExport() as $field) {
+        $fieldsSelector .= '<label><input type="checkbox" name="import_export[]" value="'
+            . MAPS_importHtml($field) . '"> ' . MAPS_importHtml($field) . '</label><br>' . LB;
     }
-	
-    //if ( $selected_fields == '' ) return;
-	
-	$result = DB_query("SELECT 
-							{$selected_fields}  
-							FROM {$_TABLES['maps_markers']} WHERE mid={$map}");
-	//Check if there is at least 1 marker
-	$rows  = DB_numRows($result);
-	
-	if ($rows < 1 ||  $selected_fields == '') {
-		$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
-        $display .= MAPS_admin_menu();
-        $display .= MAPS_message($LANG_MAPS_1['no_marker_to_export']);
-		$display .= MAPS_compatSiteFooter(0);
-        MAPS_compatOutput($display);
-		exit();
-	}
-	$search = array(',','\'',' ','.','!',':');
-	$sitename =  str_replace($search, "_", $_CONF['site_name']);
-	// send response headers to the browser
-	header( 'Content-Type: text/csv' );
-	header( 'Content-Disposition: attachment;filename=map_' . $map . '_' . $sitename . '.csv');
-	$fp1 = fopen('php://output', 'w');
+    $template->set_var('fields_selector', $fieldsSelector);
+    $template->set_var('ok_button', $LANG_MAPS_1['ok_button']);
 
-	while($row = DB_fetchArray($result, false)) {
-		if ($separator == ',') {
-		    fputcsv($fp1, $row, ",", '"');
-		} else if($separator == 'tab') {
-		    fputcsv($fp1, $row, "\t", '"');
-		} else {
-		    fputcsv($fp1, $row, ";", '"');
-		}
-	}
-	fclose($fp1);
-	//header("Refresh: 0;url={$_CONF['site_admin_url']}/plugins/maps/import_export.php");
+    return COM_startBlock($LANG_MAPS_1['import_export'])
+        . $template->parse('output', 'import_export')
+        . COM_endBlock();
 }
 
-function MAPS_getFieldsImportExport () {
-    
-	$fields = array('address', 'lat', 'lng', 'name', 'description', 'mk_default', 'mk_pcolor', 'mk_scolor', 'mk_label', 'mk_label_color', 'street', 'code', 'city', 'state', 'country', 'tel', 'fax', 'web', 'item_1', 'item_2', 'item_3', 'item_4', 'item_5', 'item_6', 'item_7', 'item_8', 'item_9', 'item_10');
-	
-	return $fields;
+/**
+ * Upload one CSV file into the private Geeklog data directory.
+ *
+ * @param array $files
+ * @return string|false Generated basename on success
+ */
+function MAPS_stageImportCsv($files)
+{
+    global $_CONF, $LANG24;
+
+    if (!is_array($files) || empty($files['file']) || !is_array($files['file'])) {
+        return false;
+    }
+
+    require_once $_CONF['path_system'] . 'classes/upload.class.php';
+    $upload = new upload();
+    if (isset($_CONF['debug_image_upload']) && $_CONF['debug_image_upload']) {
+        $upload->setLogFile($_CONF['path'] . 'logs/error.log');
+        $upload->setDebug(true);
+    }
+    $upload->setMaxFileUploads(1);
+    $upload->setAllowedMimeTypes(array(
+        'text/csv' => '.csv',
+        'text/plain' => '.csv',
+        'text/comma-separated-values' => '.csv',
+        'application/vnd.ms-excel' => '.csv'
+    ));
+
+    if (!$upload->setPath($_CONF['path_data'])) {
+        COM_errorLog('MAPS import: path_data is not writable.');
+        return false;
+    }
+
+    $upload->setPerms('0644');
+    $filename = 'import_markers_' . COM_makesid() . '.csv';
+    $upload->setFileNames($filename);
+    $upload->uploadFiles();
+
+    if ($upload->areErrors()) {
+        COM_errorLog('MAPS import upload error: ' . strip_tags($upload->printErrors(false)));
+        return false;
+    }
+
+    return $filename;
+}
+
+/**
+ * Parse the staged CSV according to the selected field order.
+ *
+ * @param string $filename
+ * @param string $separator
+ * @param array  $fields
+ * @param string &$error
+ * @return array
+ */
+function MAPS_readImportCsv($filename, $separator, $fields, &$error)
+{
+    $error = '';
+    $path = MAPS_importTempPath($filename);
+    if ($path === false || !is_file($path) || !is_readable($path)) {
+        $error = 'Invalid or unavailable import file.';
+        return array();
+    }
+
+    $fields = MAPS_filterImportExportFields($fields);
+    if (empty($fields)) {
+        $error = 'No valid import fields were selected.';
+        return array();
+    }
+
+    $handle = fopen($path, 'rb');
+    if ($handle === false) {
+        $error = 'Unable to open the import file.';
+        return array();
+    }
+
+    $delimiter = MAPS_csvSeparator($separator);
+    $rows = array();
+    $line = 0;
+
+    while (($values = fgetcsv($handle, 0, $delimiter)) !== false) {
+        $line++;
+        if ($values === array(null) || $values === array()) {
+            continue;
+        }
+
+        $marker = array_fill_keys(MAPS_getFieldsImportExport(), '');
+        foreach ($fields as $index => $field) {
+            $marker[$field] = isset($values[$index]) ? trim((string) $values[$index]) : '';
+        }
+
+        if ($marker['name'] === '') {
+            $error = 'Marker name is missing on line ' . $line . '.';
+            break;
+        }
+        if ($marker['address'] === '' && ($marker['lat'] === '' || $marker['lng'] === '')) {
+            $error = 'Address or coordinates are required on line ' . $line . '.';
+            break;
+        }
+
+        if ($marker['lat'] === '' || $marker['lng'] === '') {
+            $lat = '';
+            $lng = '';
+            if (!MAPS_getCoords($marker['address'], $lat, $lng)) {
+                $error = 'Unable to geocode marker on line ' . $line . '.';
+                break;
+            }
+            $marker['lat'] = $lat;
+            $marker['lng'] = $lng;
+        }
+
+        $lat = MAPS_normalizeNumber($marker['lat'], null);
+        $lng = MAPS_normalizeNumber($marker['lng'], null);
+        if (!MAPS_isValidCoordinatePair($lat, $lng)) {
+            $error = 'Invalid coordinates on line ' . $line . '.';
+            break;
+        }
+        $marker['lat'] = MAPS_canonicalNumberString($lat, 0);
+        $marker['lng'] = MAPS_canonicalNumberString($lng, 0);
+        $marker['mk_default'] = (string) ((int) $marker['mk_default'] === 0 ? 0 : 1);
+        $marker['mk_label_color'] = (string) ((int) $marker['mk_label_color'] === 1 ? 1 : 0);
+        $marker['mk_pcolor'] = MAPS_htmlColor($marker['mk_pcolor'], '#666666');
+        $marker['mk_scolor'] = MAPS_htmlColor($marker['mk_scolor'], '#666666');
+        $marker['mk_label'] = substr($marker['mk_label'], 0, 1);
+
+        $rows[] = $marker;
+    }
+
+    fclose($handle);
+
+    if ($error !== '') {
+        return array();
+    }
+
+    return $rows;
+}
+
+/**
+ * Render a safe preview of imported markers and confirmation form.
+ *
+ * @param array  $rows
+ * @param int    $mid
+ * @param string $separator
+ * @param array  $fields
+ * @param string $filename
+ * @return string
+ */
+function MAPS_importPreview($rows, $mid, $separator, $fields, $filename)
+{
+    global $_CONF, $_TABLES, $LANG_MAPS_1;
+
+    $mapName = DB_getItem($_TABLES['maps_maps'], 'name', 'mid=' . (int) $mid);
+    $html = '<p>' . MAPS_importHtml($LANG_MAPS_1['markers_to_add']) . ' '
+        . MAPS_importHtml($mapName) . '</p><ul>';
+
+    foreach ($rows as $index => $marker) {
+        $html .= '<li>#' . ($index + 1)
+            . ' — ' . MAPS_importHtml($marker['name'])
+            . ' — ' . MAPS_importHtml($marker['address'])
+            . ' [' . MAPS_importHtml($marker['lat']) . ', ' . MAPS_importHtml($marker['lng']) . ']</li>';
+    }
+    $html .= '</ul>';
+
+    $token = SEC_createToken();
+    $action = MAPS_importHtml($_CONF['site_admin_url'] . '/plugins/maps/import_export.php');
+    $html .= '<form action="' . $action . '" method="post">'
+        . '<input type="hidden" name="mode" value="valid">'
+        . '<input type="hidden" name="filename" value="' . MAPS_importHtml($filename) . '">'
+        . '<input type="hidden" name="mid" value="' . (int) $mid . '">'
+        . '<input type="hidden" name="separator_in" value="' . MAPS_importHtml($separator) . '">'
+        . '<input type="hidden" name="' . MAPS_importHtml(CSRF_TOKEN) . '" value="' . MAPS_importHtml($token) . '">';
+
+    foreach (MAPS_filterImportExportFields($fields) as $field) {
+        $html .= '<input type="hidden" name="import_export[]" value="' . MAPS_importHtml($field) . '">';
+    }
+
+    $html .= '<button type="submit" name="confirm" value="yes">'
+        . MAPS_importHtml($LANG_MAPS_1['yes']) . '</button> '
+        . '<button type="submit" name="confirm" value="no">'
+        . MAPS_importHtml($LANG_MAPS_1['no']) . '</button>'
+        . '</form>';
+
+    return $html;
+}
+
+/**
+ * Generate an unused BIGINT marker id.
+ *
+ * @return string
+ */
+function MAPS_importMarkerId()
+{
+    global $_TABLES;
+
+    do {
+        $mkid = date('ymdHis') . sprintf('%06d', mt_rand(0, 999999));
+    } while ((int) DB_count($_TABLES['maps_markers'], 'mkid', $mkid) > 0);
+
+    return $mkid;
+}
+
+/**
+ * Insert parsed CSV rows. The parent map lifecycle is emitted once per batch.
+ *
+ * @param array $rows
+ * @param int   $mid
+ * @return int Number inserted
+ */
+function MAPS_commitImportRows($rows, $mid)
+{
+    global $_TABLES, $_USER;
+
+    $mid = (int) $mid;
+    if (!MAPS_importMapExists($mid)) {
+        return 0;
+    }
+
+    $validFields = MAPS_getFieldsImportExport();
+    $inserted = 0;
+    $now = date('Y-m-d H:i:s');
+
+    foreach ($rows as $marker) {
+        $columns = array('mkid', 'mid', 'owner_id', 'created', 'modified');
+        $values = array(
+            "'" . MAPS_dbEscape(MAPS_importMarkerId()) . "'",
+            (string) $mid,
+            (string) (int) $_USER['uid'],
+            "'" . MAPS_dbEscape($now) . "'",
+            "'" . MAPS_dbEscape($now) . "'"
+        );
+
+        foreach ($validFields as $field) {
+            $columns[] = $field;
+            $values[] = "'" . MAPS_dbEscape(isset($marker[$field]) ? $marker[$field] : '') . "'";
+        }
+
+        DB_query(
+            "INSERT INTO {$_TABLES['maps_markers']} (" . implode(',', $columns) . ') VALUES ('
+            . implode(',', $values) . ')'
+        );
+        if (!DB_error()) {
+            $inserted++;
+        }
+    }
+
+    if ($inserted > 0) {
+        updateMap($mid);
+    }
+
+    return $inserted;
+}
+
+/**
+ * Export selected marker fields as CSV.
+ *
+ * @param int    $mid
+ * @param string $separator
+ * @param array  $fields
+ * @return void
+ */
+function MAPS_exportCSV($mid, $separator, $fields)
+{
+    global $_CONF, $_TABLES, $LANG_MAPS_1;
+
+    $mid = (int) $mid;
+    $fields = MAPS_filterImportExportFields($fields);
+    if (!MAPS_importMapExists($mid) || empty($fields)) {
+        $display = MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name'])
+            . MAPS_admin_menu()
+            . MAPS_message($LANG_MAPS_1['no_marker_to_export'])
+            . MAPS_compatSiteFooter(0);
+        MAPS_compatOutput($display);
+        exit;
+    }
+
+    $result = DB_query(
+        'SELECT ' . implode(',', $fields)
+        . " FROM {$_TABLES['maps_markers']} WHERE mid={$mid}"
+    );
+    if (DB_numRows($result) < 1) {
+        $display = MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name'])
+            . MAPS_admin_menu()
+            . MAPS_message($LANG_MAPS_1['no_marker_to_export'])
+            . MAPS_compatSiteFooter(0);
+        MAPS_compatOutput($display);
+        exit;
+    }
+
+    $siteName = preg_replace('/[^A-Za-z0-9_-]+/', '_', $_CONF['site_name']);
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="map_' . $mid . '_' . $siteName . '.csv"');
+    header('X-Content-Type-Options: nosniff');
+
+    $fp = fopen('php://output', 'wb');
+    $delimiter = MAPS_csvSeparator($separator);
+    while ($row = DB_fetchArray($result, false)) {
+        fputcsv($fp, $row, $delimiter, '"');
+    }
+    fclose($fp);
+    exit;
 }
 
 // MAIN
+$mode = isset($_POST['mode']) ? COM_applyFilter($_POST['mode']) : '';
 
-
-switch ($_REQUEST['mode']) {
-    case 'export':
-	    MAPS_exportCSV($_REQUEST['mid'],  $_REQUEST['separator_out'], $_REQUEST['import_export']);
-	    break;
-		
-	case 'import':
-	    $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
-        $display .= MAPS_admin_menu();
-		$display .= MAPS_importCSV ($_FILES, $_REQUEST['mid'], $_REQUEST['separator_in'], $_REQUEST['import_export']);
-		$display .= MAPS_compatSiteFooter(0);
+if ($mode !== '') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !SEC_checkToken()) {
+        COM_accessLog('Invalid CSRF token on Maps import/export action.');
+        $display .= MAPS_compatSiteHeader('menu', $MESSAGE[30])
+            . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
+            . MAPS_compatSiteFooter();
         MAPS_compatOutput($display);
-	    break;
-	
-	case 'valid':
-	    $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
-        $display .= MAPS_admin_menu();
-		if ( $_REQUEST['submit'] == $LANG_MAPS_1['yes']) {
-    		$display .= MAPS_importCSV ('', $_REQUEST['mid'], $_REQUEST['separator_in'], $_REQUEST['import_export'], true, $_REQUEST['filename']);
-		} else {
-		    $display .= getImportExportForm();
-		}
-		$display .= MAPS_compatSiteFooter(0);
-        MAPS_compatOutput($display);
-	    break;
+        exit;
+    }
 
-    default:
-	    $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
-        $display .= MAPS_admin_menu();
+    $mid = isset($_POST['mid']) ? (int) $_POST['mid'] : 0;
+    $fields = MAPS_filterImportExportFields(isset($_POST['import_export']) ? $_POST['import_export'] : array());
+
+    if ($mode === 'export') {
+        MAPS_exportCSV(
+            $mid,
+            isset($_POST['separator_out']) ? $_POST['separator_out'] : ';',
+            $fields
+        );
+    }
+
+    $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
+    $display .= MAPS_admin_menu();
+
+    if (!MAPS_importMapExists($mid)) {
+        $display .= MAPS_message('Invalid map.');
         $display .= getImportExportForm();
-		$display .= MAPS_compatSiteFooter(0);
-        MAPS_compatOutput($display);
-        break;
+    } elseif ($mode === 'import') {
+        $filename = MAPS_stageImportCsv($_FILES);
+        if ($filename === false) {
+            $display .= MAPS_message('Unable to upload the CSV file.');
+            $display .= getImportExportForm();
+        } else {
+            $separator = isset($_POST['separator_in']) ? (string) $_POST['separator_in'] : ';';
+            $error = '';
+            $rows = MAPS_readImportCsv($filename, $separator, $fields, $error);
+            if ($error !== '') {
+                $path = MAPS_importTempPath($filename);
+                if ($path !== false && is_file($path)) {
+                    @unlink($path);
+                }
+                $display .= MAPS_message(MAPS_importHtml($error));
+                $display .= getImportExportForm();
+            } else {
+                $display .= MAPS_importPreview($rows, $mid, $separator, $fields, $filename);
+            }
+        }
+    } elseif ($mode === 'valid') {
+        $filename = isset($_POST['filename']) ? (string) $_POST['filename'] : '';
+        $path = MAPS_importTempPath($filename);
+        $confirm = isset($_POST['confirm']) ? COM_applyFilter($_POST['confirm']) : 'no';
+
+        if ($path === false || !is_file($path)) {
+            $display .= MAPS_message('Invalid or expired import file.');
+            $display .= getImportExportForm();
+        } elseif ($confirm !== 'yes') {
+            @unlink($path);
+            $display .= getImportExportForm();
+        } else {
+            $separator = isset($_POST['separator_in']) ? (string) $_POST['separator_in'] : ';';
+            $error = '';
+            $rows = MAPS_readImportCsv($filename, $separator, $fields, $error);
+            if ($error !== '') {
+                @unlink($path);
+                $display .= MAPS_message(MAPS_importHtml($error));
+                $display .= getImportExportForm();
+            } else {
+                $inserted = MAPS_commitImportRows($rows, $mid);
+                @unlink($path);
+                $mapName = DB_getItem($_TABLES['maps_maps'], 'name', 'mid=' . $mid);
+                $display .= '<p>' . MAPS_importHtml($LANG_MAPS_1['markers_added']) . ' '
+                    . MAPS_importHtml($mapName) . ': ' . (int) $inserted . '</p>';
+                $display .= getImportExportForm();
+            }
+        }
+    } else {
+        $display .= getImportExportForm();
+    }
+
+    $display .= MAPS_compatSiteFooter(0);
+    MAPS_compatOutput($display);
+    exit;
 }
 
-
-
-?>
+$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
+$display .= MAPS_admin_menu();
+$display .= getImportExportForm();
+$display .= MAPS_compatSiteFooter(0);
+MAPS_compatOutput($display);
