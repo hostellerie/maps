@@ -16,6 +16,7 @@
 &nbsp;
 <div id="marker_form">
 	<form name="marker_edit" action="{site_url}/admin/plugins/maps/marker_edit.php" method="POST">
+        {csrf_token}
 		<fieldset style="margin-top: 10px;padding:10px;">
 		<legend><a class="maps-section-toggle" onClick="elementToggle('informations'); return false;" href="#"><b>{section_location}</b></a></legend>
 			<div id="informations">
@@ -38,65 +39,57 @@
 				<option value="0"{mk_default_no}>{no}</option>
 				<option value="1"{mk_default_yes}>{yes}</option>
 				</select></p>
-				<div>{icon}</div>
-				<p>{primary_color_label}
-				
-				<input type="color" id="primary_color" name="primary_color" value="{primary_color}"></p>
-				<p>{stroke_color_label}
-				
-				<input type="color" id="stroke_color" name="stroke_color" value="{stroke_color}"></p>
-				<p>{label_label} <input type="text" id="label" name="label" value="{label}" size="1" maxlength="1">&nbsp;&nbsp;&nbsp;{label_color_label}  <select name="label_color">
+				{marker_icon}
+				<p>{primary_color_label} <input type="color" name="primary_color" value="{primary_color}" /></p>
+				<p>{stroke_color_label} <input type="color" name="stroke_color" value="{stroke_color}" /></p>
+				<p>{label_label} <input type="text" name="label" value="{label}" size="2" maxlength="1" /></p>
+				<p>{label_color_label} <select name="label_color">
 				<option value="0"{label_color_black}>{black}</option>
 				<option value="1"{label_color_white}>{white}</option>
-				</select>
-				
+				</select></p>
 			</div>
-		</fieldset>		
+		</fieldset>
 		<fieldset style="margin-top: 10px;">
-		<legend><b><a class="maps-section-toggle" onClick="elementToggle('general_settings'); return false;" href="#">{section_publication}</a></b></legend>
-			<div id="general_settings" style="display:none;">
-				<p>{payed} <select name="payed">
-				<option value="0"{payed_no}>{no}</option>
-				<option value="1"{payed_yes}>{yes}</option>
-				</select>&nbsp;&nbsp;&nbsp;
-				{active} <select name="active">
+		<legend><b><a class="maps-section-toggle" onClick="elementToggle('publication'); return false;" href="#">{section_publication}</a></b></legend>
+			<div id="publication" style="display:none;">
+				<p>{active} <select name="active">
 				<option value="0"{active_no}>{no}</option>
 				<option value="1"{active_yes}>{yes}</option>
-				</select>&nbsp;&nbsp;&nbsp;
-				{hidden} <select name="hidden">
+				</select></p>
+				<p>{hidden} <select name="hidden">
 				<option value="0"{hidden_no}>{no}</option>
 				<option value="1"{hidden_yes}>{yes}</option>
 				</select></p>
-				<p>{marker_validity} <select id="validity" name="validity" OnChange="changeValidity();">
+				<p>{payed} <select name="payed">
+				<option value="0"{payed_no}>{no}</option>
+				<option value="1"{payed_yes}>{yes}</option>
+				</select></p>
+				<p>{marker_validity} <select id="validity" name="validity" onchange="changeValidity();">
 				<option value="0"{validity_no}>{no}</option>
 				<option value="1"{validity_yes}>{yes}</option>
-				</select>
-				&nbsp;&nbsp;&nbsp;{from_label} <input type="text" id="from" name="from" value="{from}" size="14" maxlength="12"{disabled}>
-				&nbsp;&nbsp;&nbsp;{to_label}  <input type="text" id="to" name="to" value="{to}" size="14" maxlength="12"{disabled}></p>
-				<p><a class="maps-section-toggle" onClick="elementToggle('remark_panel'); return false;" href="#">{remark_label}</a></p>
-				<div id="remark_panel" style="display:none">
-				    <textarea rows="5" id="remark" name="remark" cols="51" style="width:99%">{remark}</textarea>
-				</div>
+				</select></p>
+				<p>{from_label} <input type="text" name="from" id="from" value="{from}"{disabled} />
+				{to_label} <input type="text" name="to" id="to" value="{to}"{disabled} /></p>
+				<p>{remark_label}<br{xhtml}><textarea name="remark" rows="4" cols="80">{remark}</textarea></p>
 			</div>
 		</fieldset>
 		<fieldset style="margin-top: 10px;">
-		<legend><b><a class="maps-section-toggle" onClick="elementToggle('presentation_tab'); return false;" href="#">{section_content_contact}</a></b></legend>
-			<div id="presentation_tab" style="display:block;">
-				<p><b>{description_label}</b><br{xhtml}><textarea rows="4" id="description" name="description" cols="51" style="width:99%">{description}</textarea>
-				</p>
-				<p><b>{street_label}</b> {street}</p>
-				<p><b>{code_label}</b> {code}</p>
-				<p><b>{city_label}</b> {city}</p>
-				<p><b>{state_label}</b> {state}</p>
-				<p><b>{country_label}</b> {country}</p>
-				<p><b>{tel_label}</b> {tel}</p>
-				<p><b>{fax_label}</b> {fax}</p>
-				<p><b>{web_label}</b> {web}</p>
+		<legend><b><a class="maps-section-toggle" onClick="elementToggle('presentation'); return false;" href="#">{section_content_contact}</a></b></legend>
+			<div id="presentation" style="display:none;">
+				<p>{description_label}<br{xhtml}><textarea name="description" rows="8" cols="80">{description}</textarea></p>
+				<p>{street_label} {street}</p>
+				<p>{code_label} {code}</p>
+				<p>{city_label} {city}</p>
+				<p>{state_label} {state}</p>
+				<p>{country_label} {country}</p>
+				<p>{tel_label} {tel}</p>
+				<p>{fax_label} {fax}</p>
+				<p>{web_label} {web}</p>
 			</div>
 		</fieldset>
 		<fieldset style="margin-top: 10px;">
-		<legend><b><a class="maps-section-toggle" onClick="elementToggle('ressources_tab'); return false;" href="#">{section_resources}</a></b></legend>
-			<div id="ressources_tab" style="display:block;">
+		<legend><b><a class="maps-section-toggle" onClick="elementToggle('ressources'); return false;" href="#">{section_resources}</a></b></legend>
+			<div id="ressources" style="display:none;">
 				{ressources}
 			</div>
 		</fieldset>
