@@ -629,4 +629,11 @@ $LANG_confignames['maps']['detail_height'] = 'Marker detail map height';
 $LANG_confignames['maps']['detail_zoom'] = 'Marker detail map zoom';
 $LANG_confignames['maps']['popup_width'] = 'Info window width';
 $LANG_confignames['maps']['popup_height'] = 'Info window height';
+
+/* Maps 1.5.10 landing-page SEO configuration. */
+$LANG_fs['maps']['fs_seo'] = 'Landing page SEO';
+$LANG_confignames['maps']['maps_page_title'] = 'SEO title for the Maps landing page';
+$LANG_confignames['maps']['maps_page_h1'] = 'H1 heading for the Maps landing page';
+$LANG_confignames['maps']['maps_meta_description'] = 'Meta description for the Maps landing page';
+$LANG_confignames['maps']['map_main_header'] = 'Introductory content for the Maps landing page (autotags supported)';
 ?>

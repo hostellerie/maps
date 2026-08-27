@@ -175,10 +175,18 @@ function MAPS_publicSeoHeader($title, $description, $canonical, $robots = '', $j
     return $header;
 }
 
-$pageTitle = $LANG_MAPS_1['maps_label'];
+$pageTitle = trim((string) MAPS_arrayGet($_MAPS_CONF, 'maps_page_title', ''));
+if ($pageTitle === '') {
+    $pageTitle = $LANG_MAPS_1['maps_label'];
+}
+$pageH1 = trim((string) MAPS_arrayGet($_MAPS_CONF, 'maps_page_h1', ''));
+if ($pageH1 === '') {
+    $pageH1 = $pageTitle;
+}
+$configuredMetaDescription = trim((string) MAPS_arrayGet($_MAPS_CONF, 'maps_meta_description', ''));
 $pageDescription = MAPS_publicDescription(
-    MAPS_arrayGet($_MAPS_CONF, 'map_main_header', ''),
-    $LANG_MAPS_1['maps_label']
+    $configuredMetaDescription !== '' ? $configuredMetaDescription : MAPS_arrayGet($_MAPS_CONF, 'map_main_header', ''),
+    $pageTitle
 );
 $canonical = rtrim($_MAPS_CONF['site_url'], '/') . '/';
 $robots = '';
@@ -321,7 +329,7 @@ switch ($mode) {
         break;
 
     default:
-        $content .= '<h1>' . htmlspecialchars($LANG_MAPS_1['maps_label'], ENT_QUOTES, 'UTF-8') . '</h1>';
+        $content .= '<h1>' . htmlspecialchars($pageH1, ENT_QUOTES, 'UTF-8') . '</h1>';
         $content .= MAPS_displayFrontPage();
         break;
 }

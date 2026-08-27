@@ -1639,6 +1639,59 @@ function MAPS_upgrade159()
     return !DB_error();
 }
 
+/**
+ * Maps 1.5.10 adds dedicated SEO settings for the public Maps landing page.
+ * Existing display content remains untouched; empty SEO values keep the
+ * automatic fallbacks introduced in 1.5.9.
+ *
+ * @return bool
+ */
+function MAPS_upgrade1510()
+{
+    global $_CONF, $_TABLES, $_MAPS_DEFAULT;
+
+    require_once $_CONF['path_system'] . 'classes/config.class.php';
+    require_once $_CONF['path'] . 'plugins/maps/install_defaults.php';
+
+    $config = config::get_instance();
+    $group = 'maps';
+    $groupSql = MAPS_dbEscape($group);
+    $rows = array(
+        'fs_seo' => array(null, 'fieldset', 0, 6, null, 0, 2),
+        'maps_page_title' => array($_MAPS_DEFAULT['maps_page_title'], 'text', 0, 6, 0, 10, 2),
+        'maps_page_h1' => array($_MAPS_DEFAULT['maps_page_h1'], 'text', 0, 6, 0, 20, 2),
+        'maps_meta_description' => array($_MAPS_DEFAULT['maps_meta_description'], 'text', 0, 6, 0, 30, 2)
+    );
+
+    foreach ($rows as $name => $def) {
+        $nameSql = MAPS_dbEscape($name);
+        $exists = (int) DB_getItem(
+            $_TABLES['conf_values'],
+            'COUNT(*)',
+            "group_name='" . $groupSql . "' AND name='" . $nameSql . "'"
+        );
+        if ($exists === 0) {
+            $config->add($name, $def[0], $def[1], $def[2], $def[3], $def[4], $def[5], true, $group, $def[6]);
+        }
+
+        $selection = ($def[4] === null) ? -1 : (int) $def[4];
+        DB_query("UPDATE {$_TABLES['conf_values']} SET type='" . MAPS_dbEscape($def[1])
+            . "', subgroup=" . (int) $def[2]
+            . ", fieldset=" . (int) $def[3]
+            . ", selectionArray=" . $selection
+            . ", sort_order=" . (int) $def[5]
+            . ", tab=" . (int) $def[6]
+            . " WHERE group_name='" . $groupSql . "' AND name='" . $nameSql . "'");
+    }
+
+    if (method_exists($config, 'initConfig')) {
+        $config->initConfig();
+    }
+
+    COM_errorLog('Maps 1.5.10 upgrade: public landing-page SEO settings added.', 1);
+    return !DB_error();
+}
+
 function plugin_upgrade_maps()
 {
     global $_CONF, $_TABLES;
@@ -1719,6 +1772,14 @@ function plugin_upgrade_maps()
     if (version_compare($installed, '1.5.9', '<')) {
         if (!MAPS_upgrade159()) {
             COM_errorLog('Maps 1.5.9 upgrade stopped: marker service operation table creation failed.');
+            return false;
+        }
+    }
+
+    /* Maps 1.5.10 adds landing-page SEO title, H1 and meta description settings. */
+    if (version_compare($installed, '1.5.10', '<')) {
+        if (!MAPS_upgrade1510()) {
+            COM_errorLog('Maps 1.5.10 upgrade stopped: SEO configuration migration failed.');
             return false;
         }
     }

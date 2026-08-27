@@ -654,4 +654,11 @@ $LANG_confignames['maps']['country'] = 'Afficher le pays';
 $LANG_confignames['maps']['tel'] = 'Afficher le téléphone';
 $LANG_confignames['maps']['fax'] = 'Afficher le contact complémentaire';
 $LANG_confignames['maps']['web'] = 'Afficher le site web';
+
+/* Maps 1.5.10 landing-page SEO configuration. */
+$LANG_fs['maps']['fs_seo'] = 'SEO de la page des cartes';
+$LANG_confignames['maps']['maps_page_title'] = 'Titre SEO de la page des cartes';
+$LANG_confignames['maps']['maps_page_h1'] = 'Titre H1 de la page des cartes';
+$LANG_confignames['maps']['maps_meta_description'] = 'Meta description de la page des cartes';
+$LANG_confignames['maps']['map_main_header'] = 'Contenu introductif de la page Maps (autotags acceptés)';
 ?>

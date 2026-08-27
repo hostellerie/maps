@@ -41,6 +41,9 @@ $_MAPS_DEFAULT['url_geocode'] = 'https://maps.googleapis.com/maps/api/geocode/js
 /* Maps display */
 $_MAPS_DEFAULT['map_main_header'] = '';
 $_MAPS_DEFAULT['map_main_footer'] = '';
+$_MAPS_DEFAULT['maps_page_title'] = '';
+$_MAPS_DEFAULT['maps_page_h1'] = '';
+$_MAPS_DEFAULT['maps_meta_description'] = '';
 $_MAPS_DEFAULT['use_cluster'] = 1;
 $_MAPS_DEFAULT['display_events_map'] = 1;
 
@@ -166,6 +169,10 @@ function MAPS_configDefinition155()
         'map_main_footer' => array($_MAPS_DEFAULT['map_main_footer'], 'text', 0, 0, 0, 20, 2),
         'use_cluster' => array($_MAPS_DEFAULT['use_cluster'], 'select', 0, 0, 3, 30, 2),
         'display_events_map' => array($_MAPS_DEFAULT['display_events_map'], 'select', 0, 0, 3, 40, 2),
+        'fs_seo' => array(null, 'fieldset', 0, 6, null, 0, 2),
+        'maps_page_title' => array($_MAPS_DEFAULT['maps_page_title'], 'text', 0, 6, 0, 10, 2),
+        'maps_page_h1' => array($_MAPS_DEFAULT['maps_page_h1'], 'text', 0, 6, 0, 20, 2),
+        'maps_meta_description' => array($_MAPS_DEFAULT['maps_meta_description'], 'text', 0, 6, 0, 30, 2),
         'fs_global_map' => array(null, 'fieldset', 0, 1, null, 0, 2),
         'users_map' => array($_MAPS_DEFAULT['users_map'], 'select', 0, 1, 3, 10, 2),
         'global_map' => array($_MAPS_DEFAULT['global_map'], 'select', 0, 1, 3, 20, 2),
