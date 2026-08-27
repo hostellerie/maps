@@ -34,32 +34,6 @@ if (!in_array($action, array('add', 'delete'), true) || !SEC_checkToken()) {
     exit;
 }
 
-/**
- * Mark a map as modified after a successful change to one of its rendered
- * dependencies and notify Geeklog consumers through the normal lifecycle API.
- *
- * @param int $mid
- * @return void
- */
-function MAPS_touchMapAfterDependencyChange($mid)
-{
-    global $_TABLES;
-
-    $mid = (int) $mid;
-    if ($mid <= 0 || (int) DB_count($_TABLES['maps_maps'], 'mid', $mid) !== 1) {
-        return;
-    }
-
-    $modified = MAPS_dbEscape(date('Y-m-d H:i:s'));
-    DB_query(
-        "UPDATE {$_TABLES['maps_maps']} SET modified='{$modified}' WHERE mid={$mid}"
-    );
-
-    if (function_exists('PLG_itemSaved')) {
-        PLG_itemSaved($mid, 'maps');
-    }
-}
-
 if ($action === 'delete') {
     // Resolve the map from the stored relation instead of trusting the
     // client-provided mid. This also lets us distinguish a real deletion
@@ -72,7 +46,7 @@ if ($action === 'delete') {
     if ($storedMid > 0) {
         DB_delete($_TABLES['maps_map_overlay'], 'mo_id', $id);
         if ((int) DB_count($_TABLES['maps_map_overlay'], 'mo_id', $id) === 0) {
-            MAPS_touchMapAfterDependencyChange($storedMid);
+            updateMap($storedMid);
             $mid = $storedMid;
         }
     }
@@ -95,7 +69,7 @@ if ($action === 'delete') {
                 array($mid, $id)
             );
             if ($after > 0) {
-                MAPS_touchMapAfterDependencyChange($mid);
+                updateMap($mid);
             }
         }
     }
