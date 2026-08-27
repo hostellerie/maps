@@ -71,7 +71,7 @@ jobs:
           p.write_text(s)
           PY
 
-      - name: Lint interoperability files
+      - name: Lint interoperability and security-critical files
         shell: bash
         run: |
           php -l source/interoperability.php
@@ -79,6 +79,7 @@ jobs:
           php -l source/distribution.php
           php -l source/maps.php
           php -l source/functions.inc
+          php -l source/admin/edit_functions.php
           php -l source/admin/map_edit.php
           php -l source/admin/marker_edit.php
           php -l source/admin/import_export.php
