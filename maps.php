@@ -15,16 +15,6 @@ if (!isset($_MAPS_CONF) || !is_array($_MAPS_CONF)) {
     $_MAPS_CONF = array();
 }
 
-// Self-heal installations that were already marked as Maps 1.5.8 before
-// the infos_label upgrade cleanup was corrected. This branch runs only while
-// the obsolete key is still loaded, so normal requests incur no extra query.
-if (isset($_MAPS_CONF['infos_label'])
-    && isset($_TABLES['conf_values']) && $_TABLES['conf_values'] !== ''
-) {
-    DB_query("DELETE FROM {$_TABLES['conf_values']} WHERE group_name='maps' AND name='infos_label'");
-    unset($_MAPS_CONF['infos_label']);
-}
-
 // Maps 1.5.2 uses a fixed public folder. Preserve the configured 1.5.1
 // value for the upgrader before normalizing all runtime URLs to /maps/.
 $legacyMapsFolder = isset($_MAPS_CONF['maps_folder'])
