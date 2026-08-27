@@ -84,12 +84,17 @@ function MAPS_getListField_maps_displayOverlays($fieldname, $fieldvalue, $a, $ic
     global $LANG_MAPS_1, $_MAPS_CONF;
 
     if ($fieldname === 'edit') {
-        return COM_createLink($icon_arr['enabled'], '#', array(
-            'class' => 'delete',
-            'id' => (int) $a['mo_id'],
-            'mid' => (int) $a['mo_mid'],
-            'title' => $LANG_MAPS_1['remove_overlay']
-        ));
+        $label = isset($LANG_MAPS_1['remove_overlay']) ? $LANG_MAPS_1['remove_overlay'] : 'Remove';
+        return COM_createLink(
+            htmlspecialchars($label, ENT_QUOTES, 'UTF-8'),
+            '#',
+            array(
+                'class' => 'delete maps-overlay-action maps-overlay-remove',
+                'id' => (int) $a['mo_id'],
+                'mid' => (int) $a['mo_mid'],
+                'title' => $label
+            )
+        );
     }
     if ($fieldname === 'o_image') {
         $url = $_MAPS_CONF['images_overlay_url'] . rawurlencode($a['o_image']);
@@ -104,8 +109,9 @@ function MAPS_displayOverlaysToAdd($mid)
 
     require_once $_CONF['path_system'] . 'lib-admin.php';
     $mid = (int) $mid;
+    $actionLabel = isset($LANG_MAPS_1['add_overlay']) ? $LANG_MAPS_1['add_overlay'] : 'Add';
     $header = array(
-        array('text' => $LANG_ADMIN['edit'], 'field' => 'edit', 'sort' => false),
+        array('text' => $actionLabel, 'field' => 'edit', 'sort' => false),
         array('text' => $LANG_MAPS_1['overlay_label'], 'field' => 'o_name', 'sort' => false)
     );
     $query = array(
@@ -123,12 +129,17 @@ function MAPS_getListField_maps_displayOverlaysToAdd($fieldname, $fieldvalue, $a
     global $LANG_MAPS_1, $_MAPS_CONF;
 
     if ($fieldname === 'edit') {
-        return COM_createLink($icon_arr['disabled'], '#', array(
-            'class' => 'add',
-            'id' => (int) $a['oid'],
-            'mid' => (int) $a['mid'],
-            'title' => $LANG_MAPS_1['add_overlay']
-        ));
+        $label = isset($LANG_MAPS_1['add_overlay']) ? $LANG_MAPS_1['add_overlay'] : 'Add';
+        return COM_createLink(
+            htmlspecialchars($label, ENT_QUOTES, 'UTF-8'),
+            '#',
+            array(
+                'class' => 'add maps-overlay-action maps-overlay-add',
+                'id' => (int) $a['oid'],
+                'mid' => (int) $a['mid'],
+                'title' => $label
+            )
+        );
     }
     if ($fieldname === 'o_name') {
         $url = $_MAPS_CONF['images_overlay_url'] . rawurlencode($a['o_image']);
