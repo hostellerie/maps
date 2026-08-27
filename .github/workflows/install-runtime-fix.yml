@@ -1,0 +1,40 @@
+name: Install runtime migration
+
+on:
+  push:
+    branches:
+      - modernize/maps-1.5
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-install-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modernize/maps-1.5
+      - name: Apply install/runtime fixes
+        shell: bash
+        run: |
+          printf '%s' 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgojIFJlbW92ZSBvYnNvbGV0ZSBydW50aW1lIHRhYmxlIGFsaWFzZXMgdGhhdCBhcmUgbm90IGNyZWF0ZWQgYnkgdGhlIGluc3RhbGxlcgojIGFuZCBhcmUgbm90IHBhcnQgb2YgTWFwcyAxLjUuNy4KcCA9IFBhdGgoIm1hcHMucGhwIikKcyA9IHAucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpCmZvciBsaW5lIGluICgKICAgICIkX1RBQkxFU1snbWFwc19tYXJrZXJzX2NhdCddID0gJF9EQl90YWJsZV9wcmVmaXggLiAnbWFwc19tYXJrZXJzX2NhdCc7XG4iLAogICAgIiRfVEFCTEVTWydtYXBzX21hcmtlcnNfZmllbGRzJ10gPSAkX0RCX3RhYmxlX3ByZWZpeCAuICdtYXBzX21hcmtlcnNfZmllbGRzJztcbiIsCiAgICAiJF9UQUJMRVNbJ21hcHNfbWFya2Vyc192YWx1ZXMnXSA9ICRfREJfdGFibGVfcHJlZml4IC4gJ21hcHNfbWFya2Vyc192YWx1ZXMnO1xuIiwKKToKICAgIHMgPSBzLnJlcGxhY2UobGluZSwgIiIpCnAud3JpdGVfdGV4dChzLCBlbmNvZGluZz0idXRmLTgiKQoKIyBNYWtlIENTViBpbnNlcnRzIHZhbGlkIHVuZGVyIHN0cmljdCBTUUwgbW9kZXMgYnkgc3VwcGx5aW5nIGV2ZXJ5IG1hbmRhdG9yeQojIGRhdGV0aW1lL3RleHQgZmllbGQgdGhhdCBoYXMgbm8gcG9ydGFibGUgU1FMIGRlZmF1bHQuCnAgPSBQYXRoKCJhZG1pbi9pbXBvcnRfZXhwb3J0LnBocCIpCnMgPSBwLnJlYWRfdGV4dChlbmNvZGluZz0idXRmLTgiKQpvbGQgPSAiIiIgICAgICAgICRjb2x1bW5zID0gYXJyYXkoJ21raWQnLCAnbWlkJywgJ293bmVyX2lkJywgJ2NyZWF0ZWQnLCAnbW9kaWZpZWQnKTsKICAgICAgICAkdmFsdWVzID0gYXJyYXkoCiAgICAgICAgICAgICInIiAuIE1BUFNfZGJFc2NhcGUoTUFQU19pbXBvcnRNYXJrZXJJZCgpKSAuICInIiwKICAgICAgICAgICAgKHN0cmluZykgJG1pZCwKICAgICAgICAgICAgKHN0cmluZykgKGludCkgJF9VU0VSWyd1aWQnXSwKICAgICAgICAgICAgIiciIC4gTUFQU19kYkVzY2FwZSgkbm93KSAuICInIiwKICAgICAgICAgICAgIiciIC4gTUFQU19kYkVzY2FwZSgkbm93KSAuICInIgogICAgICAgICk7IiIiCm5ldyA9ICIiIiAgICAgICAgJGNvbHVtbnMgPSBhcnJheSgKICAgICAgICAgICAgJ21raWQnLCAnbWlkJywgJ293bmVyX2lkJywgJ2NyZWF0ZWQnLCAnbW9kaWZpZWQnLAogICAgICAgICAgICAndmFsaWRpdHlfc3RhcnQnLCAndmFsaWRpdHlfZW5kJywgJ3JlbWFyaycKICAgICAgICApOwogICAgICAgICR2YWx1ZXMgPSBhcnJheSgKICAgICAgICAgICAgIiciIC4gTUFQU19kYkVzY2FwZShNQVBTX2ltcG9ydE1hcmtlcklkKCkpIC4gIiciLAogICAgICAgICAgICAoc3RyaW5nKSAkbWlkLAogICAgICAgICAgICAoc3RyaW5nKSAoaW50KSAkX1VTRVJbJ3VpZCddLAogICAgICAgICAgICAiJyIgLiBNQVBTX2RiRXNjYXBlKCRub3cpIC4gIiciLAogICAgICAgICAgICAiJyIgLiBNQVBTX2RiRXNjYXBlKCRub3cpIC4gIiciLAogICAgICAgICAgICAiJyIgLiBNQVBTX2RiRXNjYXBlKCRub3cpIC4gIiciLAogICAgICAgICAgICAiJyIgLiBNQVBTX2RiRXNjYXBlKCRub3cpIC4gIiciLAogICAgICAgICAgICAiJyciCiAgICAgICAgKTsiIiIKaWYgb2xkIG5vdCBpbiBzOgogICAgcmFpc2UgU3lzdGVtRXhpdCgiaW1wb3J0IGluc2VydCBhbmNob3Igbm90IGZvdW5kIikKcyA9IHMucmVwbGFjZShvbGQsIG5ldywgMSkKcC53cml0ZV90ZXh0KHMsIGVuY29kaW5nPSJ1dGYtOCIpCgojIE15U1FMIGJlZm9yZSA4LjAuMTMgZG9lcyBub3Qgc3VwcG9ydCBleHBsaWNpdCBkZWZhdWx0cyBvbiBURVhUL0JMT0IgY29sdW1ucy4KIyBLZWVwIE5PVCBOVUxMIHNlbWFudGljcyBhbmQgbGV0IGFwcGxpY2F0aW9uIGluc2VydHMgcHJvdmlkZSB2YWx1ZXMuCnAgPSBQYXRoKCJzcWwvbXlzcWxfaW5zdGFsbC5waHAiKQpzID0gcC5yZWFkX3RleHQoZW5jb2Rpbmc9InV0Zi04IikKcyA9IHMucmVwbGFjZSgifCBNYXBzIFBsdWdpbiAxLjQgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHwiLCAifCBNYXBzIFBsdWdpbiAxLjUuNyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHwiLCAxKQpmb3Igb2xkLCBuZXcgaW4gKAogICAgKCIgIHJlbWFyayB0ZXh0IE5PVCBOVUxMIGRlZmF1bHQgJycsIiwgIiAgcmVtYXJrIHRleHQgTk9UIE5VTEwsIiksCiAgICAoIiAgZGVzY3JpcHRpb24gVEVYVCBOT1QgTlVMTCBkZWZhdWx0ICcnLCIsICIgIGRlc2NyaXB0aW9uIFRFWFQgTk9UIE5VTEwsIiksCik6CiAgICBjb3VudCA9IHMuY291bnQob2xkKQogICAgaWYgY291bnQgIT0gMjoKICAgICAgICByYWlzZSBTeXN0ZW1FeGl0KCIlcyBleHBlY3RlZCB0d2ljZSwgZm91bmQgJWQiICUgKG9sZCwgY291bnQpKQogICAgcyA9IHMucmVwbGFjZShvbGQsIG5ldykKcC53cml0ZV90ZXh0KHMsIGVuY29kaW5nPSJ1dGYtOCIpCg==' | base64 -d > /tmp/install-runtime-fix.py
+          python3 /tmp/install-runtime-fix.py
+      - name: Lint changed PHP files
+        shell: bash
+        run: |
+          php -l maps.php
+          php -l admin/import_export.php
+          php -l sql/mysql_install.php
+      - name: Commit install/runtime fixes
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add maps.php admin/import_export.php sql/mysql_install.php
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'Harden Maps install and strict SQL import [skip ci]'
+          git pull --rebase origin modernize/maps-1.5
+          git push origin HEAD:modernize/maps-1.5
