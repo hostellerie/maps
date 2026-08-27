@@ -20,43 +20,37 @@ jobs:
           git clone --depth 1 --branch modernize/maps-1.5 \
             https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
-      - name: Lint interoperability, services, install and security-critical files
+      - name: Lint release files
         shell: bash
         run: |
-          php -l source/autoinstall.php
-          php -l source/install_defaults.php
-          php -l source/sql/mysql_install.php
-          php -l source/interoperability.php
-          php -l source/integrations.php
-          php -l source/distribution.php
-          php -l source/services.inc.php
-          php -l source/maps.php
-          php -l source/functions.inc
-          php -l source/admin/edit_functions.php
-          php -l source/admin/index.php
-          php -l source/admin/map_edit.php
-          php -l source/admin/marker_edit.php
-          php -l source/admin/markers.php
-          php -l source/admin/import_export.php
-          php -l source/admin/overlay_edit.php
-          php -l source/admin/overlay_group_edit.php
-          php -l source/admin/overlays.php
-          php -l source/admin/icons.php
-          php -l source/admin/geocoder.php
-          php -l source/admin/ajax.php
+          find source -type f \( -name '*.php' -o -name '*.inc' \) \
+            -not -path 'source/build/*' -not -path 'source/tools/*' -print0 \
+            | xargs -0 -n1 php -l
 
-      - name: Build installable archive
+      - name: Verify release metadata
+        shell: bash
+        run: |
+          set -e
+          grep -q "'pi_version' => '1.6.0'" source/autoinstall.php
+          grep -q 'Maps Plugin 1.6.0' source/functions.inc
+          grep -q 'Maps Plugin 1.6.0' source/maps.php
+          grep -q 'Maps 1.6.0' source/README.md
+          test -f source/RELEASE-NOTES-1.6.0.md
+
+      - name: Build final installable archive
         shell: bash
         run: |
           set -e
           cd source
           rm -rf build
           mkdir -p build/maps
-          cp -a admin autoinstall.php functions.inc install_defaults.php integrations.php interoperability.php distribution.php services.inc.php language maps.php public_html sql templates README.md RELEASE-NOTES-1.5.10.md build/maps/
+          cp -a admin autoinstall.php functions.inc install_defaults.php integrations.php interoperability.php distribution.php services.inc.php language maps.php public_html sql templates README.md RELEASE-NOTES-1.6.0.md build/maps/
           cd build
-          zip -r maps-1.5.10-test.zip maps >/dev/null
+          zip -r maps_1.6.0_2.1.1.zip maps >/dev/null
+          unzip -t maps_1.6.0_2.1.1.zip >/dev/null
+          test "$(zipinfo -1 maps_1.6.0_2.1.1.zip | head -n 1)" = 'maps/'
 
-      - name: Commit test archive
+      - name: Commit final archive
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -64,12 +58,12 @@ jobs:
           set -e
           cd source
           mkdir -p dist
-          cp build/maps-1.5.10-test.zip dist/maps-1.5.10-test.zip
+          cp build/maps_1.6.0_2.1.1.zip dist/maps_1.6.0_2.1.1.zip
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f dist/maps-1.5.10-test.zip
+          git add -f dist/maps_1.6.0_2.1.1.zip
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Rebuild Maps 1.5.10 test archive [skip ci]'
+          git commit -m 'Build Maps 1.6.0 final archive [skip ci]'
           git push origin HEAD:modernize/maps-1.5
