@@ -2,36 +2,10 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.2                                                           |
+// | Maps Plugin 1.5.7                                                         |
 // +---------------------------------------------------------------------------+
-// | overlays.php                                                               |
+// | overlays.php                                                              |
 // +---------------------------------------------------------------------------+
-// | Copyright (C) 2010 by the following authors:                              |
-// |                                                                           |
-// | Authors: ::Ben                                                            |
-// +---------------------------------------------------------------------------+
-// | Created with the Geeklog Plugin Toolkit.                                  |
-// +---------------------------------------------------------------------------+
-// |                                                                           |
-// | This program is free software; you can redistribute it and/or             |
-// | modify it under the terms of the GNU General Public License               |
-// | as published by the Free Software Foundation; either version 2            |
-// | of the License, or (at your option) any later version.                    |
-// |                                                                           |
-// | This program is distributed in the hope that it will be useful,           |
-// | but WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             |
-// | GNU General Public License for more details.                              |
-// |                                                                           |
-// | You should have received a copy of the GNU General Public License         |
-// | along with this program; if not, write to the Free Software Foundation,   |
-// | Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.           |
-// |                                                                           |
-// +---------------------------------------------------------------------------+
-
-/**
-* @package Maps
-*/
 
 require_once '../../../lib-common.php';
 require_once '../../auth.inc.php';
@@ -40,285 +14,241 @@ MAPS_getheadercode();
 
 $display = '';
 
-// Ensure user even has the rights to access this page
-if (! SEC_hasRights('maps.admin')) {
+if (!SEC_hasRights('maps.admin')) {
     $display .= MAPS_compatSiteHeader('menu', $MESSAGE[30])
-             . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
-             . MAPS_compatSiteFooter();
-
-    // Log attempt to access.log
+        . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
+        . MAPS_compatSiteFooter();
     COM_accessLog("User {$_USER['username']} tried to illegally access the Maps plugin administration screen.");
-
     MAPS_compatOutput($display);
     exit;
 }
 
-// Incoming variable filter
-$vars = array('mode' => 'alpha',
-			   'msg' => 'text'
-			  );
-
-MAPS_filterVars($vars, $_REQUEST);
+$mode = isset($_REQUEST['mode']) ? COM_applyFilter($_REQUEST['mode']) : '';
+$msg = isset($_REQUEST['msg']) ? (string) $_REQUEST['msg'] : '';
 
 /**
-* List all overlays that the user has access to
-*
-* @retun    string      HTML for the list
-*
-*/
+ * List all overlays.
+ *
+ * @return string
+ */
 function MAPS_listOverlays()
 {
-    global $_CONF, $_TABLES, $_IMAGE_TYPE, $LANG_ADMIN, $LANG_MAPS_1;
+    global $_CONF, $_TABLES, $LANG_ADMIN, $LANG_MAPS_1;
 
     require_once $_CONF['path_system'] . 'lib-admin.php';
 
-    $retval = '';
-
-    $header_arr = array(      // display 'text' and use table field 'field'
+    $header = array(
         array('text' => $LANG_MAPS_1['id'], 'field' => 'oid', 'sort' => true),
         array('text' => $LANG_MAPS_1['name'], 'field' => 'o_name', 'sort' => true),
-		array('text' => $LANG_MAPS_1['group'], 'field' => 'o_group_name', 'sort' => true),
-		array('text' => $LANG_MAPS_1['order'], 'field' => 'o_order', 'sort' => true),
-		array('text' => $LANG_MAPS_1['move'], 'field' => 'move', 'sort' => true),
+        array('text' => $LANG_MAPS_1['group'], 'field' => 'o_group_name', 'sort' => true),
+        array('text' => $LANG_MAPS_1['order'], 'field' => 'o_order', 'sort' => true),
+        array('text' => $LANG_MAPS_1['move'], 'field' => 'move', 'sort' => false),
         array('text' => $LANG_MAPS_1['active_field'], 'field' => 'o_active', 'sort' => true),
         array('text' => $LANG_ADMIN['edit'], 'field' => 'edit', 'sort' => false),
     );
-    $defsort_arr = array('field' => 'o_order', 'direction' => 'asc');
-
-    $text_arr = array(
+    $sort = array('field' => 'o_order', 'direction' => 'asc');
+    $text = array(
         'has_extras' => true,
         'form_url' => $_CONF['site_admin_url'] . '/plugins/maps/overlays.php'
     );
-	
-	$sql = "SELECT
-	            o.*, og.o_group_name
-            FROM {$_TABLES['maps_overlays']} AS o
-			LEFT JOIN {$_TABLES['maps_overlays_groups']} AS og
-			ON o.o_group = og.o_group_id
-			WHERE 1=1";
-
-    $query_arr = array(
-        'sql'            => $sql,
-		'query_fields'   => array('o_name'),
+    $query = array(
+        'sql' => "SELECT o.*, og.o_group_name "
+            . "FROM {$_TABLES['maps_overlays']} AS o "
+            . "LEFT JOIN {$_TABLES['maps_overlays_groups']} AS og ON o.o_group = og.o_group_id "
+            . "WHERE 1=1",
+        'query_fields' => array('o_name'),
         'default_filter' => ''
     );
 
-    $retval .= ADMIN_list('overlays', 'MAPS_getListField_overlays',
-                          $header_arr, $text_arr, $query_arr, $defsort_arr);
-
-    return $retval;
+    return ADMIN_list('overlays', 'MAPS_getListField_overlays', $header, $text, $query, $sort);
 }
 
 /**
-*   Get an individual field for the overlays screen.
-*
-*   @param  string  $fieldname  Name of field (from the array, not the db)
-*   @param  mixed   $fieldvalue Value of the field
-*   @param  array   $A          Array of all fields from the database
-*   @param  array   $icon_arr   System icon array
-*   @param  object  $EntryList  This entry list object
-*   @return string              HTML for field display in the table
-*/
+ * Render one field in the overlay list.
+ *
+ * @return string
+ */
 function MAPS_getListField_overlays($fieldname, $fieldvalue, $A, $icon_arr)
 {
-    global $_CONF, $_MAPS_CONF, $LANG_ADMIN, $LANG_STATIC, $LANG_MAPS_1, $_TABLES;
-	
-	$token = SEC_createToken();
+    global $_CONF, $_MAPS_CONF, $LANG_MAPS_1;
 
-    switch($fieldname) {
-        case "edit":
-            $retval = COM_createLink($icon_arr['edit'],
-                "{$_CONF['site_admin_url']}/plugins/maps/overlay_edit.php?mode=edit&amp;oid={$A['oid']}");
-            break;
-			
-		case "o_name":
-		    $overlay_image = $_MAPS_CONF['path_overlay_images'] . $A['o_image'];
-		    if (is_file($overlay_image)) {
-		        $overlayUrl = $_MAPS_CONF['images_overlay_url'] . rawurlencode($A['o_image']);
-		        $retval = COM_getTooltip(
-		            $A['o_name'],
-		            '<img src="' . htmlspecialchars($overlayUrl, ENT_QUOTES, 'UTF-8') . '" alt="" style="max-width:200px;height:auto" />',
-		            '',
-		            $A['o_name'],
-		            'help'
-		        );
-		    } else {
-		        $retval = $A['o_name'];
-		    }
-		    break;
-			
-		case 'move':
-			$csrftoken = '&amp;' . CSRF_TOKEN . '=' . $token;
-			$retval.="<a href=\"{$_CONF['site_admin_url']}/plugins/maps/overlays.php?op=move&amp;oid={$A['oid']}&amp;where=up{$csrftoken}\" alt=\"{$LANG21[58]}\"" . XHTML . ">"
-			        ."<img src=\"{$_CONF['layout_url']}/images/admin/up.png\"></a> "
-					."<a href=\"{$_CONF['site_admin_url']}/plugins/maps/overlays.php?op=move&amp;oid={$A['oid']}&amp;where=dn${csrftoken}\" alt=\"{$LANG21[57]}\"" . XHTML . ">"
-					."<img src=\"{$_CONF['layout_url']}/images/admin/down.png\"></a> "
-					."</a>";
-            break;
+    switch ($fieldname) {
+        case 'edit':
+            return COM_createLink(
+                $icon_arr['edit'],
+                $_CONF['site_admin_url'] . '/plugins/maps/overlay_edit.php?mode=edit&amp;oid=' . (int) $A['oid']
+            );
 
-        case "o_active":
-            $retval = MAPS_adminStatusBadge(
+        case 'o_name':
+            $name = htmlspecialchars((string) $A['o_name'], ENT_QUOTES, 'UTF-8');
+            $imageName = basename((string) $A['o_image']);
+            $overlayImage = $_MAPS_CONF['path_overlay_images'] . $imageName;
+            if ($imageName !== '' && is_file($overlayImage)) {
+                $overlayUrl = $_MAPS_CONF['images_overlay_url'] . rawurlencode($imageName);
+                return COM_getTooltip(
+                    $name,
+                    '<img src="' . htmlspecialchars($overlayUrl, ENT_QUOTES, 'UTF-8') . '" alt="" style="max-width:200px;height:auto">',
+                    '',
+                    $name,
+                    'help'
+                );
+            }
+            return $name;
+
+        case 'move':
+            $oid = (int) $A['oid'];
+            $token = SEC_createToken();
+            $action = htmlspecialchars($_CONF['site_admin_url'] . '/plugins/maps/overlays.php', ENT_QUOTES, 'UTF-8');
+            $tokenName = htmlspecialchars(CSRF_TOKEN, ENT_QUOTES, 'UTF-8');
+            $safeToken = htmlspecialchars($token, ENT_QUOTES, 'UTF-8');
+            $upLabel = htmlspecialchars(isset($LANG_MAPS_1['move_up']) ? $LANG_MAPS_1['move_up'] : 'Move up', ENT_QUOTES, 'UTF-8');
+            $downLabel = htmlspecialchars(isset($LANG_MAPS_1['move_down']) ? $LANG_MAPS_1['move_down'] : 'Move down', ENT_QUOTES, 'UTF-8');
+
+            return '<form action="' . $action . '" method="post" class="maps-inline-form">'
+                . '<input type="hidden" name="mode" value="move">'
+                . '<input type="hidden" name="oid" value="' . $oid . '">'
+                . '<input type="hidden" name="' . $tokenName . '" value="' . $safeToken . '">'
+                . '<button type="submit" name="where" value="up" title="' . $upLabel . '" aria-label="' . $upLabel . '">&#8593;</button> '
+                . '<button type="submit" name="where" value="dn" title="' . $downLabel . '" aria-label="' . $downLabel . '">&#8595;</button>'
+                . '</form>';
+
+        case 'o_active':
+            return MAPS_adminStatusBadge(
                 $fieldvalue,
                 $LANG_MAPS_1['status_active'],
                 $LANG_MAPS_1['status_inactive']
             );
-            break;
 
         default:
-            $retval = $fieldvalue;
-            break;
+            return htmlspecialchars((string) $fieldvalue, ENT_QUOTES, 'UTF-8');
     }
-    return $retval;
 }
 
 /**
-* Re-orders all overlays in increments of 10
-*
-*/
+ * Normalize overlay ordering to increments of ten.
+ *
+ * This function performs writes and must only be called from an already
+ * authorized, CSRF-validated mutation path.
+ *
+ * @return void
+ */
 function MAPS_reorderOverlays()
 {
     global $_TABLES;
 
-    $sql = "SELECT * 
-			FROM {$_TABLES['maps_overlays']}
-        	ORDER BY o_order ASC;";
-    $result = DB_query($sql);
-    $nrows = DB_numRows($result);
-
-    $blockOrd = 10;
-    $stepNumber = 10;
-
-    for ($i = 0; $i < $nrows; $i++) {
-        $A = DB_fetchArray($result);
-
-        if ($A['o_order'] != $blockOrd) {  // only update incorrect ones
-            $q = "UPDATE " . $_TABLES['maps_overlays'] . " SET o_order = '" .
-                  $blockOrd . "' WHERE oid = '" . $A['oid'] ."'";
-            DB_query($q);
+    $result = DB_query(
+        "SELECT oid, o_order FROM {$_TABLES['maps_overlays']} ORDER BY o_order ASC, oid ASC"
+    );
+    $order = 10;
+    while ($A = DB_fetchArray($result)) {
+        $oid = (int) $A['oid'];
+        if ((int) $A['o_order'] !== $order) {
+            DB_query(
+                "UPDATE {$_TABLES['maps_overlays']} SET o_order={$order} WHERE oid={$oid}"
+            );
         }
-        $blockOrd += $stepNumber;
+        $order += 10;
     }
 }
 
 /**
-* List all group of overlays that the user has access to
-*
-* @retun    string      HTML for the list
-*
-*/
-function MAPS_listOverlaysGroups ()
+ * List overlay groups.
+ *
+ * @return string
+ */
+function MAPS_listOverlaysGroups()
 {
-    global $_CONF, $_TABLES, $_IMAGE_TYPE, $LANG_ADMIN, $LANG_MAPS_1;
+    global $_CONF, $_TABLES, $LANG_ADMIN, $LANG_MAPS_1;
 
     require_once $_CONF['path_system'] . 'lib-admin.php';
 
-    $retval = '';
-
-    $header_arr = array(      // display 'text' and use table field 'field'
+    $header = array(
         array('text' => $LANG_MAPS_1['id'], 'field' => 'o_group_id', 'sort' => true),
         array('text' => $LANG_MAPS_1['name'], 'field' => 'o_group_name', 'sort' => true),
         array('text' => $LANG_ADMIN['edit'], 'field' => 'edit', 'sort' => false),
     );
-    $defsort_arr = array('field' => 'o_group_name', 'direction' => 'asc');
-
-    $text_arr = array(
+    $sort = array('field' => 'o_group_name', 'direction' => 'asc');
+    $text = array(
         'has_extras' => true,
         'form_url' => $_CONF['site_admin_url'] . '/plugins/maps/overlays.php?mode=groups'
     );
-	
-	$sql = "SELECT
-	            *
-            FROM {$_TABLES['maps_overlays_groups']}
-			WHERE 1=1";
-
-    $query_arr = array(
-        'sql'            => $sql
+    $query = array(
+        'sql' => "SELECT * FROM {$_TABLES['maps_overlays_groups']} WHERE 1=1"
     );
 
-    $retval .= ADMIN_list('overlays', 'MAPS_getListField_overlaysGroups',
-                          $header_arr, $text_arr, $query_arr, $defsort_arr);
-
-    return $retval;
+    return ADMIN_list('overlays', 'MAPS_getListField_overlaysGroups', $header, $text, $query, $sort);
 }
 
 /**
-*   Get an individual field for the overlays screen.
-*
-*   @param  string  $fieldname  Name of field (from the array, not the db)
-*   @param  mixed   $fieldvalue Value of the field
-*   @param  array   $A          Array of all fields from the database
-*   @param  array   $icon_arr   System icon array
-*   @param  object  $EntryList  This entry list object
-*   @return string              HTML for field display in the table
-*/
+ * Render one field in the overlay group list.
+ *
+ * @return string
+ */
 function MAPS_getListField_overlaysGroups($fieldname, $fieldvalue, $A, $icon_arr)
 {
-    global $_CONF, $_MAPS_CONF, $LANG_ADMIN, $LANG_STATIC, $_TABLES;
-	
-	$token = SEC_createToken();
+    global $_CONF;
 
-    switch($fieldname) {
-        case "edit":
-            $retval = COM_createLink($icon_arr['edit'],
-                "{$_CONF['site_admin_url']}/plugins/maps/overlay_group_edit.php?mode=edit&amp;o_group_id={$A['o_group_id']}");
-            break;
-			
-        default:
-            $retval = $fieldvalue;
-            break;
+    if ($fieldname === 'edit') {
+        return COM_createLink(
+            $icon_arr['edit'],
+            $_CONF['site_admin_url'] . '/plugins/maps/overlay_group_edit.php?mode=edit&amp;o_group_id=' . (int) $A['o_group_id']
+        );
     }
-    return $retval;
+
+    return htmlspecialchars((string) $fieldvalue, ENT_QUOTES, 'UTF-8');
 }
 
 // MAIN
 $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
 $display .= maps_admin_menu();
 
-if (!empty($_REQUEST['msg'])) {
-    $display .= MAPS_message($_REQUEST['msg']);
+if ($msg !== '') {
+    $display .= MAPS_message(htmlspecialchars($msg, ENT_QUOTES, 'UTF-8'));
 }
 
-if ( !file_exists($_MAPS_CONF['path_overlay_images']) || !is_writable($_MAPS_CONF['path_overlay_images']) ) {
-	$display .= COM_showMessageText( '>> '. $_MAPS_CONF['path_overlay_images'] . '<p>' . $LANG_MAPS_1['overlay_not_writable'] . '</p>');
+if (!file_exists($_MAPS_CONF['path_overlay_images']) || !is_writable($_MAPS_CONF['path_overlay_images'])) {
+    $display .= COM_showMessageText(
+        '>> ' . htmlspecialchars($_MAPS_CONF['path_overlay_images'], ENT_QUOTES, 'UTF-8')
+        . '<p>' . htmlspecialchars($LANG_MAPS_1['overlay_not_writable'], ENT_QUOTES, 'UTF-8') . '</p>'
+    );
 } else {
-    $display .= '<br /><h1>' . $LANG_MAPS_1['overlays_list'] . '</h1>';
-    $display .= '<p><ul><li><a href="' . $_CONF['site_url'] . '/admin/plugins/maps/overlay_edit.php">' . $LANG_MAPS_1['create_overlay'] 
-	    . '</a><li><a href="' . $_CONF['site_url'] . '/admin/plugins/maps/overlays.php?mode=groups">' . $LANG_MAPS_1['manage_groups'] . '</a><li><a href="' 
-		. $_CONF['site_url'] . '/admin/plugins/maps/overlay_group_edit.php?mode=new">' . $LANG_MAPS_1['create_group'] . '</a></ul></p>';
-	
-	MAPS_reorderOverlays();
-	
-	switch ($_REQUEST['mode']) {
-	    case 'groups':
-		    $display .= MAPS_listOverlaysGroups();
-		    break;
-		case  'move':
-		    $oid = COM_applyFilter($_GET['oid']);
-		    $where = COM_applyFilter($_GET['where']);
+    $display .= '<br><h1>' . htmlspecialchars($LANG_MAPS_1['overlays_list'], ENT_QUOTES, 'UTF-8') . '</h1>';
+    $display .= '<ul>'
+        . '<li><a href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/maps/overlay_edit.php', ENT_QUOTES, 'UTF-8') . '">'
+        . htmlspecialchars($LANG_MAPS_1['create_overlay'], ENT_QUOTES, 'UTF-8') . '</a></li>'
+        . '<li><a href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/maps/overlays.php?mode=groups', ENT_QUOTES, 'UTF-8') . '">'
+        . htmlspecialchars($LANG_MAPS_1['manage_groups'], ENT_QUOTES, 'UTF-8') . '</a></li>'
+        . '<li><a href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/maps/overlay_group_edit.php?mode=new', ENT_QUOTES, 'UTF-8') . '">'
+        . htmlspecialchars($LANG_MAPS_1['create_group'], ENT_QUOTES, 'UTF-8') . '</a></li>'
+        . '</ul>';
 
-		    if (DB_count($_TABLES['maps_overlays'], "oid", $oid) == 1) {
+    if ($mode === 'move') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !SEC_checkToken()) {
+            COM_accessLog('Invalid CSRF token on Maps overlay ordering action.');
+            $display .= COM_showMessageText($MESSAGE[29], $MESSAGE[30]);
+        } else {
+            $oid = isset($_POST['oid']) ? (int) $_POST['oid'] : 0;
+            $where = isset($_POST['where']) ? COM_applyFilter($_POST['where']) : '';
 
-			    switch ($where) {
-
-				    case ("up"): $q = "UPDATE " . $_TABLES['maps_overlays'] . " SET o_order = o_order-11 WHERE oid = '" . $oid . "'";
-						DB_query($q);
-					    MAPS_reorderOverlays();
-					    break;
-
-				    case ("dn"): $q = "UPDATE " . $_TABLES['maps_overlays'] . " SET o_order = o_order+11 WHERE oid = '" . $oid . "'";
-						DB_query($q);
-					    MAPS_reorderOverlays();
-						break;
-			    }
-		    }
-
-		default :
-		    $display .= MAPS_listOverlays();
-	}
+            if ($oid > 0 && in_array($where, array('up', 'dn'), true)
+                && (int) DB_count($_TABLES['maps_overlays'], 'oid', $oid) === 1
+            ) {
+                $delta = ($where === 'up') ? -11 : 11;
+                DB_query(
+                    "UPDATE {$_TABLES['maps_overlays']} SET o_order=o_order+({$delta}) WHERE oid={$oid}"
+                );
+                if (!DB_error()) {
+                    MAPS_reorderOverlays();
+                }
+            }
+        }
+        $display .= MAPS_listOverlays();
+    } elseif ($mode === 'groups') {
+        $display .= MAPS_listOverlaysGroups();
+    } else {
+        $display .= MAPS_listOverlays();
+    }
 }
 
 $display .= MAPS_compatSiteFooter(0);
-
 MAPS_compatOutput($display);
-
-?>
