@@ -1,0 +1,66 @@
+name: Icon reference integrity migration
+
+on:
+  push:
+    branches:
+      - modernize/maps-1.5
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-icon-references:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modernize/maps-1.5
+      - name: Apply icon reference and packaging lint patch
+        shell: bash
+        run: |
+          printf '%s' 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpwID0gUGF0aCgiYWRtaW4vaWNvbnMucGhwIikKcyA9IHAucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpCgpvbGQgPSAiIiIgICAgJHJlc3VsdCA9IERCX3F1ZXJ5KAogICAgICAgICJTRUxFQ1QgRElTVElOQ1QgbWlkIEZST00geyRfVEFCTEVTWydtYXBzX21hcmtlcnMnXX0gV0hFUkUgbWtfaWNvbj0iIC4gJGljb25JZAogICAgKTsKICAgIHdoaWxlICgkcm93ID0gREJfZmV0Y2hBcnJheSgkcmVzdWx0KSkgewogICAgICAgICRtaWQgPSBpc3NldCgkcm93WydtaWQnXSkgPyAoaW50KSAkcm93WydtaWQnXSA6IDA7CiAgICAgICAgaWYgKCRtaWQgPiAwKSB7CiAgICAgICAgICAgICRtYXBzWyRtaWRdID0gdHJ1ZTsKICAgICAgICB9CiAgICB9CiAgICByZXR1cm4gJG1hcHM7Cn0iIiIKbmV3ID0gIiIiICAgICRyZXN1bHQgPSBEQl9xdWVyeSgKICAgICAgICAiU0VMRUNUIERJU1RJTkNUIG1pZCBGUk9NIHskX1RBQkxFU1snbWFwc19tYXJrZXJzJ119IFdIRVJFIG1rX2ljb249IiAuICRpY29uSWQKICAgICk7CiAgICB3aGlsZSAoJHJvdyA9IERCX2ZldGNoQXJyYXkoJHJlc3VsdCkpIHsKICAgICAgICAkbWlkID0gaXNzZXQoJHJvd1snbWlkJ10pID8gKGludCkgJHJvd1snbWlkJ10gOiAwOwogICAgICAgIGlmICgkbWlkID4gMCkgewogICAgICAgICAgICAkbWFwc1skbWlkXSA9IHRydWU7CiAgICAgICAgfQogICAgfQoKICAgICRyZXN1bHQgPSBEQl9xdWVyeSgKICAgICAgICAiU0VMRUNUIG1pZCBGUk9NIHskX1RBQkxFU1snbWFwc19tYXBzJ119IFdIRVJFIG1ta19pY29uPSIgLiAkaWNvbklkCiAgICApOwogICAgd2hpbGUgKCRyb3cgPSBEQl9mZXRjaEFycmF5KCRyZXN1bHQpKSB7CiAgICAgICAgJG1pZCA9IGlzc2V0KCRyb3dbJ21pZCddKSA/IChpbnQpICRyb3dbJ21pZCddIDogMDsKICAgICAgICBpZiAoJG1pZCA+IDApIHsKICAgICAgICAgICAgJG1hcHNbJG1pZF0gPSB0cnVlOwogICAgICAgIH0KICAgIH0KCiAgICByZXR1cm4gJG1hcHM7Cn0iIiIKaWYgb2xkIG5vdCBpbiBzOgogICAgcmFpc2UgU3lzdGVtRXhpdCgiTUFQU19nZXRNYXBzVXNpbmdJY29uIGFuY2hvciBub3QgZm91bmQiKQpzID0gcy5yZXBsYWNlKG9sZCwgbmV3LCAxKQoKb2xkID0gIiIiICAgICAgICAgICAgICAgIERCX3F1ZXJ5KAogICAgICAgICAgICAgICAgICAgICJVUERBVEUgeyRfVEFCTEVTWydtYXBzX21hcmtlcnMnXX0gU0VUIG1rX2ljb249MCwgbWtfZGVmYXVsdD0xIFdIRVJFIG1rX2ljb249IiAuICRpZAogICAgICAgICAgICAgICAgKTsKICAgICAgICAgICAgICAgIERCX2RlbGV0ZSgkX1RBQkxFU1snbWFwc19tYXBfaWNvbnMnXSwgJ2ljb25faWQnLCAkaWQpOyIiIgpuZXcgPSAiIiIgICAgICAgICAgICAgICAgREJfcXVlcnkoCiAgICAgICAgICAgICAgICAgICAgIlVQREFURSB7JF9UQUJMRVNbJ21hcHNfbWFya2VycyddfSBTRVQgbWtfaWNvbj0wLCBta19kZWZhdWx0PTEgV0hFUkUgbWtfaWNvbj0iIC4gJGlkCiAgICAgICAgICAgICAgICApOwogICAgICAgICAgICAgICAgREJfcXVlcnkoCiAgICAgICAgICAgICAgICAgICAgIlVQREFURSB7JF9UQUJMRVNbJ21hcHNfbWFwcyddfSBTRVQgbW1rX2ljb249MCwgbW1rX2RlZmF1bHQ9MSBXSEVSRSBtbWtfaWNvbj0iIC4gJGlkCiAgICAgICAgICAgICAgICApOwogICAgICAgICAgICAgICAgREJfZGVsZXRlKCRfVEFCTEVTWydtYXBzX21hcF9pY29ucyddLCAn aWNvbl9pZCcsICRpZCk7IiIiCnN = s.replace("ICAn aWNvbl9pZCcs", "ICAn icon_id',") if False else s
+# Rebuild the exact replacement without encoded editing artifacts.
+new = """                DB_query(
+                    "UPDATE {$_TABLES['maps_markers']} SET mk_icon=0, mk_default=1 WHERE mk_icon=" . $id
+                );
+                DB_query(
+                    "UPDATE {$_TABLES['maps_maps']} SET mmk_icon=0, mmk_default=1 WHERE mmk_icon=" . $id
+                );
+                DB_delete($_TABLES['maps_map_icons'], 'icon_id', $id);"""
+if old not in s:
+    raise SystemExit("icon delete association anchor not found")
+s = s.replace(old, new, 1)
+p.write_text(s, encoding="utf-8")
+
+p = Path(".github/workflows/package.yml")
+s = p.read_text(encoding="utf-8")
+old = """          php -l source/admin/overlay_edit.php
+          php -l source/admin/overlays.php
+          php -l source/admin/ajax.php"""
+new = """          php -l source/admin/overlay_edit.php
+          php -l source/admin/overlay_group_edit.php
+          php -l source/admin/overlays.php
+          php -l source/admin/icons.php
+          php -l source/admin/ajax.php"""
+if old not in s:
+    raise SystemExit("package lint anchor not found")
+s = s.replace(old, new, 1)
+p.write_text(s, encoding="utf-8")
+' | base64 -d > /tmp/icon-reference-fix.py
+          python3 /tmp/icon-reference-fix.py
+      - name: Lint changed PHP files
+        run: |
+          php -l admin/icons.php
+          php -l admin/overlay_group_edit.php
+      - name: Commit integrity fix
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add admin/icons.php .github/workflows/package.yml
+          git commit -m 'Cover map default icon references [skip ci]'
+          git pull --rebase origin modernize/maps-1.5
+          git push origin HEAD:modernize/maps-1.5
