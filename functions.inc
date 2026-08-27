@@ -126,6 +126,42 @@ function MAPS_dbEscape($value)
 }
 
 /**
+ * Ensure a configured Maps directory exists and is writable.
+ *
+ * Missing image directories can occur after manual installs, migrations or
+ * archive extraction. Create them recursively when the parent path permits it,
+ * then verify the resulting directory before uploads are attempted.
+ *
+ * @param mixed $path
+ * @return bool
+ */
+function MAPS_ensureWritableDirectory($path)
+{
+    $path = rtrim((string) $path, '/\\');
+    if ($path === '') {
+        return false;
+    }
+
+    if (!is_dir($path)) {
+        $oldUmask = umask(0);
+        $created = @mkdir($path, 0755, true);
+        umask($oldUmask);
+
+        if (!$created && !is_dir($path)) {
+            COM_errorLog('MAPS could not create directory: ' . $path);
+            return false;
+        }
+    }
+
+    if (!is_writable($path)) {
+        COM_errorLog('MAPS directory is not writable: ' . $path);
+        return false;
+    }
+
+    return true;
+}
+
+/**
  * Decode HTML entities that may have been stored by historical input filters.
  * Output contexts must still apply their own escaping afterwards.
  *

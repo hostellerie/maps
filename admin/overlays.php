@@ -206,7 +206,7 @@ if ($msg !== '') {
     $display .= MAPS_message(htmlspecialchars($msg, ENT_QUOTES, 'UTF-8'));
 }
 
-if (!file_exists($_MAPS_CONF['path_overlay_images']) || !is_writable($_MAPS_CONF['path_overlay_images'])) {
+if (!MAPS_ensureWritableDirectory($_MAPS_CONF['path_overlay_images'])) {
     $display .= MAPS_message(
         '>> ' . htmlspecialchars($_MAPS_CONF['path_overlay_images'], ENT_QUOTES, 'UTF-8')
         . '<p>' . htmlspecialchars($LANG_MAPS_1['overlay_not_writable'], ENT_QUOTES, 'UTF-8') . '</p>',

@@ -282,7 +282,7 @@ if (!empty($requestData['msg'])) {
     $display .= MAPS_message(COM_applyFilter($requestData['msg']));
 }
 
-if (!file_exists($_MAPS_CONF['path_icons_images']) || !is_writable($_MAPS_CONF['path_icons_images'])) {
+if (!MAPS_ensureWritableDirectory($_MAPS_CONF['path_icons_images'])) {
     $display .= MAPS_message(
         '>> ' . htmlspecialchars($_MAPS_CONF['path_icons_images'], ENT_QUOTES, 'UTF-8')
         . '<p>' . htmlspecialchars($LANG_MAPS_1['icons_not_writable'], ENT_QUOTES, 'UTF-8') . '</p>',
