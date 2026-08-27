@@ -17,7 +17,10 @@ jobs:
           ref: modernize/maps-1.5
           fetch-depth: 0
       - run: git pull --rebase origin modernize/maps-1.5
-      - run: python3 tools/implement-marker-services-1.5.9.py
+      - name: Apply implementation
+        run: |
+          python3 tools/implement-marker-services-1.5.9.py
+          git checkout -- .github/workflows/package.yml
       - name: Validate PHP and service surface
         run: |
           php -l services.inc.php
@@ -35,7 +38,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add autoinstall.php maps.php functions.inc services.inc.php sql/mysql_install.php RELEASE-NOTES-1.5.9.md .github/workflows/package.yml
+          git add autoinstall.php maps.php functions.inc services.inc.php sql/mysql_install.php RELEASE-NOTES-1.5.9.md
           git commit -m 'Add Maps 1.5.9 marker service API [skip ci]' || exit 0
           for attempt in 1 2 3 4 5; do
             git pull --rebase origin modernize/maps-1.5
