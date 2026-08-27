@@ -517,16 +517,6 @@ function getMarkerForm($marker = array()) {
 		  }
 		}
 
-		jQuery(function() {
-			jQuery(\'#from\').datepicker({
-				altFormat:\'m/d/Y\'
-			});
-			jQuery(\'#to\').datepicker({
-				altFormat:\'m/d/Y\',
-			});
-		});
-		
-		
 		var geocoder = null;
 		var map;
 		var editMarker;
