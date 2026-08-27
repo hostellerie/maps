@@ -38,3 +38,11 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - marker information uses a responsive card layout instead of the legacy 2010-era presentation;
 - public map pages use a cleaner map card, content hierarchy, metadata area and responsive spacing;
 - map listings use modern cards with separated title, description, metadata and actions.
+
+## Administration and content hierarchy polish
+
+- Added an H2 introducing marker lists on individual public map pages.
+- Standardized the Maps administration menu and top-level H1 placement.
+- Reordered the administration dashboard to maps list, statistics, then Google Maps API status.
+- Added missing page titles to import/export and the main map/marker editors.
+- Modernized the geocoder form while preserving its menu/title hierarchy.

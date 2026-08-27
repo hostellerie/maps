@@ -1,9 +1,10 @@
-	  <h1>{geocoder}</h1>
-      <p>{geocoder_text}        
-      </p>
-      <p>
-        <input type="text" style="width:350px" id="address" value="1600 Amphitheatre Pky, Mountain View, CA" />
-        <input type="submit" value="{go}" onclick="codeAddress()"/>
-      </p>
-      <div id="map_canvas" style="width: 100%; height: 400px"></div>
-
+<section class="maps-admin-geocoder">
+    <h1 class="maps-admin-title">{geocoder}</h1>
+    <p>{geocoder_text}</p>
+    <div class="maps-geocoder-form">
+        <label for="address" class="maps-visually-hidden">{geocoder}</label>
+        <input type="text" id="address" value="1600 Amphitheatre Pky, Mountain View, CA">
+        <button type="button" onclick="codeAddress()">{go}</button>
+    </div>
+    <div id="map_canvas" class="maps-geocoder-map"></div>
+</section>

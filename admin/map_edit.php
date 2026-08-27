@@ -229,6 +229,8 @@ $requestData = $requestMethod === 'POST' ? $_POST : $_GET;
 $mode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode']) : 'new';
 $mid = isset($requestData['mid']) ? (int) $requestData['mid'] : 0;
 $content = MAPS_admin_menu();
+$editorTitle = ($mode === 'edit' && $mid > 0) ? $LANG_MAPS_1['map_edit'] : ucfirst($LANG_MAPS_1['create_map']);
+$content .= '<h1 class="maps-admin-title">' . htmlspecialchars($editorTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
 
 if (in_array($mode, array('save', 'delete'), true)) {
     if ($requestMethod !== 'POST' || !SEC_checkToken()) {

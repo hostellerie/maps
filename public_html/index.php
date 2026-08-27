@@ -303,6 +303,8 @@ switch ($mode) {
     case 'map':
         if ($mid > 0) {
             $content .= MAPS_getMap($mid);
+            $content .= '<h2 class="maps-markers-heading">'
+                . htmlspecialchars($LANG_MAPS_1['markers_list'], ENT_QUOTES, 'UTF-8') . '</h2>';
             $content .= MAPS_ListMarkers($mid);
             $content .= MAPS_renderMapStatistics($mid, true);
         } else {

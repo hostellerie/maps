@@ -678,7 +678,9 @@ $requestData = $requestMethod === 'POST' ? $_POST : $_GET;
 $requestMode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode']) : '';
 $mkid = isset($requestData['mkid']) ? preg_replace('/[^0-9]/', '', (string) $requestData['mkid']) : '';
 $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
-$display .= maps_admin_menu();
+$display .= MAPS_admin_menu();
+$markerEditorTitle = ($requestMode === 'edit' && $mkid !== '') ? $LANG_MAPS_1['marker_edit'] : ucfirst($LANG_MAPS_1['create_marker']);
+$display .= '<h1 class="maps-admin-title">' . htmlspecialchars($markerEditorTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
 
 if (in_array($requestMode, array('save', 'delete'), true)) {
     if ($requestMethod !== 'POST' || !SEC_checkToken()) {

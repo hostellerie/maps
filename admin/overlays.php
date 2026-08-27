@@ -201,7 +201,7 @@ function MAPS_getListField_overlaysGroups($fieldname, $fieldvalue, $A, $icon_arr
 
 // MAIN
 $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
-$display .= maps_admin_menu();
+$display .= MAPS_admin_menu();
 
 if ($msg !== '') {
     $display .= MAPS_message(htmlspecialchars($msg, ENT_QUOTES, 'UTF-8'));
@@ -214,7 +214,7 @@ if (!MAPS_ensureWritableDirectory($_MAPS_CONF['path_overlay_images'])) {
         $LANG_MAPS_1['error']
     );
 } else {
-    $display .= '<br><h1>' . htmlspecialchars($LANG_MAPS_1['overlays_list'], ENT_QUOTES, 'UTF-8') . '</h1>';
+    $display .= '<h1 class="maps-admin-title">' . htmlspecialchars($LANG_MAPS_1['overlays_list'], ENT_QUOTES, 'UTF-8') . '</h1>';
     $display .= '<ul>'
         . '<li><a href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/maps/overlay_edit.php', ENT_QUOTES, 'UTF-8') . '">'
         . htmlspecialchars($LANG_MAPS_1['create_overlay'], ENT_QUOTES, 'UTF-8') . '</a></li>'

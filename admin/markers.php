@@ -161,9 +161,9 @@ function plugin_getListField_markers($fieldname, $fieldvalue, $A, $icon_arr)
 
 // MAIN
 $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
-$display .= maps_admin_menu();
+$display .= MAPS_admin_menu();
 
-$display .= '<br /><h1>' . $LANG_MAPS_1['markers_list'] . '</h1>';
+$display .= '<h1 class="maps-admin-title">' . $LANG_MAPS_1['markers_list'] . '</h1>';
 $display .= '<p class="maps-list-actions"><a class="maps-primary-action" href="' . $_CONF['site_admin_url'] . '/plugins/maps/marker_edit.php">' . htmlspecialchars($LANG_MAPS_1['create_marker'], ENT_QUOTES, 'UTF-8') . '</a></p>';
 
 $display .= MAPS_listMarkersAdmin();

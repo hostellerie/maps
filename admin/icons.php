@@ -304,7 +304,7 @@ $mode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode']) : ''
 $id = isset($requestData['id']) ? (int) $requestData['id'] : 0;
 
 $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
-$display .= maps_admin_menu();
+$display .= MAPS_admin_menu();
 
 if (!empty($requestData['msg'])) {
     $display .= MAPS_message(COM_applyFilter($requestData['msg']));
@@ -436,7 +436,7 @@ if (!MAPS_ensureWritableDirectory($_MAPS_CONF['path_icons_images'])) {
             break;
 
         default:
-            $display .= '<br><h1>' . htmlspecialchars($LANG_MAPS_1['icons_list'], ENT_QUOTES, 'UTF-8') . '</h1>';
+            $display .= '<h1 class="maps-admin-title">' . htmlspecialchars($LANG_MAPS_1['icons_list'], ENT_QUOTES, 'UTF-8') . '</h1>';
             $display .= '<p>' . htmlspecialchars($LANG_MAPS_1['you_can'], ENT_QUOTES, 'UTF-8')
                 . '<a href="' . htmlspecialchars($_CONF['site_admin_url'], ENT_QUOTES, 'UTF-8')
                 . '/plugins/maps/icons.php?mode=edit">'
