@@ -44,9 +44,6 @@ function plugin_autoinstall_maps($pi_name)
         'maps_geo',
         'maps_markers',
         'maps_submission',
-        'maps_markers_cat',
-        'maps_markers_fields',
-        'maps_markers_values',
         'maps_overlays',
         'maps_map_overlay',
         'maps_map_icons',
@@ -67,7 +64,7 @@ function plugin_autoinstall_maps($pi_name)
  *
  * Official support target for Maps 1.5.7:
  * - Geeklog 2.1.1 through 2.2.2
- * - PHP 5.6 through 8.1
+ * - PHP 5.6 through 8.3
  * - MySQL-compatible DBMS as supported by this plugin's SQL installer
  *
  * @param string $pi_name
@@ -78,7 +75,7 @@ function plugin_compatible_with_this_version_maps($pi_name)
     global $_CONF, $_DB_dbms;
 
     if (version_compare(PHP_VERSION, '5.6.0', '<')
-        || version_compare(PHP_VERSION, '8.2.0', '>=')) {
+        || version_compare(PHP_VERSION, '8.4.0', '>=')) {
         return false;
     }
 
