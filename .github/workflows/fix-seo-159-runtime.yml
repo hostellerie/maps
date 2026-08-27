@@ -1,0 +1,48 @@
+name: Fix Maps 1.5.9 SEO runtime
+
+on:
+  push:
+    branches:
+      - modernize/maps-1.5
+    paths:
+      - '.github/workflows/fix-seo-159-runtime.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modernize/maps-1.5
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - name: Apply runtime fix
+        run: python3 tools/fix-seo-159-runtime.py
+      - name: PHP lint
+        run: |
+          php -l public_html/index.php
+          php -l public_html/markers.php
+          php -l functions.inc
+          php -l interoperability.php
+          php -l distribution.php
+      - name: Verify SEO references
+        run: |
+          ! grep -R "MAPS_isValidCoordinatePair\|MAPS_latitude\|MAPS_longitude" public_html/index.php
+          grep -q "index.php?mode=marker" interoperability.php
+          grep -q "application/ld+json" public_html/index.php
+      - name: Commit fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public_html/index.php
+          git commit -m 'Fix Maps 1.5.9 SEO coordinate rendering [skip ci]' || exit 0
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin modernize/maps-1.5 && git push origin HEAD:modernize/maps-1.5 && exit 0
+            sleep 3
+          done
+          exit 1
