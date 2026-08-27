@@ -42,6 +42,15 @@ function getMapForm($map = array())
     global $_CONF, $_TABLES, $_MAPS_CONF, $LANG_MAPS_1, $LANG_configselects, $LANG_ACCESS, $_USER, $_SCRIPTS;
 
     $map = MAPS_mapEditorDefaults($map);
+
+    // Some administration fragments rendered by Maps still use jQuery.
+    // Geeklog 2.2.x no longer guarantees that it is loaded on every admin page.
+    if (isset($_SCRIPTS) && is_object($_SCRIPTS)
+        && method_exists($_SCRIPTS, 'setJavaScriptLibrary')
+    ) {
+        $_SCRIPTS->setJavaScriptLibrary('jquery');
+    }
+
     $template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
     $template->set_file(array('map' => 'map_form.thtml'));
 
@@ -184,7 +193,7 @@ function getMapForm($map = array())
         . 'for(var i=0;i<links.length;i++){links[i].addEventListener("click",function(e){e.preventDefault();showTab(this.getAttribute("href"));});}showTab("#map_infos");}'
         . 'var deleteButtons=document.querySelectorAll(".maps-delete-map");for(var d=0;d<deleteButtons.length;d++){deleteButtons[d].addEventListener("click",function(e){if(!window.confirm(' . $deleteConfirmJs . ')){e.preventDefault();}});}'
         . 'var canvas=document.getElementById("maps-map-center-editor");if(!canvas){return;}'
-        . 'function initMapEditor(attempt){if(typeof google==="undefined"||!google.maps){if(attempt<40){window.setTimeout(function(){initMapEditor(attempt+1);},100);}return;}'
+        . 'function initMapEditor(attempt){if(typeof google==="undefined"||!google.maps||!google.maps.Map||!google.maps.Marker||!google.maps.MapTypeId){if(attempt<80){window.setTimeout(function(){initMapEditor(attempt+1);},100);}return;}'
         . 'var latInput=document.getElementById("map_center_lat"),lngInput=document.getElementById("map_center_lng"),zoomInput=document.getElementById("zoom"),typeInput=document.getElementById("type"),geoInput=document.getElementById("geo");'
         . 'var lat=Number(' . MAPS_jsString(MAPS_canonicalNumberString($safeLat, 0)) . '),lng=Number(' . MAPS_jsString(MAPS_canonicalNumberString($safeLng, 0)) . '),zoom=Number(' . MAPS_jsString((string) $safeZoom) . ');'
         . 'if(!isFinite(lat)){lat=0;}if(!isFinite(lng)){lng=0;}if(!isFinite(zoom)){zoom=6;}'

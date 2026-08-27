@@ -193,12 +193,16 @@ function MAPS_contentQuery($id = '*', $uid = 0, $options = array())
  * @param array $fields
  * @return array
  */
-function MAPS_contentSelectFields($item, $fields)
+function MAPS_contentSelectFields($item, $fields, $numeric = false)
 {
     $selected = array();
     foreach ($fields as $field) {
         if (array_key_exists($field, $item)) {
-            $selected[$field] = $item[$field];
+            if ($numeric) {
+                $selected[] = $item[$field];
+            } else {
+                $selected[$field] = $item[$field];
+            }
         }
     }
     return $selected;
@@ -229,7 +233,11 @@ function plugin_getiteminfo_maps($id, $what, $uid = 0, $options = array())
         if (empty($items)) {
             return array();
         }
-        return MAPS_contentSelectFields($items[0], $fields);
+        // Native Geeklog consumers (including XMLSitemap) expect a concrete
+        // PLG_getItemInfo() response to be numerically indexed in the exact
+        // order requested through $what. Collection records remain associative
+        // for the Maps interoperability contract.
+        return MAPS_contentSelectFields($items[0], $fields, true);
     }
 
     $result = array();
