@@ -145,3 +145,5 @@ After RC1, changes should be restricted to regression, compatibility, security a
 - Kept `item_1` through `item_10` as supported marker custom fields.
 
 - Centralized public rendering of marker custom fields on marker detail pages and map info windows; fields are shown only when both label and value are present.
+
+- Marker edit forms now hide untouched custom-field placeholders; a field appears only after its label is customized, or when the marker already contains a value to preserve legacy data.

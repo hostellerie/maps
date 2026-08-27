@@ -508,19 +508,21 @@ function getUserMarkerForm($marker = array()) {
 		$template->set_var('max_char', $LANG_MAPS_1['max_char']);
 		
 		$arr = array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-		$ressources ='';
-		foreach ($arr as &$value) {
+		$ressources = '';
+		foreach ($arr as $value) {
 			$itemConfig = MAPS_arrayGet($_MAPS_CONF, 'item_' . $value, '');
-			if ($itemConfig == '') {
-				$template->set_var('item_'. $value . '_label', '');
-				$template->set_var('item_'. $value, '');
-				$ressources .= '';
-			} else {
-				$template->set_var('item_'. $value . '_label', $itemConfig);
-				$itemValue = MAPS_arrayGet($marker, 'item_' . $value, '');
-				$template->set_var('item_'. $value, $itemValue);
-				$ressources .= '<p>' . htmlspecialchars($itemConfig, ENT_QUOTES, 'UTF-8') . ' <input type="text" name="item_' . $value . '" size="80" maxlength="255" value="' . htmlspecialchars($itemValue, ENT_QUOTES, 'UTF-8') . '"></p>';
+			$itemValue = MAPS_arrayGet($marker, 'item_' . $value, '');
+			if (!MAPS_shouldShowCustomField($value, $marker)) {
+				$template->set_var('item_' . $value . '_label', '');
+				$template->set_var('item_' . $value, '');
+				continue;
 			}
+
+			$template->set_var('item_' . $value . '_label', $itemConfig);
+			$template->set_var('item_' . $value, $itemValue);
+			$ressources .= '<p>' . htmlspecialchars($itemConfig, ENT_QUOTES, 'UTF-8')
+			    . ' <input type="text" name="item_' . $value . '" size="80" maxlength="255" value="'
+			    . htmlspecialchars($itemValue, ENT_QUOTES, 'UTF-8') . '"></p>';
 		}
 		if ($ressources == '') {
 			$ressources = $LANG_MAPS_1['empty_ressources'];

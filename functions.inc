@@ -339,6 +339,45 @@ function MAPS_arrayGet($array, $key, $default = '')
  * @param string $layout compact for info windows, detail for marker pages
  * @return string
  */
+/**
+ * Return whether a configurable marker custom field should be shown in forms.
+ *
+ * Default placeholder labels do not activate a field. Existing stored values
+ * remain editable so upgrades never hide legacy marker data.
+ *
+ * @param int   $index
+ * @param array $marker
+ * @return bool
+ */
+function MAPS_shouldShowCustomField($index, $marker = array())
+{
+    global $_MAPS_CONF;
+
+    $index = (int) $index;
+    if ($index < 1 || $index > 10) {
+        return false;
+    }
+
+    $label = trim((string) MAPS_arrayGet($_MAPS_CONF, 'item_' . $index, ''));
+    $value = trim((string) MAPS_arrayGet($marker, 'item_' . $index, ''));
+
+    if ($value !== '') {
+        return true;
+    }
+    if ($label === '') {
+        return false;
+    }
+
+    // Current 1.5.8 placeholders plus historical Maps defaults.
+    $defaultLabels = array(
+        'Custom field ' . $index,
+        'Ressource #' . $index,
+        'Resource #' . $index
+    );
+
+    return !in_array($label, $defaultLabels, true);
+}
+
 function MAPS_renderPublicCustomFields($marker, $layout = 'detail')
 {
     global $_MAPS_CONF;
