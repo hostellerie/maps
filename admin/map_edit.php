@@ -374,7 +374,7 @@ if ($mode === 'save') {
             PLG_itemSaved($mid, 'maps');
         }
 
-        echo COM_refresh($_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=edit&mid=' . (int) $mid);
+        echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php?mode=map&mid=' . (int) $mid);
         exit;
     }
 } else {

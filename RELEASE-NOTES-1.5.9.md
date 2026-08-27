@@ -27,3 +27,8 @@ These services are deliberately internal. Requests arriving through Geeklog Webs
 - Private marker management pages are `noindex,follow`.
 - XML Sitemap collection includes canonical public marker pages in addition to maps.
 - Internal marker search/list links use the canonical marker URL.
+
+## Administration and menu integration
+
+- Saving a map in administration now redirects to its public map page so the administrator can immediately validate the result.
+- Maps now implements Geeklog's native `plugin_getmenuitems_maps()` callback and always exposes `/maps/index.php` as its plugin-menu destination, preventing empty `#` menu links.
