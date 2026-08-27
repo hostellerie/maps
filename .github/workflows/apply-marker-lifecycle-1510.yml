@@ -34,3 +34,5 @@ jobs:
           git add interoperability.php admin/marker_edit.php public_html/markers.php services.inc.php admin/import_export.php RELEASE-NOTES-1.5.10.md
           git commit -m 'Add generic Maps marker lifecycle notifications [skip ci]'
           git push origin HEAD:modernize/maps-1.5
+
+# Retry after temporarily pausing the package workflow.
