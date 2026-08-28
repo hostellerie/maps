@@ -20,6 +20,12 @@ jobs:
           git clone --depth 1 --branch modernize/maps-1.5 \
             https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
+      - name: Apply final admin consistency pass
+        shell: bash
+        run: |
+          cd source
+          python3 tools/finalize-admin-consistency-160.py
+
       - name: Lint release files
         shell: bash
         run: |
@@ -46,7 +52,15 @@ jobs:
           grep -q 'maps-admin-title' source/admin/overlay_group_edit.php
           grep -q 'MAPS_admin_menu();' source/admin/overlay_group_edit.php
           grep -q 'Maps 1.6.0 shared admin editors' source/public_html/maps.css
-          grep -q 'Administration editor consistency' source/RELEASE-NOTES-1.6.0.md
+          grep -q 'Maps 1.6.0 consistent admin action bars' source/public_html/maps.css
+          grep -q 'Final administration consistency pass' source/RELEASE-NOTES-1.6.0.md
+          grep -q "'create_map'.*'Create a new map'" source/language/english.php
+          grep -q "'marker_edit'.*'Edit marker'" source/language/english.php
+          grep -q 'maps-admin-actions' source/admin/overlays.php
+          ! grep -q "LANG_MAPS_1\['you_can'\]" source/admin/index.php
+          ! grep -q "LANG_MAPS_1\['you_can'\]" source/admin/icons.php
+          ! grep -q "COM_startBlock(\$LANG_MAPS_1\['import_export'\])" source/admin/import_export.php
+          ! grep -q "COM_startBlock('<h1>' . \$LANG_MAPS_1\['marker_edit'\]" source/admin/marker_edit.php
           ! grep -q '<font color="red">' source/templates/marker_form.thtml
           ! grep -q '<font color="red">' source/templates/icon_form.thtml
           ! grep -q '<font color="red">' source/templates/overlay_form.thtml
@@ -65,7 +79,7 @@ jobs:
           unzip -t maps_1.6.0_2.1.1.zip >/dev/null
           test "$(zipinfo -1 maps_1.6.0_2.1.1.zip | head -n 1)" = 'maps/'
 
-      - name: Commit final archive
+      - name: Commit admin consistency and final archive
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -76,9 +90,11 @@ jobs:
           cp build/maps_1.6.0_2.1.1.zip dist/maps_1.6.0_2.1.1.zip
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add admin/index.php admin/markers.php admin/icons.php admin/overlays.php admin/import_export.php admin/marker_edit.php admin/map_edit.php
+          git add language/english.php language/french_france_utf-8.php public_html/maps.css RELEASE-NOTES-1.6.0.md
           git add -f dist/maps_1.6.0_2.1.1.zip
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Build Maps 1.6.0 final archive [skip ci]'
+          git commit -m 'Harmonize Maps 1.6.0 admin labels and actions [skip ci]'
           git push origin HEAD:modernize/maps-1.5
