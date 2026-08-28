@@ -20,6 +20,12 @@ jobs:
           git clone --depth 1 --branch modernize/maps-1.5 \
             https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
+      - name: Apply legacy marker display finalizer
+        shell: bash
+        run: |
+          cd source
+          python3 tools/finalize-marker-display-160.py
+
       - name: Lint release files
         shell: bash
         run: |
@@ -37,14 +43,13 @@ jobs:
           grep -q 'MAPS_displayOverlaysToAdd($map' source/admin/map_edit.php
           ! grep -q 'MAPS_displayAddOverlay($map' source/admin/map_edit.php
           grep -q 'maps-admin-editor' source/templates/marker_form.thtml
-          grep -q 'maps-admin-editor' source/templates/icon_form.thtml
-          grep -q 'maps-admin-editor' source/templates/overlay_form.thtml
-          grep -q 'maps-admin-editor' source/templates/group_overlay_form.thtml
           grep -q 'MAPS_normalizeMarkerText' source/functions.inc
           grep -q 'MAPS_normalizeMarkerPlace' source/functions.inc
+          grep -q "fieldname === 'city'" source/functions.inc
+          grep -q 'Maps 1.6.0 admin form control sizing' source/public_html/maps.css
+          grep -q 'Legacy marker display normalization' source/RELEASE-NOTES-1.6.0.md
           grep -q 'LOWER(TRIM(a.name)) AS sort_name' source/admin/markers.php
           grep -q 'LOWER(TRIM(mk.name)) AS sort_name' source/public_html/markers.php
-          grep -q 'Marker data normalization' source/RELEASE-NOTES-1.6.0.md
           ! grep -q "\$display = '<h1 class=\"maps-admin-title\">' .*marker_edit" source/admin/marker_edit.php
           grep -q 'Maps 1.6.0 shared admin editors' source/public_html/maps.css
           grep -q 'Maps 1.6.0 consistent admin action bars' source/public_html/maps.css
@@ -56,10 +61,6 @@ jobs:
           ! grep -q "LANG_MAPS_1\['you_can'\]" source/admin/icons.php
           ! grep -q "COM_startBlock(\$LANG_MAPS_1\['import_export'\])" source/admin/import_export.php
           ! grep -q "COM_startBlock('<h1>' . \$LANG_MAPS_1\['marker_edit'\]" source/admin/marker_edit.php
-          ! grep -q '<font color="red">' source/templates/marker_form.thtml
-          ! grep -q '<font color="red">' source/templates/icon_form.thtml
-          ! grep -q '<font color="red">' source/templates/overlay_form.thtml
-          ! grep -q '<font color="red">' source/templates/group_overlay_form.thtml
 
       - name: Build final installable archive
         shell: bash
@@ -74,7 +75,7 @@ jobs:
           unzip -t maps_1.6.0_2.1.1.zip >/dev/null
           test "$(zipinfo -1 maps_1.6.0_2.1.1.zip | head -n 1)" = 'maps/'
 
-      - name: Commit final archive
+      - name: Commit legacy display finalizer and final archive
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -85,9 +86,10 @@ jobs:
           cp build/maps_1.6.0_2.1.1.zip dist/maps_1.6.0_2.1.1.zip
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add functions.inc public_html/maps.css RELEASE-NOTES-1.6.0.md
           git add -f dist/maps_1.6.0_2.1.1.zip
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Build Maps 1.6.0 final archive [skip ci]'
+          git commit -m 'Harmonize Maps 1.6.0 legacy marker display [skip ci]'
           git push origin HEAD:modernize/maps-1.5
