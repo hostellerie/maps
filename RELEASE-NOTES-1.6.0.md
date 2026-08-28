@@ -64,3 +64,9 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - Separated map title, description, metadata and administrator edit action.
 - Replaced frontend records terminology with marker / markers and views.
 - Kept the users map in the same visual card system without inventing unavailable statistics.
+## Marker and cluster visual polish
+
+- Added a compact custom MarkerClusterer renderer with three density levels and a restrained blue palette.
+- Reduced cluster visual dominance while preserving click-to-zoom behavior.
+- Refined generated SVG pins with a thinner outline, lighter highlight and subtle shadow while keeping configured colors and labels.
+
