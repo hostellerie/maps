@@ -858,6 +858,39 @@ function plugin_dopluginsearch_maps($query, $datestart, $dateend, $topic, $type,
     return $search;
 }
 
+/**
+ * Parse geo autotag arguments while preserving the historical "map" syntax.
+ *
+ * Supported examples:
+ * [geo: Paris, France]
+ * [geo: Paris, France zoom:12]
+ * [geo: map width:100% height:400px zoom:12 Paris, France]
+ *
+ * @param mixed $parm1
+ * @param mixed $parm2
+ * @return array
+ */
+function MAPS_parseGeoAutotagOptions($parm1, $parm2)
+{
+    $first = trim((string) $parm1);
+    $rest = trim((string) $parm2);
+    $raw = (strtolower($first) === 'map') ? $rest : trim($first . ' ' . $rest);
+    $result = array('address' => '', 'zoom' => '', 'width' => '', 'height' => '');
+    $addressParts = array();
+
+    foreach (preg_split('/\\s+/', $raw) as $part) {
+        if (preg_match('/^(zoom|width|height):(.+)$/i', $part, $match)) {
+            $key = strtolower($match[1]);
+            $result[$key] = trim($match[2]);
+        } elseif ($part !== '') {
+            $addressParts[] = $part;
+        }
+    }
+
+    $result['address'] = MAPS_normalizeMarkerText(implode(' ', $addressParts));
+    return $result;
+}
+
 function plugin_autotags_maps($op, $content = '', $autotag = '')
 {
     global $_CONF, $_MAPS_CONF, $_TABLES, $LANG_MAPS_1;
@@ -882,23 +915,12 @@ function plugin_autotags_maps($op, $content = '', $autotag = '')
     $parm1 = MAPS_arrayGet($autotag, 'parm1', '');
     $parm2 = MAPS_arrayGet($autotag, 'parm2', '');
 
-    if ($tag === 'geo' && COM_applyFilter($parm1) === 'map') {
-        $zoom = '';
-        $width = '';
-        $height = '';
-        $addressParts = array();
-        foreach (preg_split('/\s+/', trim($parm2)) as $part) {
-            if (strpos($part, 'zoom:') === 0) {
-                $zoom = substr($part, 5);
-            } elseif (strpos($part, 'width:') === 0) {
-                $width = substr($part, 6);
-            } elseif (strpos($part, 'height:') === 0) {
-                $height = substr($part, 7);
-            } elseif ($part !== '') {
-                $addressParts[] = $part;
-            }
-        }
-        $address = trim(implode(' ', $addressParts));
+    if ($tag === 'geo') {
+        $geoOptions = MAPS_parseGeoAutotagOptions($parm1, $parm2);
+        $zoom = $geoOptions['zoom'];
+        $width = $geoOptions['width'];
+        $height = $geoOptions['height'];
+        $address = $geoOptions['address'];
         if ($address !== '') {
             $gid = '';
             $lat = 0;
@@ -911,7 +933,7 @@ function plugin_autotags_maps($op, $content = '', $autotag = '')
                 $t->set_var('gid', $rid);
                 $t->set_var('address', htmlspecialchars($address, ENT_QUOTES, 'UTF-8'));
                 $t->set_var('address_js', MAPS_jsString($address));
-                $geoZoom = is_numeric($zoom) ? (int) $zoom : (int) MAPS_arrayGet($_MAPS_CONF, 'map_zoom_geotag', 10);
+                $geoZoom = $zoom !== '' ? MAPS_zoom($zoom, MAPS_arrayGet($_MAPS_CONF, 'map_zoom_geotag', 10)) : MAPS_zoom(MAPS_arrayGet($_MAPS_CONF, 'map_zoom_geotag', 10), 10);
                 $t->set_var('lat_js', MAPS_jsNumber($lat, 0));
                 $t->set_var('lng_js', MAPS_jsNumber($lng, 0));
                 $t->set_var('zoom_js', MAPS_jsNumber($geoZoom, 10));
@@ -922,8 +944,8 @@ function plugin_autotags_maps($op, $content = '', $autotag = '')
                     $geoMapType = 'ROADMAP';
                 }
                 $t->set_var('map_type', $geoMapType);
-                $t->set_var('map_width_geotag', $width !== '' ? $width : MAPS_arrayGet($_MAPS_CONF, 'map_width_geotag', '100%'));
-                $t->set_var('map_height_geotag', $height !== '' ? $height : MAPS_arrayGet($_MAPS_CONF, 'map_height_geotag', '400px'));
+                $t->set_var('map_width_geotag', MAPS_cssSize($width !== '' ? $width : MAPS_arrayGet($_MAPS_CONF, 'map_width_geotag', '100%'), '100%'));
+                $t->set_var('map_height_geotag', MAPS_cssSize($height !== '' ? $height : MAPS_arrayGet($_MAPS_CONF, 'map_height_geotag', '400px'), '400px'));
                 $t->set_var('zoom', $geoZoom);
                 $t->set_var('show_directions_geo', (int) MAPS_arrayGet($_MAPS_CONF, 'show_directions_geo', 0) ? 'block' : 'none');
                 $t->set_var('error_address_empty', $LANG_MAPS_1['error_address_empty']);

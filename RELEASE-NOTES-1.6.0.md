@@ -94,3 +94,4 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - New markers created in administration now inherit the configured default_permissions without overwriting permissions on existing markers or resubmitted forms.
 
 - Guided CSV import assistant: minimum/recommended presets, normalized tabular preview, batch summary and confirmation, plus imported-marker permissions aligned with default_permissions.
+- Geo autotag modernization: `[geo: Paris, France]` now renders a cached geocoded place directly, with optional `zoom`, `width` and `height`, while preserving the historical `[geo: map ...]` syntax.

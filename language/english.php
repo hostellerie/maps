@@ -281,7 +281,7 @@ $LANG_MAPS_1 = array(
     'print'                 => 'Print',
 	'to_complete'           => 'To complete',
 	'autotag_desc_maps'     => '[maps: xx zoom:ZZ location] - Displays the map with id=XX. Options are zoom level (between 0 to 21) and center the map on location.',
-	'autotag_desc_geo'      => '[geo: map width:XX height:YY zoom:ZZ location] - Displays a map center on the location (street, city, country). Options are width and height in pixels (e.g 400px) and zoom level (between 0 to 21).',
+	'autotag_desc_geo'      => '[geo: Paris, France zoom:12] - Displays a map centered on a place name or address. Optional parameters: zoom, width and height. The historical [geo: map ...] syntax remains supported.',
 	'autotag_desc_marker'   => '[marker: xx] - Displays the marker with id=XX',
 	//v1.1
 	'marker_customisation'  => 'Marker customisation',
