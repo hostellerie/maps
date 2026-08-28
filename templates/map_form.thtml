@@ -71,7 +71,7 @@
 
 <fieldset><legend>{lang_accessrights}</legend>
 <div class="maps-form-grid">
-<div class="maps-field"><span>{lang_owner}</span>{owner_select}</div>
+<label class="maps-field"><span>{lang_owner}</span><select name="owner_id">{owner_select}</select></label>
 <div class="maps-field"><span>{lang_group}</span>{group_dropdown}</div>
 </div>
 </fieldset>
