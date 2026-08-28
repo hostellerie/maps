@@ -221,6 +221,34 @@ function MAPS_normalizeMarkerPlace($value)
 }
 
 /**
+ * Return a marker name in the consistent public display casing.
+ * Stored data is never rewritten: users remain free to enter the name as they wish.
+ *
+ * @param mixed $value
+ * @return string
+ */
+function MAPS_markerDisplayName($value)
+{
+    $value = MAPS_normalizeMarkerText($value);
+    if ($value === '') {
+        return '';
+    }
+    return function_exists('mb_strtoupper')
+        ? mb_strtoupper($value, 'UTF-8')
+        : strtoupper($value);
+}
+
+/**
+ * Render a discreet placeholder for an empty public marker field.
+ *
+ * @return string
+ */
+function MAPS_markerEmptyValue()
+{
+    return '<span class="maps-marker-empty" aria-label="Not provided">—</span>';
+}
+
+/**
  * Render a compact accessible status badge for administration lists.
  *
  * @param mixed  $state
@@ -433,14 +461,23 @@ function MAPS_renderPublicCustomFields($marker, $layout = 'detail')
     for ($i = 1; $i <= 10; $i++) {
         $label = trim((string) MAPS_arrayGet($_MAPS_CONF, 'item_' . $i, ''));
         $value = trim((string) MAPS_arrayGet($marker, 'item_' . $i, ''));
-        if ($label === '' || $value === '') {
+        if ($label === '') {
+            continue;
+        }
+        if ($value === '' && $layout === 'compact') {
             continue;
         }
 
         $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
-        $expandedValue = PLG_replaceTags(stripslashes($value));
-        $plainValue = trim(strip_tags((string) $expandedValue));
-        $renderedValue = nl2br(htmlspecialchars($plainValue, ENT_QUOTES, 'UTF-8'));
+        if ($value === '') {
+            $renderedValue = MAPS_markerEmptyValue();
+        } else {
+            $expandedValue = PLG_replaceTags(stripslashes($value));
+            $plainValue = trim(strip_tags((string) $expandedValue));
+            $renderedValue = $plainValue === ''
+                ? MAPS_markerEmptyValue()
+                : nl2br(htmlspecialchars($plainValue, ENT_QUOTES, 'UTF-8'));
+        }
         if ($layout === 'compact') {
             $html .= '<div class="maps-custom-field maps-custom-field-compact">'
                 . '<strong>' . $safeLabel . '</strong> ' . $renderedValue . '</div>';
@@ -2264,7 +2301,7 @@ function MAPS_renderMarker($marker, $primaryColor, $strokecolor, $label, $label_
     $mkid = preg_replace('/[^a-zA-Z0-9_]/', '_', (string) $marker['mkid']);
     $var = 'marker' . $mkid;
     $mapVar = 'map' . $mapid;
-    $name = MAPS_decodeStoredText(MAPS_arrayGet($marker, 'name', ''));
+    $name = MAPS_markerDisplayName(MAPS_arrayGet($marker, 'name', ''));
     if (!MAPS_isValidCoordinatePair(MAPS_arrayGet($marker, 'lat', null), MAPS_arrayGet($marker, 'lng', null))) {
         if (function_exists('COM_errorLog')) {
             COM_errorLog('Maps: marker ' . (string) MAPS_arrayGet($marker, 'mkid', '') . ' ignored because its coordinates are invalid.');
@@ -2773,7 +2810,7 @@ function MAPS_ViewMarkerInfos($mkid)
 
     $template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
     $template->set_file(array('presentation' => 'marker.thtml'));
-    $template->set_var('name', '<span style="text-transform:uppercase">' . htmlspecialchars(MAPS_decodeStoredText($marker['name']), ENT_QUOTES, 'UTF-8') . '</span>');
+    $template->set_var('name', htmlspecialchars(MAPS_markerDisplayName($marker['name']), ENT_QUOTES, 'UTF-8'));
     $template->set_var('description', $marker['description'] !== '' ? '<p>' . nl2br(htmlspecialchars(MAPS_decodeStoredText($marker['description']), ENT_QUOTES, 'UTF-8')) . '</p>' : '');
     foreach (array('street','code','city','state','country','tel','fax') as $field) {
         $value = MAPS_arrayGet($marker, $field, '');
@@ -2782,16 +2819,24 @@ function MAPS_ViewMarkerInfos($mkid)
         } else {
             $value = MAPS_normalizeMarkerText($value);
         }
-        $template->set_var($field, $value !== '' && (int) MAPS_arrayGet($_MAPS_CONF, $field, 1) ? '<p><strong>' . $LANG_MAPS_1[$field . '_label'] . '</strong> ' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</p>' : '');
+        if ((int) MAPS_arrayGet($_MAPS_CONF, $field, 1) === 0) {
+            $template->set_var($field, '');
+            continue;
+        }
+        $renderedValue = $value === ''
+            ? MAPS_markerEmptyValue()
+            : htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+        $template->set_var($field, '<p><strong>' . $LANG_MAPS_1[$field . '_label'] . '</strong> ' . $renderedValue . '</p>');
     }
-    $webValue = trim((string) MAPS_arrayGet($marker, 'web', ''));
+    $webValue = MAPS_normalizeMarkerText(MAPS_arrayGet($marker, 'web', ''));
     $template->set_var(
         'web',
-        $webValue !== ''
-            ? '<p><strong>' . htmlspecialchars($LANG_MAPS_1['web_label'], ENT_QUOTES, 'UTF-8') . '</strong> '
-                . '<span class="maps-marker-user-url">'
-                . htmlspecialchars(MAPS_decodeStoredText($webValue), ENT_QUOTES, 'UTF-8') . '</span></p>'
-            : ''
+        '<p><strong>' . htmlspecialchars($LANG_MAPS_1['web_label'], ENT_QUOTES, 'UTF-8') . '</strong> '
+            . ($webValue === ''
+                ? MAPS_markerEmptyValue()
+                : '<span class="maps-marker-user-url">'
+                    . htmlspecialchars($webValue, ENT_QUOTES, 'UTF-8') . '</span>')
+            . '</p>'
     );
     $template->set_var('space', '');
     $template->set_var('ressources', MAPS_renderPublicCustomFields($marker, 'detail'));
@@ -2876,16 +2921,22 @@ function MAPS_getListField_markersList($fieldname, $fieldvalue, $a, $icon_arr)
 {
     global $_MAPS_CONF;
     if ($fieldname === 'name') {
-        $name = MAPS_normalizeMarkerText($a['name']);
+        $name = MAPS_markerDisplayName($a['name']);
+        if ($name === '') {
+            return MAPS_markerEmptyValue();
+        }
         return COM_createLink(htmlspecialchars($name, ENT_QUOTES, 'UTF-8'), $_MAPS_CONF['site_url'] . '/markers.php?mode=show&mkid=' . rawurlencode($a['mkid']) . '&mid=' . (int) $a['mid']);
     }
     if ($fieldname === 'city') {
-        return htmlspecialchars(MAPS_normalizeMarkerPlace($fieldvalue), ENT_QUOTES, 'UTF-8');
+        $value = MAPS_normalizeMarkerPlace($fieldvalue);
+        return $value === '' ? MAPS_markerEmptyValue() : htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
     }
     if ($fieldname === 'code') {
-        return htmlspecialchars(MAPS_normalizeMarkerText($fieldvalue), ENT_QUOTES, 'UTF-8');
+        $value = MAPS_normalizeMarkerText($fieldvalue);
+        return $value === '' ? MAPS_markerEmptyValue() : htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
     }
-    return htmlspecialchars(MAPS_normalizeMarkerText($fieldvalue), ENT_QUOTES, 'UTF-8');
+    $value = MAPS_normalizeMarkerText($fieldvalue);
+    return $value === '' ? MAPS_markerEmptyValue() : htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
 function MAPS_setGeoLocation()

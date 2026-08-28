@@ -86,3 +86,5 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - Marker data normalization: trim/collapse whitespace on single-line fields, smart-case city/state/country values, normalized alphabetical sorting for legacy rows, and removal of the duplicate marker-editor H1.
 
 - Legacy marker display normalization: geographic fields are harmonized at render time in public tables/details, and admin select controls receive accessible vertical sizing.
+
+- Consistent marker presentation: public marker names render in uppercase while stored input casing is preserved, and empty public table/detail fields are represented by a discreet em dash.

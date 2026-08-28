@@ -509,3 +509,11 @@
         min-height: 2.8rem;
     }
 }
+
+/* Maps 1.6.0 explicit empty marker values */
+.maps-marker-empty {
+    display: inline-block;
+    min-width: .75em;
+    opacity: .48;
+    font-weight: 400;
+}
