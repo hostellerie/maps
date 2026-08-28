@@ -493,3 +493,19 @@
 }
 .maps-secondary-action:hover,
 .maps-secondary-action:focus { background: rgba(127,127,127,.07); }
+
+/* Maps 1.6.0 admin form control sizing */
+.maps-admin-editor select,
+.maps-admin-editor-card select,
+.maps-admin-form select {
+    min-height: 2.65rem;
+    padding: .48rem .7rem;
+    line-height: 1.35;
+}
+@media (max-width: 640px) {
+    .maps-admin-editor select,
+    .maps-admin-editor-card select,
+    .maps-admin-form select {
+        min-height: 2.8rem;
+    }
+}

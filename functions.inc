@@ -2777,7 +2777,12 @@ function MAPS_ViewMarkerInfos($mkid)
     $template->set_var('description', $marker['description'] !== '' ? '<p>' . nl2br(htmlspecialchars(MAPS_decodeStoredText($marker['description']), ENT_QUOTES, 'UTF-8')) . '</p>' : '');
     foreach (array('street','code','city','state','country','tel','fax') as $field) {
         $value = MAPS_arrayGet($marker, $field, '');
-        $template->set_var($field, $value !== '' && (int) MAPS_arrayGet($_MAPS_CONF, $field, 1) ? '<p><strong>' . $LANG_MAPS_1[$field . '_label'] . '</strong> ' . htmlspecialchars(stripslashes($value), ENT_QUOTES, 'UTF-8') . '</p>' : '');
+        if (in_array($field, array('city', 'state', 'country'), true)) {
+            $value = MAPS_normalizeMarkerPlace($value);
+        } else {
+            $value = MAPS_normalizeMarkerText($value);
+        }
+        $template->set_var($field, $value !== '' && (int) MAPS_arrayGet($_MAPS_CONF, $field, 1) ? '<p><strong>' . $LANG_MAPS_1[$field . '_label'] . '</strong> ' . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '</p>' : '');
     }
     $webValue = trim((string) MAPS_arrayGet($marker, 'web', ''));
     $template->set_var(
@@ -2871,9 +2876,16 @@ function MAPS_getListField_markersList($fieldname, $fieldvalue, $a, $icon_arr)
 {
     global $_MAPS_CONF;
     if ($fieldname === 'name') {
-        return COM_createLink(htmlspecialchars(stripslashes($a['name']), ENT_QUOTES, 'UTF-8'), $_MAPS_CONF['site_url'] . '/markers.php?mode=show&mkid=' . rawurlencode($a['mkid']) . '&mid=' . (int) $a['mid']);
+        $name = MAPS_normalizeMarkerText($a['name']);
+        return COM_createLink(htmlspecialchars($name, ENT_QUOTES, 'UTF-8'), $_MAPS_CONF['site_url'] . '/markers.php?mode=show&mkid=' . rawurlencode($a['mkid']) . '&mid=' . (int) $a['mid']);
     }
-    return htmlspecialchars(stripslashes((string) $fieldvalue), ENT_QUOTES, 'UTF-8');
+    if ($fieldname === 'city') {
+        return htmlspecialchars(MAPS_normalizeMarkerPlace($fieldvalue), ENT_QUOTES, 'UTF-8');
+    }
+    if ($fieldname === 'code') {
+        return htmlspecialchars(MAPS_normalizeMarkerText($fieldvalue), ENT_QUOTES, 'UTF-8');
+    }
+    return htmlspecialchars(MAPS_normalizeMarkerText($fieldvalue), ENT_QUOTES, 'UTF-8');
 }
 
 function MAPS_setGeoLocation()
