@@ -461,7 +461,15 @@ function MAPS_renderPublicCustomFields($marker, $layout = 'detail')
     for ($i = 1; $i <= 10; $i++) {
         $label = trim((string) MAPS_arrayGet($_MAPS_CONF, 'item_' . $i, ''));
         $value = trim((string) MAPS_arrayGet($marker, 'item_' . $i, ''));
-        if ($label === '') {
+        $placeholderLabels = array(
+            'Custom field ' . $i,
+            'Ressource #' . $i,
+            'Resource #' . $i
+        );
+        // Empty/default labels mean that this resource field is not configured.
+        // Keep the admin warning in the editor, but never expose placeholders
+        // or empty resource rows on public marker pages.
+        if ($label === '' || in_array($label, $placeholderLabels, true)) {
             continue;
         }
         if ($value === '' && $layout === 'compact') {
