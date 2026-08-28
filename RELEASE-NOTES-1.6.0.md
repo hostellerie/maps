@@ -90,3 +90,5 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - Consistent marker presentation: public marker names render in uppercase while stored input casing is preserved, and empty public table/detail fields are represented by a discreet em dash.
 
 - Public marker resources are rendered only when a real resource label is configured; empty/default placeholder labels remain admin-only guidance and are hidden from marker pages.
+
+- New markers created in administration now inherit the configured default_permissions without overwriting permissions on existing markers or resubmitted forms.

@@ -119,6 +119,12 @@ MAPS_filterVars($vars, $_REQUEST);
 function getMarkerForm($marker = array()) {
 
     global $_CONF, $_TABLES, $_MAPS_CONF, $LANG_MAPS_1, $LANG_configselects, $LANG_ACCESS, $_USER, $_GROUPS, $_SCRIPTS;
+
+    $suppliedMarker = is_array($marker) ? $marker : array();
+    $hasSuppliedPermissions = array_key_exists('perm_owner', $suppliedMarker)
+        || array_key_exists('perm_group', $suppliedMarker)
+        || array_key_exists('perm_members', $suppliedMarker)
+        || array_key_exists('perm_anon', $suppliedMarker);
     
     $markerDefaults = array(
         'mkid' => '', 'mid' => '', 'owner_id' => 0, 'created' => time(), 'modified' => time(),
@@ -136,7 +142,10 @@ function getMarkerForm($marker = array()) {
         'item_1' => '', 'item_2' => '', 'item_3' => '', 'item_4' => '', 'item_5' => '',
         'item_6' => '', 'item_7' => '', 'item_8' => '', 'item_9' => '', 'item_10' => ''
     );
-    $marker = array_merge($markerDefaults, is_array($marker) ? $marker : array());
+    $marker = array_merge($markerDefaults, $suppliedMarker);
+    if ($marker['mkid'] === '' && !$hasSuppliedPermissions) {
+        SEC_setDefaultPermissions($marker, MAPS_arrayGet($_MAPS_CONF, 'default_permissions', array(3, 3, 2, 2)));
+    }
     foreach (array('name', 'description', 'address', 'remark', 'street', 'code', 'city', 'state', 'country', 'tel', 'fax', 'web', 'item_1', 'item_2', 'item_3', 'item_4', 'item_5', 'item_6', 'item_7', 'item_8', 'item_9', 'item_10') as $plainField) {
         $marker[$plainField] = MAPS_decodeStoredText($marker[$plainField]);
     }
