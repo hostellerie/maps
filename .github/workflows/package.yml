@@ -20,12 +20,6 @@ jobs:
           git clone --depth 1 --branch modernize/maps-1.5 \
             https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
-      - name: Apply cluster and pin polish
-        shell: bash
-        run: |
-          cd source
-          python3 tools/polish-clusters-pins-160.py
-
       - name: Lint release files
         shell: bash
         run: |
@@ -83,7 +77,7 @@ jobs:
           unzip -t maps_1.6.0_2.1.1.zip >/dev/null
           test "$(zipinfo -1 maps_1.6.0_2.1.1.zip | head -n 1)" = 'maps/'
 
-      - name: Commit source refinements and final archive
+      - name: Commit final archive
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -94,10 +88,9 @@ jobs:
           cp build/maps_1.6.0_2.1.1.zip dist/maps_1.6.0_2.1.1.zip
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add functions.inc RELEASE-NOTES-1.6.0.md
           git add -f dist/maps_1.6.0_2.1.1.zip
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Polish Maps 1.6.0 clusters and pins [skip ci]'
+          git commit -m 'Build Maps 1.6.0 final archive [skip ci]'
           git push origin HEAD:modernize/maps-1.5
