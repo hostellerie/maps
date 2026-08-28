@@ -175,6 +175,52 @@ function MAPS_decodeStoredText($value)
 }
 
 /**
+ * Normalize a single-line marker field without changing intentional casing.
+ *
+ * Leading/trailing whitespace is removed and runs of spaces/tabs/newlines are
+ * collapsed to a single space. This prevents invisible prefixes from breaking
+ * alphabetical sorting while preserving names and acronyms entered by users.
+ *
+ * @param mixed $value
+ * @return string
+ */
+function MAPS_normalizeMarkerText($value)
+{
+    $value = MAPS_decodeStoredText($value);
+    $value = preg_replace('/\s+/u', ' ', trim($value));
+    return ($value === null) ? '' : $value;
+}
+
+/**
+ * Normalize a geographic marker field (city/state/country).
+ *
+ * Mixed-case values are preserved. Values entered entirely in lower-case or
+ * upper-case are converted to title case when mbstring is available. This
+ * turns e.g. LANESTER / lanester into Lanester without altering mixed-case
+ * names such as Saint-Jean-d'Angély that were already deliberately entered.
+ *
+ * @param mixed $value
+ * @return string
+ */
+function MAPS_normalizeMarkerPlace($value)
+{
+    $value = MAPS_normalizeMarkerText($value);
+    if ($value === '' || !function_exists('mb_strtoupper') || !function_exists('mb_strtolower')
+        || !function_exists('mb_convert_case')
+    ) {
+        return $value;
+    }
+
+    $upper = mb_strtoupper($value, 'UTF-8');
+    $lower = mb_strtolower($value, 'UTF-8');
+    if ($value === $upper || $value === $lower) {
+        return mb_convert_case($lower, MB_CASE_TITLE, 'UTF-8');
+    }
+
+    return $value;
+}
+
+/**
  * Render a compact accessible status badge for administration lists.
  *
  * @param mixed  $state

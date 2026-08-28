@@ -73,7 +73,7 @@ function MAPS_listMarkersAdmin()
 
     $header_arr = array(      // display 'text' and use table field 'field'
         array('text' => $LANG_MAPS_1['id'], 'field' => 'mkid', 'sort' => true),
-        array('text' => $LANG_MAPS_1['name'], 'field' => 'name', 'sort' => true),
+        array('text' => $LANG_MAPS_1['name'], 'field' => 'sort_name', 'sort' => true),
 		array('text' => $LANG_MAPS_1['map_label'], 'field' => 'mapname', 'sort' => true),
         array('text' => $LANG_MAPS_1['active_field'], 'field' => 'active', 'sort' => true),
         array('text' => $LANG_MAPS_1['hidden_field'], 'field' => 'hidden', 'sort' => true),
@@ -88,7 +88,7 @@ function MAPS_listMarkersAdmin()
     );
 	
 	$sql = "SELECT
-	            a.*, b.name as mapname
+	            a.*, LOWER(TRIM(a.name)) AS sort_name, b.name as mapname
             FROM {$_TABLES['maps_markers']} AS a
 			LEFT JOIN
 			     {$_TABLES['maps_maps']} AS b
@@ -126,8 +126,8 @@ function plugin_getListField_markers($fieldname, $fieldvalue, $A, $icon_arr)
             $retval = COM_createLink($icon_arr['edit'],
                 "{$_CONF['site_admin_url']}/plugins/maps/marker_edit.php?mode=edit&mkid={$A['mkid']}");
             break;
-        case "name":
-            $map_title = MAPS_decodeStoredText($A['name']);
+        case "sort_name":
+            $map_title = MAPS_normalizeMarkerText($A['name']);
             $url = $_MAPS_CONF['site_url'] .
                                  '/markers.php?mode=show&mkid=' . $A['mkid'] . '&mid=' . $A['mid'];
             $retval = COM_createLink($map_title, $url, array('title'=>$LANG_MAPS_1['title_display']));

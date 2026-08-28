@@ -166,14 +166,14 @@ function MAPS_listUserMarkers()
 	}
 
     $header_arr = array(
-        array('text' => $LANG_MAPS_1['name'], 'field' => 'name', 'sort' => true),
+        array('text' => $LANG_MAPS_1['name'], 'field' => 'sort_name', 'sort' => true),
         array('text' => $LANG_MAPS_1['address'], 'field' => 'address', 'sort' => false),
         array('text' => $LANG_MAPS_1['id'], 'field' => 'mkid', 'sort' => true)
     );
 	
 	if ($_MAPS_CONF['marker_edition'] == 1 || SEC_hasRights('maps.admin')) $header_arr[] = array('text' => $LANG_ADMIN['edit'], 'field' => 'edit', 'sort' => false);
 
-    $defsort_arr = array('field' => 'mk.name', 'direction' => 'asc');
+    $defsort_arr = array('field' => 'sort_name', 'direction' => 'asc');
 
     $text_arr = array(
         'has_extras' => true,
@@ -181,7 +181,7 @@ function MAPS_listUserMarkers()
     );
 	
 	$sql = "SELECT
-	            mk.*, m.free_marker
+	            mk.*, LOWER(TRIM(mk.name)) AS sort_name, m.free_marker
             FROM {$_TABLES['maps_markers']} AS mk
 			LEFT JOIN {$_TABLES['maps_maps']} AS m
 				  ON mk.mid = m.mid";
@@ -220,8 +220,8 @@ function plugin_getListField_userMarkers($fieldname, $fieldvalue, $A, $icon_arr)
                 "{$_MAPS_CONF['site_url']}/markers.php?mode=edit&mkid={$A['mkid']}") . '</div>';
             break;
 			
-        case "name":
-            $map_title = stripslashes ($A['name']);
+        case "sort_name":
+            $map_title = MAPS_normalizeMarkerText($A['name']);
             $url = $_MAPS_CONF['site_url'] .
                                  '/index.php?mode=marker&mkid=' . $A['mkid'];
             $retval = COM_createLink($map_title, $url, array('title'=>$LANG_MAPS_1['title_display']));
@@ -734,8 +734,15 @@ switch ($_REQUEST['mode']) {
 	case 'save':
 
         $safeMkid = isset($_REQUEST['mkid']) ? preg_replace('/[^0-9]/', '', (string) $_REQUEST['mkid']) : '';
+        foreach (array('name', 'address', 'street', 'code', 'tel', 'fax', 'web') as $markerField) {
+            $_REQUEST[$markerField] = MAPS_normalizeMarkerText(isset($_REQUEST[$markerField]) ? $_REQUEST[$markerField] : '');
+        }
+        foreach (array('city', 'state', 'country') as $markerPlaceField) {
+            $_REQUEST[$markerPlaceField] = MAPS_normalizeMarkerPlace(isset($_REQUEST[$markerPlaceField]) ? $_REQUEST[$markerPlaceField] : '');
+        }
+        $_REQUEST['description'] = trim(isset($_REQUEST['description']) ? (string) $_REQUEST['description'] : '');
 
-		if (empty($_REQUEST['name']) || empty($_REQUEST['address'])) {
+		if ($_REQUEST['name'] === '' || $_REQUEST['address'] === '') {
             $display .= COM_startBlock($LANG_MAPS_1['error'],'','blockheader-message.thtml');
             $display .= $LANG_MAPS_1['missing_field'];
             $display .= COM_endBlock('blockfooter-message.thtml');

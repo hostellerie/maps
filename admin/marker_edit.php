@@ -143,7 +143,7 @@ function getMarkerForm($marker = array()) {
 
 
     
-	$display = '<h1 class="maps-admin-title">' . htmlspecialchars($LANG_MAPS_1['marker_edit'], ENT_QUOTES, 'UTF-8') . ($marker['name'] !== '' ? ': ' . htmlspecialchars($marker['name'], ENT_QUOTES, 'UTF-8') : '') . '</h1>';
+	$display = '';
 	
 	$map_options = MAPS_recurseMaps($marker['mid']);
 
@@ -741,7 +741,21 @@ switch ($requestMode) {
         );
         $_REQUEST = array_merge($saveDefaults, $_REQUEST);
 
-        if (empty($_REQUEST['name']) || empty($_REQUEST['address'])) {
+        $markerSingleLineFields = array(
+            'name', 'address', 'street', 'code', 'tel', 'fax', 'web', 'label',
+            'item_1', 'item_2', 'item_3', 'item_4', 'item_5',
+            'item_6', 'item_7', 'item_8', 'item_9', 'item_10'
+        );
+        foreach ($markerSingleLineFields as $markerField) {
+            $_REQUEST[$markerField] = MAPS_normalizeMarkerText($_REQUEST[$markerField]);
+        }
+        foreach (array('city', 'state', 'country') as $markerPlaceField) {
+            $_REQUEST[$markerPlaceField] = MAPS_normalizeMarkerPlace($_REQUEST[$markerPlaceField]);
+        }
+        $_REQUEST['description'] = trim((string) $_REQUEST['description']);
+        $_REQUEST['remark'] = trim((string) $_REQUEST['remark']);
+
+        if ($_REQUEST['name'] === '' || $_REQUEST['address'] === '') {
             $display .= COM_startBlock($LANG_MAPS_1['error'],'','blockheader-message.thtml');
             $display .= $LANG_MAPS_1['missing_field'];
             $display .= COM_endBlock('blockfooter-message.thtml');

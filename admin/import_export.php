@@ -270,6 +270,16 @@ function MAPS_readImportCsv($filename, $separator, $fields, &$error)
             $marker[$field] = isset($values[$index]) ? trim((string) $values[$index]) : '';
         }
 
+        foreach (array('name', 'address', 'street', 'code', 'tel', 'fax', 'web',
+                       'item_1', 'item_2', 'item_3', 'item_4', 'item_5',
+                       'item_6', 'item_7', 'item_8', 'item_9', 'item_10') as $markerField) {
+            $marker[$markerField] = MAPS_normalizeMarkerText($marker[$markerField]);
+        }
+        foreach (array('city', 'state', 'country') as $markerPlaceField) {
+            $marker[$markerPlaceField] = MAPS_normalizeMarkerPlace($marker[$markerPlaceField]);
+        }
+        $marker['description'] = trim((string) $marker['description']);
+
         if ($marker['name'] === '') {
             $error = 'Marker name is missing on line ' . $line . '.';
             break;

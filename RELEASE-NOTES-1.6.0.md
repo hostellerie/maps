@@ -82,3 +82,5 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 
 
 - Final administration consistency pass: single H1 per editor, consistent Create/Edit labels, unified list action bars, and no duplicate Import/Export block title.
+
+- Marker data normalization: trim/collapse whitespace on single-line fields, smart-case city/state/country values, normalized alphabetical sorting for legacy rows, and removal of the duplicate marker-editor H1.
