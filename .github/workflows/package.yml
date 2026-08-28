@@ -20,6 +20,12 @@ jobs:
           git clone --depth 1 --branch modernize/maps-1.5 \
             https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
+      - name: Apply overlay call fix
+        shell: bash
+        run: |
+          cd source
+          python3 tools/fix-map-overlay-call-160.py
+
       - name: Lint release files
         shell: bash
         run: |
@@ -40,6 +46,8 @@ jobs:
           grep -q 'maps-popup-card' source/templates/presentation_tab.thtml
           grep -q 'Maps 1.6.0 marker info windows' source/public_html/maps.css
           grep -q 'Marker info-window polish' source/RELEASE-NOTES-1.6.0.md
+          grep -q 'MAPS_displayOverlaysToAdd($map' source/admin/map_edit.php
+          ! grep -q 'MAPS_displayAddOverlay($map' source/admin/map_edit.php
           ! grep -q '<h2>{name}{edit}</h2>' source/templates/presentation_tab.thtml
           ! grep -q '<h1' source/templates/marker.thtml
 
@@ -56,7 +64,7 @@ jobs:
           unzip -t maps_1.6.0_2.1.1.zip >/dev/null
           test "$(zipinfo -1 maps_1.6.0_2.1.1.zip | head -n 1)" = 'maps/'
 
-      - name: Commit final archive
+      - name: Commit source fix and final archive
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -67,9 +75,10 @@ jobs:
           cp build/maps_1.6.0_2.1.1.zip dist/maps_1.6.0_2.1.1.zip
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add admin/map_edit.php
           git add -f dist/maps_1.6.0_2.1.1.zip
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Build Maps 1.6.0 final archive [skip ci]'
+          git commit -m 'Fix Maps 1.6.0 overlay editor call [skip ci]'
           git push origin HEAD:modernize/maps-1.5
