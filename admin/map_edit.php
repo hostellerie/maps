@@ -44,8 +44,6 @@ function getMapForm($map = array())
 
     $map = MAPS_mapEditorDefaults($map);
 
-    // Some administration fragments rendered by Maps still use jQuery.
-    // Geeklog 2.2.x no longer guarantees that it is loaded on every admin page.
     if (isset($_SCRIPTS) && is_object($_SCRIPTS)
         && method_exists($_SCRIPTS, 'setJavaScriptLibrary')
     ) {
@@ -151,7 +149,6 @@ function getMapForm($map = array())
     $template->set_var('black', $LANG_MAPS_1['black']);
     $template->set_var('white', $LANG_MAPS_1['white']);
 
-    /* Plain textareas deliberately replace the removed FCKeditor dependency. */
     $template->set_var('header_footer', $LANG_MAPS_1['header_footer']);
     $template->set_var('map_header_label', $LANG_MAPS_1['map_header_label']);
     $template->set_var('map_header', htmlspecialchars(stripslashes($map['header']), ENT_QUOTES, 'UTF-8'));
@@ -188,15 +185,13 @@ function getMapForm($map = array())
     $template->set_var('ok_button', $LANG_MAPS_1['ok_button']);
     $template->set_var('mid', $map['mid'] !== '' ? '<input type="hidden" name="mid" value="' . (int) $map['mid'] . '">' : '');
     $template->set_var('overlays', $map['mid'] !== '' ? MAPS_displayOverlays($map['mid']) : '');
-    $template->set_var('add_overlay', $map['mid'] !== '' ? MAPS_displayOverlaysToAdd($map['mid']) : '<p>' . $LANG_MAPS_1['add_overlay'] . '</p>');
+    $template->set_var('add_overlay', $map['mid'] !== '' ? MAPS_displayAddOverlay($map['mid']) : '');
 
-    $editorScript = "<script type=\"text/javascript\">\n"
+    $editorScript = '<script type="text/javascript">'
         . '(function(){'
-        . 'function ready(fn){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",fn);}else{fn();}}'
+        . 'function ready(fn){if(document.readyState!=="loading"){fn();}else{document.addEventListener("DOMContentLoaded",fn);}}'
         . 'ready(function(){'
-        . 'var tabs=document.querySelector(".maps-map-editor-tabs");'
-        . 'if(tabs){var links=tabs.querySelectorAll(".tabNavigation a"),allPanels=tabs.querySelectorAll(".maps-map-editor-panel"),panels=[];for(var p=0;p<allPanels.length;p++){if(allPanels[p].parentNode===tabs){panels.push(allPanels[p]);}}'
-        . 'function showTab(hash){var target=null;try{target=tabs.querySelector(hash);}catch(ignore){}if(!target&&panels.length){target=panels[0];hash="#"+target.id;}for(var i=0;i<panels.length;i++){panels[i].style.display=(panels[i]===target)?"":"none";}for(var j=0;j<links.length;j++){var active=links[j].getAttribute("href")===hash;links[j].classList.toggle("selected",active);links[j].setAttribute("aria-selected",active?"true":"false");}}'
+        . 'var root=document.querySelector(".maps-map-editor-tabs");if(root){var links=root.querySelectorAll(".tabNavigation a");var panels=root.querySelectorAll(".maps-map-editor-panel");function showTab(hash){for(var p=0;p<panels.length;p++){panels[p].style.display=("#"+panels[p].id===hash)?"block":"none";}for(var l=0;l<links.length;l++){if(links[l].getAttribute("href")===hash){links[l].className="maps-tab-active";}else{links[l].className="";}}}'
         . 'for(var i=0;i<links.length;i++){links[i].addEventListener("click",function(e){e.preventDefault();showTab(this.getAttribute("href"));});}showTab("#map_infos");}'
         . 'var deleteButtons=document.querySelectorAll(".maps-delete-map");for(var d=0;d<deleteButtons.length;d++){deleteButtons[d].addEventListener("click",function(e){if(!window.confirm(' . $deleteConfirmJs . ')){e.preventDefault();}});}'
         . 'var canvas=document.getElementById("maps-map-center-editor");if(!canvas){return;}'
@@ -220,8 +215,8 @@ function getMapForm($map = array())
         . "})();\n"
         . '</script>';
 
-    return COM_startBlock($LANG_MAPS_1['map_edit'] . ' ' . htmlspecialchars(stripslashes($map['name']), ENT_QUOTES, 'UTF-8'))
-        . $template->parse('output', 'map') . $editorScript . COM_endBlock();
+    return '<div class="maps-admin-editor-card">'
+        . $template->parse('output', 'map') . $editorScript . '</div>';
 }
 
 $requestMethod = isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
@@ -230,6 +225,12 @@ $mode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode']) : 'n
 $mid = isset($requestData['mid']) ? (int) $requestData['mid'] : 0;
 $content = MAPS_admin_menu();
 $editorTitle = ($mode === 'edit' && $mid > 0) ? $LANG_MAPS_1['map_edit'] : ucfirst($LANG_MAPS_1['create_map']);
+if ($mode === 'edit' && $mid > 0) {
+    $mapTitle = trim((string) DB_getItem($_TABLES['maps_maps'], 'name', 'mid=' . $mid));
+    if ($mapTitle !== '') {
+        $editorTitle .= ': ' . MAPS_decodeStoredText($mapTitle);
+    }
+}
 $content .= '<h1 class="maps-admin-title">' . htmlspecialchars($editorTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
 
 if (in_array($mode, array('save', 'delete'), true)) {
