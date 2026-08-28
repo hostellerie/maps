@@ -878,7 +878,7 @@ function MAPS_parseGeoAutotagOptions($parm1, $parm2)
     $result = array('address' => '', 'zoom' => '', 'width' => '', 'height' => '');
     $addressParts = array();
 
-    foreach (preg_split('/\\s+/', $raw) as $part) {
+    foreach (preg_split('/[[:space:]]+/', $raw) as $part) {
         if (preg_match('/^(zoom|width|height):(.+)$/i', $part, $match)) {
             $key = strtolower($match[1]);
             $result[$key] = trim($match[2]);
