@@ -20,6 +20,12 @@ jobs:
           git clone --depth 1 --branch modernize/maps-1.5 \
             https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
+      - name: Apply public map list polish
+        shell: bash
+        run: |
+          cd source
+          python3 tools/modernize-public-map-list-160.py
+
       - name: Lint release files
         shell: bash
         run: |
@@ -40,7 +46,12 @@ jobs:
           grep -q 'maps-markers-heading' source/public_html/index.php
           grep -q 'map_markers_heading' source/language/english.php
           grep -q 'map_markers_heading' source/language/french_france_utf-8.php
-          grep -Fq '<div class="maps_list_item"><strong><a href="' source/public_html/index.php
+          grep -q 'maps-public-list' source/public_html/index.php
+          grep -q 'maps-list-card' source/public_html/maps.css
+          grep -q 'Explore our maps' source/language/english.php
+          grep -q 'Découvrez nos cartes' source/language/french_france_utf-8.php
+          grep -q 'marker_singular' source/language/english.php
+          grep -q 'marker_singular' source/language/french_france_utf-8.php
           grep -q 'maps-admin-title' source/admin/index.php
           grep -q 'maps-admin-menu' source/templates/admin_menu.thtml
           grep -q 'maps-admin-title' source/templates/geocoder.thtml
@@ -68,7 +79,7 @@ jobs:
           unzip -t maps_1.6.0_2.1.1.zip >/dev/null
           test "$(zipinfo -1 maps_1.6.0_2.1.1.zip | head -n 1)" = 'maps/'
 
-      - name: Commit final archive
+      - name: Commit source refinements and final archive
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -79,9 +90,10 @@ jobs:
           cp build/maps_1.6.0_2.1.1.zip dist/maps_1.6.0_2.1.1.zip
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public_html/index.php public_html/maps.css language/english.php language/french_france_utf-8.php RELEASE-NOTES-1.6.0.md
           git add -f dist/maps_1.6.0_2.1.1.zip
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Build Maps 1.6.0 final archive [skip ci]'
+          git commit -m 'Polish Maps 1.6.0 public map directory [skip ci]'
           git push origin HEAD:modernize/maps-1.5
