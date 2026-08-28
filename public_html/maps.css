@@ -517,3 +517,52 @@
     opacity: .48;
     font-weight: 400;
 }
+
+/* Maps 1.6.0 guided CSV import assistant */
+.maps-import-assistant { margin: 0 0 1.25rem; }
+.maps-import-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; margin:0 0 1rem; }
+.maps-import-step { display:flex; gap:.65rem; align-items:flex-start; padding:.8rem; border:1px solid rgba(127,127,127,.22); border-radius:9px; opacity:.7; }
+.maps-import-step.is-active { opacity:1; background:rgba(127,127,127,.035); }
+.maps-import-step > span { display:inline-flex; align-items:center; justify-content:center; flex:0 0 1.8rem; height:1.8rem; border-radius:50%; background:rgba(127,127,127,.13); font-weight:700; }
+.maps-import-step p { margin:.15rem 0 0; font-size:.92em; }
+.maps-import-panel { margin:0; padding:1rem; border:1px solid rgba(127,127,127,.24); border-radius:9px; }
+.maps-import-panel legend { padding:0 .35rem; font-weight:700; }
+.maps-import-requirements { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; margin:.8rem 0 1rem; }
+.maps-import-requirements > div { padding:.75rem; border-left:3px solid rgba(127,127,127,.28); background:rgba(127,127,127,.035); }
+.maps-import-requirements p { margin:.2rem 0 0; }
+.maps-import-core-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.8rem; margin:0 0 1rem; }
+.maps-import-core-fields label { display:flex; flex-direction:column; gap:.3rem; }
+.maps-import-core-fields input[type=file], .maps-import-core-fields select { width:100%; box-sizing:border-box; }
+.maps-import-field-header { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; margin:.9rem 0 .65rem; }
+.maps-import-field-header p { margin:.2rem 0 0; }
+.maps-import-fields-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.4rem .75rem; padding:.75rem; border:1px solid rgba(127,127,127,.18); border-radius:8px; }
+.maps-import-field-choice { display:flex; align-items:center; gap:.35rem; min-width:0; }
+.maps-import-field-choice code { overflow-wrap:anywhere; }
+.maps-import-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.65rem; margin:.8rem 0 1rem; }
+.maps-import-summary > div { display:flex; flex-direction:column; padding:.7rem; border:1px solid rgba(127,127,127,.18); border-radius:8px; }
+.maps-import-summary strong { font-size:1.35rem; }
+.maps-import-summary span { font-size:.9em; opacity:.75; }
+.maps-import-table-wrap { overflow-x:auto; margin:0 0 1rem; }
+.maps-import-preview-table { width:100%; border-collapse:collapse; }
+.maps-import-preview-table th, .maps-import-preview-table td { padding:.55rem .6rem; border-bottom:1px solid rgba(127,127,127,.18); text-align:left; vertical-align:top; white-space:nowrap; }
+.maps-import-preview-table td:nth-child(2), .maps-import-preview-table td:nth-child(3) { white-space:normal; min-width:12rem; }
+.maps-import-status { display:inline-block; padding:.2rem .45rem; border-radius:999px; font-size:.86em; font-weight:600; }
+.maps-import-status.is-ready { background:rgba(46,125,50,.10); }
+.maps-import-status.is-warning { background:rgba(184,134,11,.12); }
+.maps-import-confirm-summary { display:grid; grid-template-columns:max-content 1fr; gap:.35rem .75rem; padding:.8rem; margin:.75rem 0; background:rgba(127,127,127,.035); border-radius:8px; }
+.maps-import-confirm-summary dt { font-weight:700; }
+.maps-import-confirm-summary dd { margin:0; }
+.maps-import-confirm-actions { display:flex; flex-wrap:wrap; gap:.55rem; align-items:center; }
+.maps-import-primary { font-weight:700; }
+.maps-import-export-secondary { margin:1rem 0; }
+.maps-import-export-secondary > summary { cursor:pointer; font-weight:700; padding:.65rem 0; }
+@media (max-width:900px) {
+    .maps-import-steps, .maps-import-core-fields { grid-template-columns:1fr; }
+    .maps-import-fields-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .maps-import-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .maps-import-field-header { flex-direction:column; }
+}
+@media (max-width:560px) {
+    .maps-import-requirements, .maps-import-fields-grid, .maps-import-summary { grid-template-columns:1fr; }
+}
+

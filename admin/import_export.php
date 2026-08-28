@@ -56,6 +56,35 @@ function MAPS_getFieldsImportExport()
  * @param mixed $fields
  * @return array
  */
+/**
+ * Preferred visual order for CSV field mapping.
+ *
+ * @return array
+ */
+function MAPS_getImportFieldOrder()
+{
+    return array(
+        'name', 'address', 'lat', 'lng', 'description', 'street', 'code',
+        'city', 'state', 'country', 'tel', 'web', 'fax', 'mk_default',
+        'mk_pcolor', 'mk_scolor', 'mk_label', 'mk_label_color', 'item_1',
+        'item_2', 'item_3', 'item_4', 'item_5', 'item_6', 'item_7', 'item_8',
+        'item_9', 'item_10'
+    );
+}
+
+function MAPS_getMinimumImportFields()
+{
+    return array('name', 'address');
+}
+
+function MAPS_getRecommendedImportFields()
+{
+    return array(
+        'name', 'address', 'lat', 'lng', 'description', 'street', 'code',
+        'city', 'state', 'country', 'tel', 'web'
+    );
+}
+
 function MAPS_filterImportExportFields($fields)
 {
     $valid = MAPS_getFieldsImportExport();
@@ -147,11 +176,16 @@ function getImportExportForm()
         . '" value="' . MAPS_importHtml($token) . '">'
     );
 
-    $template->set_var('import', $LANG_MAPS_1['import']);
-    $template->set_var('import_message', $LANG_MAPS_1['import_message']);
-    $template->set_var('export', $LANG_MAPS_1['export']);
-    $template->set_var('export_message', $LANG_MAPS_1['export_message']);
-    $template->set_var('select_file', $LANG_MAPS_1['select_file']);
+    foreach (array(
+        'import', 'import_message', 'export', 'export_message', 'select_file',
+        'choose_fields_import', 'choose_fields_export', 'checkall',
+        'import_step_1', 'import_step_1_text', 'import_step_2', 'import_step_2_text',
+        'import_step_3', 'import_step_3_text', 'import_minimum', 'import_recommended',
+        'import_minimum_help', 'import_recommended_help', 'import_order_help',
+        'import_select_minimum', 'import_select_recommended', 'import_clear_fields'
+    ) as $langKey) {
+        $template->set_var($langKey, isset($LANG_MAPS_1[$langKey]) ? $LANG_MAPS_1[$langKey] : $langKey);
+    }
     $template->set_var('separator_in', $LANG_MAPS_1['separator']);
     $template->set_var('separator_out', $LANG_MAPS_1['separator']);
 
@@ -164,16 +198,30 @@ function getImportExportForm()
     $selectedMid = isset($_REQUEST['mid']) ? (int) $_REQUEST['mid'] : 0;
     $template->set_var('mid_label', $LANG_MAPS_1['name_label']);
     $template->set_var('map_options', MAPS_recurseMaps($selectedMid));
-    $template->set_var('choose_fields_import', $LANG_MAPS_1['choose_fields_import']);
-    $template->set_var('choose_fields_export', $LANG_MAPS_1['choose_fields_export']);
-    $template->set_var('checkall', $LANG_MAPS_1['checkall']);
 
-    $fieldsSelector = '';
-    foreach (MAPS_getFieldsImportExport() as $field) {
-        $fieldsSelector .= '<label><input type="checkbox" name="import_export[]" value="'
-            . MAPS_importHtml($field) . '"> ' . MAPS_importHtml($field) . '</label><br>' . LB;
+    $minimum = MAPS_getMinimumImportFields();
+    $recommended = MAPS_getRecommendedImportFields();
+    $importFieldsSelector = '';
+    foreach (MAPS_getImportFieldOrder() as $field) {
+        $classes = array('maps-import-field');
+        if (in_array($field, $minimum, true)) {
+            $classes[] = 'maps-import-minimum';
+        }
+        if (in_array($field, $recommended, true)) {
+            $classes[] = 'maps-import-recommended';
+        }
+        $importFieldsSelector .= '<label class="maps-import-field-choice"><input type="checkbox" class="'
+            . implode(' ', $classes) . '" name="import_export[]" value="'
+            . MAPS_importHtml($field) . '"> <code>' . MAPS_importHtml($field) . '</code></label>' . LB;
     }
-    $template->set_var('fields_selector', $fieldsSelector);
+    $template->set_var('import_fields_selector', $importFieldsSelector);
+
+    $exportFieldsSelector = '';
+    foreach (MAPS_getImportFieldOrder() as $field) {
+        $exportFieldsSelector .= '<label class="maps-import-field-choice"><input type="checkbox" name="import_export[]" value="'
+            . MAPS_importHtml($field) . '"> <code>' . MAPS_importHtml($field) . '</code></label>' . LB;
+    }
+    $template->set_var('export_fields_selector', $exportFieldsSelector);
     $template->set_var('ok_button', $LANG_MAPS_1['ok_button']);
 
     return $template->parse('output', 'import_export');
@@ -266,6 +314,8 @@ function MAPS_readImportCsv($filename, $separator, $fields, &$error)
         }
 
         $marker = array_fill_keys(MAPS_getFieldsImportExport(), '');
+        $marker['_source_line'] = $line;
+        $marker['_geocoded'] = 0;
         foreach ($fields as $index => $field) {
             $marker[$field] = isset($values[$index]) ? trim((string) $values[$index]) : '';
         }
@@ -296,6 +346,7 @@ function MAPS_readImportCsv($filename, $separator, $fields, &$error)
                 $error = 'Unable to geocode marker on line ' . $line . '.';
                 break;
             }
+            $marker['_geocoded'] = 1;
             $marker['lat'] = $lat;
             $marker['lng'] = $lng;
         }
@@ -338,23 +389,79 @@ function MAPS_readImportCsv($filename, $separator, $fields, &$error)
  */
 function MAPS_importPreview($rows, $mid, $separator, $fields, $filename)
 {
-    global $_CONF, $_TABLES, $LANG_MAPS_1;
+    global $_CONF, $_TABLES, $_USER, $LANG_MAPS_1;
 
     $mapName = DB_getItem($_TABLES['maps_maps'], 'name', 'mid=' . (int) $mid);
-    $html = '<p>' . MAPS_importHtml($LANG_MAPS_1['markers_to_add']) . ' '
-        . MAPS_importHtml($mapName) . '</p><ul>';
+    $total = count($rows);
+    $geocoded = 0;
+    $partial = 0;
+    foreach ($rows as $marker) {
+        if (!empty($marker['_geocoded'])) {
+            $geocoded++;
+        }
+        if (trim((string) $marker['code']) === '' || trim((string) $marker['city']) === '') {
+            $partial++;
+        }
+    }
+    $providedCoordinates = $total - $geocoded;
+    $permissions = MAPS_importPermissionValues();
+    $ownerName = COM_getDisplayName((int) $_USER['uid']);
+    $groupName = MAPS_importGroupName();
+
+    $html = '<section class="maps-import-assistant maps-import-preview">'
+        . '<div class="maps-import-step is-active"><span>2</span><div><strong>'
+        . MAPS_importHtml($LANG_MAPS_1['import_preview_title']) . '</strong><p>'
+        . MAPS_importHtml($LANG_MAPS_1['import_preview_text']) . '</p></div></div>';
+    $html .= '<div class="maps-import-summary">'
+        . '<div><strong>' . $total . '</strong><span>' . MAPS_importHtml($LANG_MAPS_1['import_summary_rows']) . '</span></div>'
+        . '<div><strong>' . $providedCoordinates . '</strong><span>' . MAPS_importHtml($LANG_MAPS_1['import_summary_coordinates']) . '</span></div>'
+        . '<div><strong>' . $geocoded . '</strong><span>' . MAPS_importHtml($LANG_MAPS_1['import_summary_geocoded']) . '</span></div>'
+        . '<div><strong>' . $partial . '</strong><span>' . MAPS_importHtml($LANG_MAPS_1['import_summary_partial']) . '</span></div>'
+        . '</div>';
+
+    $html .= '<div class="maps-import-table-wrap"><table class="maps-import-preview-table"><thead><tr>'
+        . '<th>#</th><th>' . MAPS_importHtml($LANG_MAPS_1['name']) . '</th>'
+        . '<th>' . MAPS_importHtml($LANG_MAPS_1['address']) . '</th>'
+        . '<th>' . MAPS_importHtml($LANG_MAPS_1['code']) . '</th>'
+        . '<th>' . MAPS_importHtml($LANG_MAPS_1['city']) . '</th>'
+        . '<th>Lat.</th><th>Lng.</th><th>' . MAPS_importHtml($LANG_MAPS_1['import_status']) . '</th>'
+        . '</tr></thead><tbody>';
 
     foreach ($rows as $index => $marker) {
-        $html .= '<li>#' . ($index + 1)
-            . ' — ' . MAPS_importHtml($marker['name'])
-            . ' — ' . MAPS_importHtml($marker['address'])
-            . ' [' . MAPS_importHtml($marker['lat']) . ', ' . MAPS_importHtml($marker['lng']) . ']</li>';
+        $isPartial = trim((string) $marker['code']) === '' || trim((string) $marker['city']) === '';
+        $statusClass = $isPartial ? 'is-warning' : 'is-ready';
+        $statusText = $isPartial ? $LANG_MAPS_1['import_status_partial'] : $LANG_MAPS_1['import_status_ready'];
+        if (!empty($marker['_geocoded'])) {
+            $statusText .= ' · ' . $LANG_MAPS_1['import_status_geocoded'];
+        }
+        $html .= '<tr><td>' . ($index + 1) . '</td>'
+            . '<td><strong>' . MAPS_importHtml(MAPS_markerDisplayName($marker['name'])) . '</strong></td>'
+            . '<td>' . MAPS_importPreviewValue($marker['address']) . '</td>'
+            . '<td>' . MAPS_importPreviewValue($marker['code']) . '</td>'
+            . '<td>' . MAPS_importPreviewValue(MAPS_normalizeMarkerPlace($marker['city'])) . '</td>'
+            . '<td>' . MAPS_importHtml($marker['lat']) . '</td>'
+            . '<td>' . MAPS_importHtml($marker['lng']) . '</td>'
+            . '<td><span class="maps-import-status ' . $statusClass . '">' . MAPS_importHtml($statusText) . '</span></td></tr>';
     }
-    $html .= '</ul>';
+    $html .= '</tbody></table></div>';
+
+    $html .= '<div class="maps-import-step is-active"><span>3</span><div><strong>'
+        . MAPS_importHtml($LANG_MAPS_1['import_confirm_title']) . '</strong><p>'
+        . MAPS_importHtml($LANG_MAPS_1['import_confirm_text']) . '</p></div></div>';
+    $html .= '<dl class="maps-import-confirm-summary">'
+        . '<dt>' . MAPS_importHtml($LANG_MAPS_1['map_label']) . '</dt><dd>' . MAPS_importHtml($mapName) . '</dd>'
+        . '<dt>' . MAPS_importHtml($LANG_MAPS_1['section_ownership']) . '</dt><dd>' . MAPS_importHtml($ownerName) . '</dd>'
+        . '<dt>' . MAPS_importHtml($LANG_MAPS_1['group']) . '</dt><dd>' . MAPS_importHtml($groupName) . '</dd>'
+        . '<dt>' . MAPS_importHtml($LANG_MAPS_1['section_permissions']) . '</dt><dd>'
+        . MAPS_importHtml('Owner ' . MAPS_permissionLabel($permissions[0])
+            . ' · Group ' . MAPS_permissionLabel($permissions[1])
+            . ' · Members ' . MAPS_permissionLabel($permissions[2])
+            . ' · Anonymous ' . MAPS_permissionLabel($permissions[3])) . '</dd>'
+        . '</dl>';
 
     $token = SEC_createToken();
     $action = MAPS_importHtml($_CONF['site_admin_url'] . '/plugins/maps/import_export.php');
-    $html .= '<form action="' . $action . '" method="post">'
+    $html .= '<form class="maps-import-confirm-actions" action="' . $action . '" method="post">'
         . '<input type="hidden" name="mode" value="valid">'
         . '<input type="hidden" name="filename" value="' . MAPS_importHtml($filename) . '">'
         . '<input type="hidden" name="mid" value="' . (int) $mid . '">'
@@ -365,13 +472,68 @@ function MAPS_importPreview($rows, $mid, $separator, $fields, $filename)
         $html .= '<input type="hidden" name="import_export[]" value="' . MAPS_importHtml($field) . '">';
     }
 
-    $html .= '<button type="submit" name="confirm" value="yes">'
-        . MAPS_importHtml($LANG_MAPS_1['yes']) . '</button> '
+    $html .= '<button class="maps-import-primary" type="submit" name="confirm" value="yes">'
+        . MAPS_importHtml(sprintf($LANG_MAPS_1['import_confirm_button'], $total)) . '</button> '
         . '<button type="submit" name="confirm" value="no">'
-        . MAPS_importHtml($LANG_MAPS_1['no']) . '</button>'
-        . '</form>';
+        . MAPS_importHtml($LANG_MAPS_1['import_cancel_button']) . '</button>'
+        . '</form></section>';
 
     return $html;
+}
+
+/**
+ * Render one preview cell while making missing information explicit.
+ */
+function MAPS_importPreviewValue($value)
+{
+    $value = trim((string) $value);
+    return $value === '' ? '<span class="maps-marker-empty">—</span>' : MAPS_importHtml($value);
+}
+
+function MAPS_importPermissionValues()
+{
+    global $_MAPS_CONF;
+
+    $permissions = MAPS_arrayGet($_MAPS_CONF, 'default_permissions', array(3, 3, 2, 2));
+    if (!is_array($permissions) || count($permissions) < 4) {
+        $permissions = array(3, 3, 2, 2);
+    }
+    for ($i = 0; $i < 4; $i++) {
+        $permissions[$i] = max(0, min(3, (int) $permissions[$i]));
+    }
+    return array($permissions[0], $permissions[1], $permissions[2], $permissions[3]);
+}
+
+function MAPS_importGroupId()
+{
+    global $_TABLES;
+
+    $groupId = (int) DB_getItem($_TABLES['groups'], 'grp_id', "grp_name='Maps Admin'");
+    return $groupId > 0 ? $groupId : 1;
+}
+
+function MAPS_importGroupName()
+{
+    global $_TABLES;
+
+    $groupId = MAPS_importGroupId();
+    $name = DB_getItem($_TABLES['groups'], 'grp_name', 'grp_id=' . $groupId);
+    return $name !== '' ? $name : 'Maps Admin';
+}
+
+function MAPS_permissionLabel($permission)
+{
+    $permission = (int) $permission;
+    if ($permission === 3) {
+        return 'Read/Edit';
+    }
+    if ($permission === 2) {
+        return 'Read';
+    }
+    if ($permission === 1) {
+        return 'Edit';
+    }
+    return 'None';
 }
 
 /**
@@ -410,17 +572,25 @@ function MAPS_commitImportRows($rows, $mid)
     $inserted = 0;
     $insertedMarkerIds = array();
     $now = date('Y-m-d H:i:s');
+    $permissions = MAPS_importPermissionValues();
+    $groupId = MAPS_importGroupId();
 
     foreach ($rows as $marker) {
         $importMarkerId = MAPS_importMarkerId();
         $columns = array(
-            'mkid', 'mid', 'owner_id', 'created', 'modified',
+            'mkid', 'mid', 'owner_id', 'group_id', 'perm_owner', 'perm_group',
+            'perm_members', 'perm_anon', 'created', 'modified',
             'validity_start', 'validity_end', 'remark'
         );
         $values = array(
             "'" . MAPS_dbEscape($importMarkerId) . "'",
             (string) $mid,
             (string) (int) $_USER['uid'],
+            (string) $groupId,
+            (string) $permissions[0],
+            (string) $permissions[1],
+            (string) $permissions[2],
+            (string) $permissions[3],
             "'" . MAPS_dbEscape($now) . "'",
             "'" . MAPS_dbEscape($now) . "'",
             "'" . MAPS_dbEscape($now) . "'",

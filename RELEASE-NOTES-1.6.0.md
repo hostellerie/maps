@@ -92,3 +92,5 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - Public marker resources are rendered only when a real resource label is configured; empty/default placeholder labels remain admin-only guidance and are hidden from marker pages.
 
 - New markers created in administration now inherit the configured default_permissions without overwriting permissions on existing markers or resubmitted forms.
+
+- Guided CSV import assistant: minimum/recommended presets, normalized tabular preview, batch summary and confirmation, plus imported-marker permissions aligned with default_permissions.
