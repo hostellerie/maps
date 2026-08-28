@@ -185,7 +185,7 @@ function getMapForm($map = array())
     $template->set_var('ok_button', $LANG_MAPS_1['ok_button']);
     $template->set_var('mid', $map['mid'] !== '' ? '<input type="hidden" name="mid" value="' . (int) $map['mid'] . '">' : '');
     $template->set_var('overlays', $map['mid'] !== '' ? MAPS_displayOverlays($map['mid']) : '');
-    $template->set_var('add_overlay', $map['mid'] !== '' ? MAPS_displayAddOverlay($map['mid']) : '');
+    $template->set_var('add_overlay', $map['mid'] !== '' ? MAPS_displayOverlaysToAdd($map['mid']) : '');
 
     $editorScript = '<script type="text/javascript">'
         . '(function(){'
