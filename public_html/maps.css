@@ -475,3 +475,21 @@
 .maps-required { color:#b42318; margin-left:.15rem; }
 @media (max-width:720px) { .maps-admin-editor .maps-form-grid { grid-template-columns:1fr; } .maps-admin-editor .maps-field-wide { grid-column:auto; } }
 
+
+/* Maps 1.6.0 consistent admin action bars */
+.maps-admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+    align-items: center;
+}
+.maps-secondary-action {
+    display: inline-block;
+    padding: .45rem .72rem;
+    border: 1px solid rgba(127,127,127,.28);
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+}
+.maps-secondary-action:hover,
+.maps-secondary-action:focus { background: rgba(127,127,127,.07); }

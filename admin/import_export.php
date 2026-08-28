@@ -176,9 +176,7 @@ function getImportExportForm()
     $template->set_var('fields_selector', $fieldsSelector);
     $template->set_var('ok_button', $LANG_MAPS_1['ok_button']);
 
-    return COM_startBlock($LANG_MAPS_1['import_export'])
-        . $template->parse('output', 'import_export')
-        . COM_endBlock();
+    return $template->parse('output', 'import_export');
 }
 
 /**

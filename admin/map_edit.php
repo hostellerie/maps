@@ -224,7 +224,7 @@ $requestData = $requestMethod === 'POST' ? $_POST : $_GET;
 $mode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode']) : 'new';
 $mid = isset($requestData['mid']) ? (int) $requestData['mid'] : 0;
 $content = MAPS_admin_menu();
-$editorTitle = ($mode === 'edit' && $mid > 0) ? $LANG_MAPS_1['map_edit'] : ucfirst($LANG_MAPS_1['create_map']);
+$editorTitle = ($mode === 'edit' && $mid > 0) ? $LANG_MAPS_1['map_edit'] : $LANG_MAPS_1['create_map'];
 if ($mode === 'edit' && $mid > 0) {
     $mapTitle = trim((string) DB_getItem($_TABLES['maps_maps'], 'name', 'mid=' . $mid));
     if ($mapTitle !== '') {

@@ -215,14 +215,14 @@ if (!MAPS_ensureWritableDirectory($_MAPS_CONF['path_overlay_images'])) {
     );
 } else {
     $display .= '<h1 class="maps-admin-title">' . htmlspecialchars($LANG_MAPS_1['overlays_list'], ENT_QUOTES, 'UTF-8') . '</h1>';
-    $display .= '<ul>'
-        . '<li><a href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/maps/overlay_edit.php', ENT_QUOTES, 'UTF-8') . '">'
-        . htmlspecialchars($LANG_MAPS_1['create_overlay'], ENT_QUOTES, 'UTF-8') . '</a></li>'
-        . '<li><a href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/maps/overlays.php?mode=groups', ENT_QUOTES, 'UTF-8') . '">'
-        . htmlspecialchars($LANG_MAPS_1['manage_groups'], ENT_QUOTES, 'UTF-8') . '</a></li>'
-        . '<li><a href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/maps/overlay_group_edit.php?mode=new', ENT_QUOTES, 'UTF-8') . '">'
-        . htmlspecialchars($LANG_MAPS_1['create_group'], ENT_QUOTES, 'UTF-8') . '</a></li>'
-        . '</ul>';
+    $display .= '<div class="maps-list-actions maps-admin-actions">'
+        . '<a class="maps-primary-action" href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/maps/overlay_edit.php', ENT_QUOTES, 'UTF-8') . '">'
+        . htmlspecialchars($LANG_MAPS_1['create_overlay'], ENT_QUOTES, 'UTF-8') . '</a>'
+        . '<a class="maps-secondary-action" href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/maps/overlays.php?mode=groups', ENT_QUOTES, 'UTF-8') . '">'
+        . htmlspecialchars($LANG_MAPS_1['manage_groups'], ENT_QUOTES, 'UTF-8') . '</a>'
+        . '<a class="maps-secondary-action" href="' . htmlspecialchars($_CONF['site_admin_url'] . '/plugins/maps/overlay_group_edit.php?mode=new', ENT_QUOTES, 'UTF-8') . '">'
+        . htmlspecialchars($LANG_MAPS_1['create_group'], ENT_QUOTES, 'UTF-8') . '</a>'
+        . '</div>';
 
     if ($mode === 'move') {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !SEC_checkToken()) {

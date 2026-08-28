@@ -80,3 +80,5 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - Standardized each editor on menu → one H1 → content, removing nested legacy block titles.
 - Replaced legacy Save/Delete selectors with explicit actions and improved responsive field grouping.
 
+
+- Final administration consistency pass: single H1 per editor, consistent Create/Edit labels, unified list action bars, and no duplicate Import/Export block title.

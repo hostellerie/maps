@@ -437,10 +437,10 @@ if (!MAPS_ensureWritableDirectory($_MAPS_CONF['path_icons_images'])) {
 
         default:
             $display .= '<h1 class="maps-admin-title">' . htmlspecialchars($LANG_MAPS_1['icons_list'], ENT_QUOTES, 'UTF-8') . '</h1>';
-            $display .= '<p>' . htmlspecialchars($LANG_MAPS_1['you_can'], ENT_QUOTES, 'UTF-8')
-                . '<a href="' . htmlspecialchars($_CONF['site_admin_url'], ENT_QUOTES, 'UTF-8')
+            $display .= '<p class="maps-list-actions"><a class="maps-primary-action" href="'
+                . htmlspecialchars($_CONF['site_admin_url'], ENT_QUOTES, 'UTF-8')
                 . '/plugins/maps/icons.php?mode=edit">'
-                . htmlspecialchars($LANG_MAPS_1['create_icon'], ENT_QUOTES, 'UTF-8') . '</a>.</p>';
+                . htmlspecialchars($LANG_MAPS_1['create_icon'], ENT_QUOTES, 'UTF-8') . '</a></p>';
             $display .= MAPS_listIcons();
             break;
     }

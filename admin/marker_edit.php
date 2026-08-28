@@ -501,8 +501,6 @@ function getMarkerForm($marker = array()) {
 		$display .= $template->parse('output', 'map');
 	}
 
-    $display .= COM_endBlock();
-	
 	$_SCRIPTS->setJavaScriptLibrary('jquery');
 	$deleteConfirmJs = MAPS_jsString(isset($LANG_MAPS_1['delete_confirm']) ? $LANG_MAPS_1['delete_confirm'] : 'Delete this marker?');
 	$js = LB . '<script type="text/javascript">
@@ -679,7 +677,13 @@ $requestMode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode'
 $mkid = isset($requestData['mkid']) ? preg_replace('/[^0-9]/', '', (string) $requestData['mkid']) : '';
 $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
 $display .= MAPS_admin_menu();
-$markerEditorTitle = ($requestMode === 'edit' && $mkid !== '') ? $LANG_MAPS_1['marker_edit'] : ucfirst($LANG_MAPS_1['create_marker']);
+$markerEditorTitle = ($requestMode === 'edit' && $mkid !== '') ? $LANG_MAPS_1['marker_edit'] : $LANG_MAPS_1['create_marker'];
+if ($requestMode === 'edit' && $mkid !== '') {
+    $markerTitle = trim((string) DB_getItem($_TABLES['maps_markers'], 'name', "mkid='" . MAPS_dbEscape($mkid) . "'"));
+    if ($markerTitle !== '') {
+        $markerEditorTitle .= ': ' . MAPS_decodeStoredText($markerTitle);
+    }
+}
 $display .= '<h1 class="maps-admin-title">' . htmlspecialchars($markerEditorTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
 
 if (in_array($requestMode, array('save', 'delete'), true)) {

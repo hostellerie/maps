@@ -427,7 +427,7 @@ switch ($mode) {
         }
 
         $display .= '<h1 class="maps-admin-title">' . $LANG_MAPS_1['maps_list'] . '</h1>';
-        $display .= '<p class="maps-list-actions">' . $LANG_MAPS_1['you_can'] . '<a class="maps-primary-action" href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php">' . $LANG_MAPS_1['create_map'] . '</a>.</p>';
+        $display .= '<p class="maps-list-actions"><a class="maps-primary-action" href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php">' . htmlspecialchars($LANG_MAPS_1['create_map'], ENT_QUOTES, 'UTF-8') . '</a></p>';
         $display .= MAPS_listmaps();
         $display .= MAPS_renderStatistics(false);
         $display .= MAPS_adminGoogleApiStatus();
