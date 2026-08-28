@@ -12,6 +12,8 @@ require_once '../../../lib-common.php';
 require_once '../../auth.inc.php';
 require_once 'edit_functions.php';
 
+MAPS_getheadercode();
+
 $display = '';
 
 if (!SEC_hasRights('maps.admin')) {
@@ -763,7 +765,7 @@ if ($mode !== '') {
 
 $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
 $display .= MAPS_admin_menu();
-    $display .= '<h1 class="maps-admin-title">' . htmlspecialchars($LANG_MAPS_1['import_export'], ENT_QUOTES, 'UTF-8') . '</h1>';
+$display .= '<h1 class="maps-admin-title">' . htmlspecialchars($LANG_MAPS_1['import_export'], ENT_QUOTES, 'UTF-8') . '</h1>';
 $display .= getImportExportForm();
 $display .= MAPS_compatSiteFooter(0);
 MAPS_compatOutput($display);
