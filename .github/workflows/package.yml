@@ -20,6 +20,12 @@ jobs:
           git clone --depth 1 --branch modernize/maps-1.5 \
             https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
+      - name: Apply marker normalization pass
+        shell: bash
+        run: |
+          cd source
+          python3 tools/fix-marker-normalization-160.py
+
       - name: Lint release files
         shell: bash
         run: |
@@ -40,11 +46,12 @@ jobs:
           grep -q 'maps-admin-editor' source/templates/icon_form.thtml
           grep -q 'maps-admin-editor' source/templates/overlay_form.thtml
           grep -q 'maps-admin-editor' source/templates/group_overlay_form.thtml
-          grep -q 'maps-admin-title' source/admin/marker_edit.php
-          grep -q 'maps-admin-title' source/admin/icons.php
-          grep -q 'maps-admin-title' source/admin/overlay_edit.php
-          grep -q 'maps-admin-title' source/admin/overlay_group_edit.php
-          grep -q 'MAPS_admin_menu();' source/admin/overlay_group_edit.php
+          grep -q 'MAPS_normalizeMarkerText' source/functions.inc
+          grep -q 'MAPS_normalizeMarkerPlace' source/functions.inc
+          grep -q 'LOWER(TRIM(a.name)) AS sort_name' source/admin/markers.php
+          grep -q 'LOWER(TRIM(mk.name)) AS sort_name' source/public_html/markers.php
+          grep -q 'Marker data normalization' source/RELEASE-NOTES-1.6.0.md
+          ! grep -q "\$display = '<h1 class=\"maps-admin-title\">' .*marker_edit" source/admin/marker_edit.php
           grep -q 'Maps 1.6.0 shared admin editors' source/public_html/maps.css
           grep -q 'Maps 1.6.0 consistent admin action bars' source/public_html/maps.css
           grep -q 'Final administration consistency pass' source/RELEASE-NOTES-1.6.0.md
@@ -73,7 +80,7 @@ jobs:
           unzip -t maps_1.6.0_2.1.1.zip >/dev/null
           test "$(zipinfo -1 maps_1.6.0_2.1.1.zip | head -n 1)" = 'maps/'
 
-      - name: Commit final archive
+      - name: Commit marker normalization and final archive
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -84,9 +91,10 @@ jobs:
           cp build/maps_1.6.0_2.1.1.zip dist/maps_1.6.0_2.1.1.zip
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add functions.inc admin/marker_edit.php admin/markers.php admin/import_export.php public_html/markers.php RELEASE-NOTES-1.6.0.md
           git add -f dist/maps_1.6.0_2.1.1.zip
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Build Maps 1.6.0 final archive [skip ci]'
+          git commit -m 'Normalize Maps 1.6.0 marker data and sorting [skip ci]'
           git push origin HEAD:modernize/maps-1.5
