@@ -2,13 +2,13 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.4                                                           |
+// | Maps Plugin 1.6.0                                                           |
 // +---------------------------------------------------------------------------+
 // | english.php                                                               |
 // |                                                                           |
 // | English language file                                                     |
 // +---------------------------------------------------------------------------+
-// | Copyright (C) 2010_2014 by the following authors:                         |
+// | Copyright (C) 2010-2026_2014 by the following authors:                         |
 // |                                                                           |
 // | Authors: ::Ben                                                            |
 // +---------------------------------------------------------------------------+
@@ -51,11 +51,54 @@ global $LANG32;
 
 $LANG_MAPS_1 = array(
     'plugin_name'           => 'Cartes',
-    'plugin_doc'            => 'La documentation concernant l\'installation, la mise à jour et l\'usage est disponible',
+    'plugin_conf'           => 'Configuration du plugin',
     'map'                   => 'carte',
-    'online'                => 'en ligne',
-    'google_maps_API'       => '<a href="">Google Maps API</a>',
-    'need_google_api'       => 'Attention, vous avez besoin d\'une <a href="http://code.google.com/apis/maps/signup.html" target="_blank">API Google Maps</a> pour commencer.',
+    'need_google_api'       => 'Aucune clé API Google Maps pour navigateur n\'est configurée. Les cartes Google ne pourront pas être affichées tant que cette clé n\'aura pas été ajoutée.',
+    'api_status_title' => 'État Google Maps API',
+    'api_status_missing' => 'Aucune clé API Google Maps navigateur n’est configurée.',
+    'api_status_testing' => 'Test de l’API Google Maps JavaScript en cours…',
+    'api_status_key' => 'Clé navigateur',
+    'api_status_ok' => 'API Google Maps JavaScript chargée correctement : la clé navigateur est acceptée pour cette page.',
+    'api_status_auth' => 'Google Maps refuse la clé navigateur ou sa configuration. Vérifiez la console du navigateur pour le code d’erreur Google exact, puis contrôlez les restrictions de référent, les API activées et la facturation Google Cloud.',
+    'api_status_load' => 'Le script Google Maps JavaScript API n’a pas pu être chargé. Vérifiez le réseau, la politique CSP, un éventuel bloqueur de contenu et la console du navigateur.',
+    'api_status_timeout' => 'L’API Google Maps JavaScript ne répond pas. Vérifiez la console et l’onglet Réseau du navigateur.',
+    'admin_help_title'      => 'Prise en main de Maps',
+    'admin_help_intro'      => 'Maps permet de créer plusieurs cartes, d\'y ajouter des marqueurs et, si nécessaire, des icônes ou des overlays personnalisés.',
+    'admin_help_google'     => 'Configurer Google Maps',
+    'admin_help_google_1'   => 'Ouvrez Google Cloud Console, créez ou sélectionnez un projet et associez-lui un compte de facturation pour un usage en production.',
+    'admin_help_google_2'   => 'Activez au minimum Maps JavaScript API. Activez également Geocoding API si vous utilisez la conversion automatique des adresses en latitude/longitude.',
+    'admin_help_google_3'   => 'Créez une clé API destinée au navigateur. Restreignez-la aux sites Web (référents HTTP) autorisés, par exemple https://www.example.com/*, puis limitez cette clé à Maps JavaScript API.',
+    'admin_help_google_4'   => 'Pour le géocodage côté serveur, il est recommandé de créer une seconde clé. Restreignez-la à l\'adresse IP de votre serveur et uniquement à Geocoding API.',
+    'admin_help_google_5'   => 'Copiez ensuite la clé navigateur dans Google Maps API key et, si vous en utilisez une, la clé serveur dans Google Maps server API key dans la configuration Maps de Geeklog.',
+    'admin_help_security'   => 'Ne laissez jamais une clé Google Maps sans restrictions en production. Une clé navigateur et une clé serveur séparées limitent les risques d\'utilisation abusive.',
+    'admin_help_create'     => 'Créer votre première carte',
+    'admin_help_create_1'   => 'Cliquez sur Créer une nouvelle carte, donnez-lui un nom et choisissez son centre, son niveau de zoom et son type d\'affichage.',
+    'admin_help_create_2'   => 'Enregistrez la carte, puis ajoutez des marqueurs depuis l\'administration Maps. Chaque marqueur peut utiliser une adresse ou des coordonnées précises.',
+    'admin_help_create_3'   => 'Les icônes et overlays sont facultatifs. Commencez par une carte simple et quelques marqueurs afin de valider votre configuration Google Maps.',
+    'admin_help_trouble'    => 'Si une carte reste grisée ou affiche « For development purposes only », vérifiez la facturation Google Cloud, les API activées et les restrictions appliquées à la clé.',
+    'admin_help_official'   => 'Documentation officielle Google Maps Platform',
+    'admin_help_geo_title'  => 'À quoi sert « Vérifier la géolocalisation des membres » ?',
+    'admin_help_geo_intro'  => 'Cette commande parcourt les membres qui ont renseigné le champ Localisation de leur profil et prépare leurs coordonnées pour la carte des membres.',
+    'admin_help_geo_1'      => 'Maps envoie chaque localisation textuelle non encore résolue à Google Geocoding API, par exemple « Nantes, France ».',
+    'admin_help_geo_2'      => "Les latitude et longitude obtenues sont mises en cache dans la table Maps de géocodage. Le profil Geeklog du membre n'est pas modifié.",
+    'admin_help_geo_3'      => 'Cette opération est surtout utile après une installation, une migration ou lorsque de nombreux membres ont ajouté ou modifié leur localisation. Elle nécessite Geocoding API et une clé autorisée pour le géocodage côté serveur.',
+    'admin_help_overlays_title' => 'À quoi servent les overlays (calques) ?',
+    'admin_help_overlays_intro' => "Un overlay est une image géoréférencée placée par-dessus la carte Google, entre deux coordonnées sud-ouest et nord-est. Il permet d'ajouter une information visuelle qui n'existe pas dans le fond Google Maps.",
+    'admin_help_overlays_1' => 'Afficher un plan de site, de camping, de parc, de domaine, de bâtiment ou de festival sur la carte réelle.',
+    'admin_help_overlays_2' => 'Superposer une carte historique, cadastrale, géologique, touristique ou un ancien plan pour comparaison.',
+    'admin_help_overlays_3' => "Présenter une zone thématique : itinéraire illustré, secteur de travail, zone naturelle, emprise d'un projet ou autre information graphique.",
+    'admin_help_overlays_4' => "Définir des niveaux de zoom minimum et maximum afin que le calque ne s'affiche que lorsqu'il est pertinent.",
+    'admin_help_overlays_how' => "Pour en créer un : préparez une image adaptée, ouvrez Calques, indiquez ses limites sud-ouest et nord-est, puis associez le calque à une carte depuis l'onglet Calques de l'éditeur de carte. Les overlays sont facultatifs : pour une carte classique avec des points, les marqueurs suffisent.",
+    'admin_help_concepts_title' => 'Les éléments de Maps en bref',
+    'admin_help_concept_map' => 'Carte',
+    'admin_help_concept_map_text' => "Le conteneur principal : centre, zoom, type d'affichage, dimensions, permissions et options générales.",
+    'admin_help_concept_marker' => 'Marqueur',
+    'admin_help_concept_marker_text' => 'Un point géographique placé sur une carte, avec un nom, une description, une adresse et éventuellement des informations complémentaires.',
+    'admin_help_concept_icon' => 'Icône',
+    'admin_help_concept_icon_text' => 'Une image facultative qui remplace le marqueur Google standard pour distinguer certaines catégories de points.',
+    'admin_help_concept_users' => 'Carte des membres',
+    'admin_help_concept_users_text' => 'Une carte générée à partir du champ Localisation des profils Geeklog. Les coordonnées sont obtenues et mises en cache par le système de géocodage Maps.',
+    'admin_help_trouble_title' => 'Dépannage rapide',
     'profile_title'         => 'Géolocalisation',
     'buy_marker'            => 'Acheter un  marqueur',
     'menu_label'            => 'Administration du plugin Maps',
@@ -64,10 +107,10 @@ $LANG_MAPS_1 = array(
     'maps'                  => 'Les cartes',
     'markers'               => 'Les marqueurs',
     'maps_label'            => 'Les cartes', // For user  menu
-    'create_map'            => 'créer une nouvelle carte',
-    'create_marker'         => 'créer un nouveau marqueur',
-    'map_edit'              => 'Edition de la carte :',
-    'marker_edit'           => 'Edition du marqueur :',
+    'create_map'            => 'Créer une nouvelle carte',
+    'create_marker'         => 'Créer un nouveau marqueur',
+    'map_edit'              => 'Modifier la carte',
+    'marker_edit'           => 'Modifier le marqueur',
     'deletion_succes'       => 'Suppression réussie',
     'deletion_fail'         => 'Suppression impossible',
     'error'                 => 'Erreur',
@@ -76,6 +119,7 @@ $LANG_MAPS_1 = array(
     'missing_field'         => 'Il manque un champ requis...',
     'geocoder'              => 'Géocoder',
     'geocoder_text'         => 'Saisir une adresse, valider puis déplacer le marqueur si nécessaire. La latitude et la longitude apparaîtront dans la fenêtre d\'information.',
+    'geocode_failed'         => 'L’adresse n’a pas pu être géocodée. Vérifiez la clé Google Maps, l’activation de l’API Geocoding et l’adresse, puis réessayez.',
     'go'                    => 'Go!',
     'name_label'            => 'Nom de la carte : ',
     'marker_name_label'     => 'Nom du marqueur : ',
@@ -105,11 +149,17 @@ $LANG_MAPS_1 = array(
     'error_google_error'    => 'Il y a eut un problèque lors de votre requette. Essayez a nouveau.',
     'error_no_map_info'     => 'Désolé! Les informations cartographiques ne sont pas disponibles pour cette adresse.',
     'need_directions'       => 'Besoin de d\'indications? Saisissez votre point de départ :',
+    'directions_title'     => 'Préparer votre itinéraire',
+    'directions_start'     => 'Point de départ',
     'get_directions'        => '  Valider  ',
     'maps_list'             => 'Liste des cartes',
     'you_can'               => 'Vous pouvez ',
-    'user_maps_list'        => 'Voici les cartes présentes dans notre base de données :',
+    'user_maps_list'        => 'Découvrez nos cartes',
     'markers_list'          => 'Liste des marqueurs',
+    'map_markers_heading'   => 'Marqueurs de cette carte',
+    'marker_singular'      => 'marqueur',
+    'marker_plural'        => 'marqueurs',
+    'views_label'          => 'vues',
     'no_map'                => 'Il n\'y a pas encore de carte dans notre base de données. Vous devez en créer une pour pouvoir ajouter des marqueurs.',
     'no_map_user'           => 'Oups... Il n\'y a pas de carte active.',
     'value_directions'      => 'Nom de la rue, commune, pays', // No quote here please
@@ -118,6 +168,11 @@ $LANG_MAPS_1 = array(
     'description'           => 'Description',
     'active_field'          => 'Actif',
     'hidden_field'          => 'Caché',
+    'marker_count'          => 'Marqueurs',
+    'status_active'         => 'Actif',
+    'status_inactive'       => 'Inactif',
+    'status_visible'        => 'Visible',
+    'status_hidden'         => 'Caché',
     'title_display'         => 'Display map page',
     'map_header_label'      => 'Entête facultatif',
     'map_footer_label'      => 'Pied de page facultatif',
@@ -158,7 +213,7 @@ $LANG_MAPS_1 = array(
     'state_label'           => 'Etat/Province :',
     'country_label'         => 'Pays :',
     'tel_label'             => 'Tel :',
-    'fax_label'             => 'Fax :',
+    'fax_label'             => 'Contact complémentaire :',
     'web_label'             => 'Web :',
     'not_use_see_config'    => 'Non utilisé. Voir la config.',
     //global maps
@@ -226,7 +281,7 @@ $LANG_MAPS_1 = array(
     'print'                 => 'Imprimer',
 	'to_complete'           => 'A compléter',
 	'autotag_desc_maps'     => '[maps: xx zoom:ZZ lieu] - Affiche la carte dont l\'id=XX. Options niveau de zoom (0 à 21) et centre la carte sur le lieu.',
-	'autotag_desc_geo'      => '[geo: map width:XX height:YY zoom:ZZ location] - Affiche une carte centrée sur le point location (rue, nom de ville, pays). Les options sont width (largeur) et height (largeur) en pixels (par exemple 400px) et le zoom (entre 0 et 21).',
+	'autotag_desc_geo'      => '[geo: Paris, France zoom:12] - Affiche une carte centrée sur un nom de lieu ou une adresse. Paramètres facultatifs : zoom, width et height. L’ancienne syntaxe [geo: map ...] reste compatible.',
 	'autotag_desc_marker'   => '[marker: xx] - Affiche le marqueur dont l\'id=XX',
 	//v1.1
 	'marker_customisation'  => 'Personnalisation du marqueur',
@@ -235,6 +290,7 @@ $LANG_MAPS_1 = array(
 	'overlays_list'         => 'Liste des calques',
 	'create_overlay'        => 'Créer un nouveau calque',
 	'edit_overlay_text'     => 'Edition du calque',
+	'overlay_edit'          => 'Modifier le calque',
 	'overlay_name_label'    => 'Nom du calque',
 	'overlay_presentation'  => 'Overlays (les calques) are objects on the map that are tied to latitude/longitude coordinates, so they move when you drag or zoom the map. Overlays reflect objects that you "add" to the map to designate points, lines, or areas. Here you can add an image as an overlay',
 	'overlay_active'        => 'Ce calque est activé',
@@ -250,7 +306,7 @@ $LANG_MAPS_1 = array(
 	'overlay_not_writable'  => 'Overlays folder is not writable: Please create this folder first and make it writable before using this feature.', 
 	'map_tab'               => 'Carte',
 	'overlays_tab'          => 'Calques',
-	'add_overlay'           => 'Vous devez d\'abord sauvegarder votre carte avant de pourvoir ajouter un calque.',
+	'add_overlay'           => 'Ajouter l\'overlay',
 	'remove_overlay'        => 'Supprimer ce calque',
 	'overlay_label'         => 'Calque',
 	'import_export'         => 'Import/Export',
@@ -263,39 +319,69 @@ $LANG_MAPS_1 = array(
 	'no_marker_to_export'   => 'Il n\'y a pas de marqueur à exporter pour cette carte.',
 	'icons'                 => 'Icons',
 	'icons_not_writable'    => 'Icons folder is not writable: Please create this folder first and make it writable before using this feature.',
-	'icons_list'            => 'Liste des icons',
-	'create_icon'           => 'créer un nouvel icon',
-	'icon_edit'             => 'Edition d\'icon',
+	'icons_list'            => 'Liste des icônes',
+	'create_icon'           => 'Créer une nouvelle icône',
+	'icon_edit'             => 'Modifier l’icône',
 	'icon_presentation'        => 'Ici vous pouvez télécharger un nouvel icon à utiliser avec les marqueurs', 
 	'icon_name_label'       => 'Nom de l\'icon',
 	'xmarkers'              => 'marqueurs',
 	'1marker'               => 'marqueur',
-	'choose_icon'           => 'Vous pouvez choisir un icon pour ce marqueur. Les icons sont prioritaire sur les couleurs.',
-	'no_icon'               => 'Pas d\'icon',
+	'choose_icon'           => 'Vous pouvez choisir une icône pour ce marqueur. Les icônes sont prioritaires sur les couleurs.',
+	'no_icon'               => 'Pas d\'icône',
+	'no_custom_icons'        => 'Aucune icône personnalisée n’est enregistrée.',
+	'manage_icons'           => 'Gérer les icônes',
 	'separator'             => 'Choisir le délimiteur',
 	'markers_to_add'        => 'Merci de vérifier que les valeurs correspondent aux champs et de confirmer l\'ajout des marqueurs suivants sur la carte :',
 	'choose_fields_import'  => 'Choisir les champs à importer',
 	'choose_fields_export'  => 'Choisir les champs à exporter',
 	'checkall'              => 'Tout cocher',
+    'import_step_1' => 'Préparer l’import',
+    'import_step_1_text' => 'Choisissez la carte, le fichier CSV, le séparateur et l’ordre des colonnes.',
+    'import_step_2' => 'Vérifier les données',
+    'import_step_2_text' => 'Maps valide, normalise et géocode les lignes avant toute écriture.',
+    'import_step_3' => 'Confirmer l’import',
+    'import_step_3_text' => 'Vérifiez la destination, le propriétaire et les permissions avant de confirmer.',
+    'import_minimum' => 'Champs minimum',
+    'import_minimum_help' => 'name + address, ou name + lat + lng. Le préréglage Minimum utilise la variante avec adresse.',
+    'import_recommended' => 'Champs recommandés',
+    'import_recommended_help' => 'name, address, lat, lng, description, street, code, city, state, country, tel et web.',
+    'import_order_help' => 'Les colonnes du CSV doivent suivre le même ordre que les champs sélectionnés ci-dessous.',
+    'import_select_minimum' => 'Champs minimum',
+    'import_select_recommended' => 'Champs recommandés',
+    'import_clear_fields' => 'Effacer la sélection',
+    'import_preview_title' => 'Vérifier les données',
+    'import_preview_text' => 'Voici les valeurs normalisées qui seront enregistrées si vous confirmez l’import.',
+    'import_summary_rows' => 'lignes prêtes',
+    'import_summary_coordinates' => 'coordonnées fournies',
+    'import_summary_geocoded' => 'géocodées automatiquement',
+    'import_summary_partial' => 'avec adresse partielle',
+    'import_status' => 'État',
+    'import_status_ready' => 'Prêt',
+    'import_status_partial' => 'Prêt · informations partielles',
+    'import_status_geocoded' => 'géocodé',
+    'import_confirm_title' => 'Confirmer l’import',
+    'import_confirm_text' => 'Vérifiez les paramètres du lot avant de créer les marqueurs.',
+    'import_confirm_button' => 'Importer %d marqueurs',
+    'import_cancel_button' => 'Annuler',
 	'order'                 => 'Ordre',
 	'move'                  => 'Move',
 	'name_missing'          => 'A least a name is missing. Please check your csv file.',
 	'need_address'          => 'We need at least an adresse or coordinates to build a marker. Please check your csv file something is missing.',
 	'manage_groups'         => 'Gérer les groupes de calques',
-	'create_group'          => 'Créer un nouveau groupe de claques',
-	'group_edit'            => 'Edition du groupe :',
+	'create_group'          => 'Créer un nouveau groupe de calques',
+	'group_edit'            => 'Modifier le groupe de calques',
 	'group_overlay_presentation' => 'Vous pouvez choisir ou modifier le nom de votre groupe de calques.',
 	'group_overlay_name_label'   => 'Nom du groupe',
 	'group_label'           => 'Groupe (optionnel)',
 	'choose_group'          => 'Choisir un group',
 	'group'                 => 'Groupe',
-	'from_owner'            => 'de',
+	'from_owner'            => 'Ajouté par :',
 	
 	//v1.3
 	'geo_fail'              => 'L\'adresse saisie de semble pas être valide',
 	'on_map'                => 'Sur la carte',
 	'read_more'             => 'Lire la suite',
-	'from_map'              => 'Sur la carte',
+	'from_map'              => 'Carte :',
 	'show_hide_overlays'    => 'Afficher / masquer les calques',
 	'fields_presentation'   => 'Editez une catégorie existante pour ajouter ou éditer un champ.',
 	'overlays_added'        => 'Overlays présents sur cette carte',
@@ -308,7 +394,39 @@ $LANG_MAPS_1 = array(
 	'to_cal'                => 'au',
 	'on_cal'                => 'Le',
     //v1.4
+    'admin_menu_maps' => 'Cartes',
+    'admin_menu_markers' => 'Marqueurs',
+    'admin_menu_icons' => 'Icônes',
+    'admin_menu_overlays' => 'Calques',
+    'admin_menu_import_export' => 'Import/Export',
+    'admin_menu_geocoder' => 'Géocoder',
+    'admin_menu_geolocation' => 'Géolocalisation',
+    'admin_menu_configuration' => 'Configuration',
+    'section_location' => 'Localisation',
+    'section_content_contact' => 'Contenu et contact',
+    'section_appearance' => 'Apparence',
+    'section_publication' => 'Publication',
+    'section_resources' => 'Ressources',
+    'section_ownership' => 'Propriétaire',
+    'section_permissions' => 'Permissions',
+    'delete_confirm' => 'Supprimer définitivement ce marqueur ?',
+    'marker_not_found' => 'Marqueur introuvable ou vous n\'avez pas l\'autorisation de le consulter.',
+    'delete_map_confirm' => 'Supprimer définitivement cette carte ?',
+    'technical_coordinates' => 'Coordonnées techniques',
     'configuration'         => 'Configuration',
+    // Maps 1.5.6 map editor
+    'map_section_display' => 'Affichage',
+    'map_section_center' => 'Centre et zoom',
+    'map_section_markers' => 'Marqueurs',
+    'map_section_advanced' => 'Options avancées',
+    'map_center_search' => 'Rechercher une adresse',
+    'map_center_search_button' => 'Localiser',
+    'map_center_use_button' => 'Utiliser le centre affiché',
+    'map_center_help' => 'Recherchez une adresse, cliquez sur la carte ou déplacez le marqueur pour choisir précisément le centre de la carte.',
+    'latitude_label' => 'Latitude',
+    'longitude_label' => 'Longitude',
+    'map_center_marker' => 'Centre de la carte',
+
 );
 
 $LANG_MAPS_MESSAGE = array(
@@ -350,7 +468,6 @@ $LANG_configsections['maps'] = array(
 *   @global array $LANG_confignames['maps']
 */
 $LANG_confignames['maps'] = array(
-    'maps_folder'           => 'Maps public folder',
     'hide_maps_menu'        => 'Hide Maps menu',
     'maps_login_required'   => 'Maps login required',
     'autofill_coord'        => 'Automatically fill undefined coordinates',
@@ -364,10 +481,6 @@ $LANG_confignames['maps'] = array(
     'map_zoom_geotag'       => 'geo autotag zoom (0-21)',
     'map_width_profile'     => 'Profile map width (with % or px)',
     'map_height_profile'    => 'Profile map height (with px only)',
-    'AdsOnMap'              => 'Show google ads on map',
-    'publisher_id'          => 'Your publisher id',
-    'channel_id'            => 'Your channel for stats',
-    'maxAdsOnMap'           => 'Max ads on a map', 
     'show_map'              => 'Show Google Map',
     'google_api_key'        => 'Google Maps API Key',
     'url_geocode'           => 'URL to Google Geocoding Service',
@@ -390,18 +503,18 @@ $LANG_confignames['maps'] = array(
     'state'                 => 'Use state info',
     'country'               => 'Use country info',
     'tel'                   => 'Use tel info',
-    'fax'                   => 'Use fax info',
+    'fax'                   => 'Utiliser le contact complémentaire',
     'web'                   => 'Use web info',
-    'item_1'                => 'Ressource #1 label',
-    'item_2'                => 'Ressource #2 label',
-    'item_3'                => 'Ressource #3 label',
-    'item_4'                => 'Ressource #4 label',
-    'item_5'                => 'Ressource #5 label',
-    'item_6'                => 'Ressource #6 label',
-    'item_7'                => 'Ressource #7 label',
-    'item_8'                => 'Ressource #8 label',
-    'item_9'                => 'Ressource #9 label',
-    'item_10'               => 'Ressource #10 label',
+    'item_1'                => 'Libellé du champ personnalisé 1',
+    'item_2'                => 'Libellé du champ personnalisé 2',
+    'item_3'                => 'Libellé du champ personnalisé 3',
+    'item_4'                => 'Libellé du champ personnalisé 4',
+    'item_5'                => 'Libellé du champ personnalisé 5',
+    'item_6'                => 'Libellé du champ personnalisé 6',
+    'item_7'                => 'Libellé du champ personnalisé 7',
+    'item_8'                => 'Libellé du champ personnalisé 8',
+    'item_9'                => 'Libellé du champ personnalisé 9',
+    'item_10'               => 'Libellé du champ personnalisé 10',
     'label_color'           => 'Label color',
     'star_primary_color'    => 'Star primary color',
     'star_stroke_color'     => 'Star stroke color',
@@ -409,7 +522,6 @@ $LANG_confignames['maps'] = array(
     'marker_hidden'         => 'Marker is hidden by default',
     'marker_payed'          => 'Marker payed by default',
     'marker_validity'       => 'Marker validy by default',
-    'monetize'              => 'Monetize the markers',
     'marker_submission'     => 'Allow markers submission',
     'users_map'             => 'Active map of site users',
     'global_map' 	        => 'Active global map',
@@ -420,7 +532,6 @@ $LANG_confignames['maps'] = array(
     'detail_zoom'           => 'Marker detail zoom (0-21)',
     'submit_login_required' => 'Login require for markers submissions',
     'marker_edition'        => 'Marker edition',
-    'infos_label'           => 'Infos label (Pro version)',
 	'use_cluster'           => 'Use markers cluster',
 	'zoom_profile'          => 'Zoom carte profil du membre (0-21)',
 	'display_events_map'    => 'Afficher la carte des événements',
@@ -433,6 +544,27 @@ $LANG_confignames['maps'] = array(
 $LANG_configsubgroups['maps'] = array(
     'sg_main' => 'Main Settings',
     'sg_display' => 'Display Settings'
+);
+
+/**
+*   Configuration system tab names
+*   @global array $LANG_configtabs['maps']
+*/
+$LANG_configtabs['maps'] = array(
+    'tab_general' => 'Général',
+    'tab_google' => 'Google Maps',
+    'tab_maps' => 'Cartes',
+    'tab_markers' => 'Marqueurs',
+    'tab_fields' => 'Champs des marqueurs',
+);
+
+/** Geeklog configuration tab labels (used by config::_UI_get_tab). */
+$LANG_tab['maps'] = array(
+    'tab_general' => 'Général',
+    'tab_google' => 'Google Maps',
+    'tab_maps' => 'Cartes',
+    'tab_markers' => 'Marqueurs',
+    'tab_fields' => 'Champs des marqueurs',
 );
 
 /**
@@ -473,4 +605,94 @@ $LANG_configselects['maps'] = array(
     31 => array('Temporary' => 1, 'Permanent' => 0),
 );
 
+$LANG_MAPS_1['location_search_label'] = 'Rechercher une adresse';
+$LANG_MAPS_1['location_search_help'] = 'Recherchez une adresse, cliquez sur la carte ou déplacez le marqueur pour ajuster précisément sa position.';
+$LANG_MAPS_1['use_map_click_help'] = 'Cliquez sur la carte pour déplacer le marqueur.';
+
+/* Maps 1.5.7 configuration labels. */
+/* Configuration subgroup and tabs */
+$LANG_configsubgroups['maps']['sg_main'] = 'Principaux';
+$LANG_configtabs['maps']['tab_general'] = 'Général';
+$LANG_tab['maps']['tab_general'] = 'Général';
+$LANG_configtabs['maps']['tab_google'] = 'Google Maps';
+$LANG_tab['maps']['tab_google'] = 'Google Maps';
+$LANG_configtabs['maps']['tab_maps'] = 'Cartes';
+$LANG_tab['maps']['tab_maps'] = 'Cartes';
+$LANG_configtabs['maps']['tab_markers'] = 'Marqueurs';
+$LANG_tab['maps']['tab_markers'] = 'Marqueurs';
+$LANG_configtabs['maps']['tab_fields'] = 'Champs des marqueurs';
+$LANG_tab['maps']['tab_fields'] = 'Champs des marqueurs';
+
+/* Fieldsets */
+$LANG_fs['maps']['fs_main'] = 'Accès et fonctions';
+$LANG_fs['maps']['fs_permissions'] = 'Permissions par défaut';
+$LANG_fs['maps']['fs_uploads'] = 'Images et uploads';
+$LANG_fs['maps']['fs_google'] = 'Google Maps Platform';
+$LANG_fs['maps']['fs_display'] = 'Affichage général';
+$LANG_fs['maps']['fs_global_map'] = 'Carte globale et carte des membres';
+$LANG_fs['maps']['fs_display_profile'] = 'Carte du profil des membres';
+$LANG_fs['maps']['fs_display_geo'] = 'Autotag geo';
+$LANG_fs['maps']['fs_map_defaults'] = 'Valeurs par défaut des nouvelles cartes';
+$LANG_fs['maps']['fs_events_map'] = 'Carte des événements';
+$LANG_fs['maps']['fs_marker_defaults'] = 'Valeurs par défaut des marqueurs';
+$LANG_fs['maps']['fs_marker_editor'] = 'Carte de saisie / déplacement d’un marqueur';
+$LANG_fs['maps']['fs_marker_detail'] = 'Carte de détail d’un marqueur';
+$LANG_fs['maps']['fs_marker_popup'] = 'Infobulles des marqueurs';
+$LANG_fs['maps']['fs_marker_fields'] = 'Champs et libellés des marqueurs';
+
+/* General */
+$LANG_confignames['maps']['maps_login_required'] = 'Connexion requise pour consulter Maps';
+$LANG_confignames['maps']['hide_maps_menu'] = 'Masquer Maps dans le menu';
+$LANG_confignames['maps']['marker_submission'] = 'Autoriser la soumission de marqueurs';
+$LANG_confignames['maps']['submit_login_required'] = 'Connexion requise pour soumettre un marqueur';
+$LANG_confignames['maps']['marker_edition'] = 'Autoriser l’édition des marqueurs';
+$LANG_confignames['maps']['default_permissions'] = 'Permissions par défaut';
+$LANG_confignames['maps']['max_image_width'] = 'Largeur maximale des images (px)';
+$LANG_confignames['maps']['max_image_height'] = 'Hauteur maximale des images (px)';
+$LANG_confignames['maps']['max_image_size'] = 'Taille maximale d’une image (octets)';
+
+/* Google */
+$LANG_confignames['maps']['autofill_coord'] = 'Compléter automatiquement les coordonnées manquantes';
+$LANG_confignames['maps']['google_api_key'] = 'Clé API Google Maps (navigateur)';
+$LANG_confignames['maps']['google_server_api_key'] = 'Clé API Google Geocoding (serveur, optionnelle)';
+$LANG_confignames['maps']['google_map_id'] = 'Google Map ID (préparation Advanced Markers)';
+$LANG_confignames['maps']['google_language'] = 'Langue Google Maps (optionnelle, ex. fr)';
+$LANG_confignames['maps']['google_region'] = 'Région Google Maps (optionnelle, ex. FR)';
+$LANG_confignames['maps']['url_geocode'] = 'URL du service Google Geocoding';
+
+/* New map/display values */
+$LANG_confignames['maps']['map_primary_color'] = 'Couleur principale par défaut';
+$LANG_confignames['maps']['map_stroke_color'] = 'Couleur de contour par défaut';
+$LANG_confignames['maps']['map_label'] = 'Libellé de marqueur par défaut';
+$LANG_confignames['maps']['map_label_color'] = 'Couleur de libellé par défaut';
+$LANG_confignames['maps']['events_map_zoom'] = 'Zoom de la carte des événements';
+$LANG_confignames['maps']['events_map_height'] = 'Hauteur de la carte des événements';
+
+/* Markers */
+$LANG_confignames['maps']['marker_editor_type'] = 'Type de carte pour l’éditeur';
+$LANG_confignames['maps']['marker_editor_zoom'] = 'Zoom initial de l’éditeur';
+$LANG_confignames['maps']['marker_editor_width'] = 'Largeur de la carte de l’éditeur';
+$LANG_confignames['maps']['marker_editor_height'] = 'Hauteur de la carte de l’éditeur';
+$LANG_confignames['maps']['detail_width'] = 'Largeur de la carte de détail';
+$LANG_confignames['maps']['detail_height'] = 'Hauteur de la carte de détail';
+$LANG_confignames['maps']['detail_zoom'] = 'Zoom de la carte de détail';
+$LANG_confignames['maps']['popup_width'] = 'Largeur des infobulles';
+$LANG_confignames['maps']['popup_height'] = 'Hauteur des infobulles';
+
+/* Marker fields */
+$LANG_confignames['maps']['street'] = 'Afficher la rue';
+$LANG_confignames['maps']['code'] = 'Afficher le code postal';
+$LANG_confignames['maps']['city'] = 'Afficher la ville';
+$LANG_confignames['maps']['state'] = 'Afficher la région / l’État';
+$LANG_confignames['maps']['country'] = 'Afficher le pays';
+$LANG_confignames['maps']['tel'] = 'Afficher le téléphone';
+$LANG_confignames['maps']['fax'] = 'Afficher le contact complémentaire';
+$LANG_confignames['maps']['web'] = 'Afficher le site web';
+
+/* Maps 1.5.10 landing-page SEO configuration. */
+$LANG_fs['maps']['fs_seo'] = 'SEO de la page des cartes';
+$LANG_confignames['maps']['maps_page_title'] = 'Titre SEO de la page des cartes';
+$LANG_confignames['maps']['maps_page_h1'] = 'Titre H1 de la page des cartes';
+$LANG_confignames['maps']['maps_meta_description'] = 'Meta description de la page des cartes';
+$LANG_confignames['maps']['map_main_header'] = 'Contenu introductif de la page Maps (autotags acceptés)';
 ?>

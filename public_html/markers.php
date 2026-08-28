@@ -2,13 +2,13 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.3                                                           |
+// | Maps Plugin 1.6.0                                                           |
 // +---------------------------------------------------------------------------+
 // | markers.php                                                               |
 // |                                                                           |
 // | Public plugin page                                                        |
 // +---------------------------------------------------------------------------+
-// | Copyright (C) 2013 by the following authors:                              |
+// | Copyright (C) 2013-2026 by the following authors:                              |
 // |                                                                           |
 // | Authors: ::Ben                                                            |
 // +---------------------------------------------------------------------------+
@@ -45,15 +45,17 @@ if (!in_array('maps', $_PLUGINS)) {
 
 MAPS_getheadercode();
 
+$display = '';
+
 // Ensure user has the rights to access this page
 
 if (COM_isAnonUser() && $_MAPS_CONF['maps_login_required'] == 1) {
-	$display .= COM_siteHeader('');
+	$display .= MAPS_compatSiteHeader('');
 	$display .= MAPS_user_menu();
 
 	$display .= COM_startBlock ($LANG_LOGIN[1], '',
 								COM_getBlockTemplate ('_msg_block', 'header'));
-	$login = new Template($_CONF['path'] . 'plugins/maps/templates');
+	$login = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
 	$login->set_file (array ('login'=>'submitloginrequired.thtml'));
 	$login->set_var ( 'xhtml', XHTML );
 	$login->set_var ('login_message', $LANG_LOGIN[2]);
@@ -66,8 +68,8 @@ if (COM_isAnonUser() && $_MAPS_CONF['maps_login_required'] == 1) {
 	$display .= $login->finish ($login->get_var('output'));
 	$display .= COM_endBlock (COM_getBlockTemplate ('_msg_block', 'footer'));
 
-    $display .= COM_siteFooter();
-    COM_output($display);
+    $display .= MAPS_compatSiteFooter();
+    MAPS_compatOutput($display);
     exit;
 }
 
@@ -111,6 +113,19 @@ $vars = array('mode' => 'alpha',
 
 MAPS_filterVars($vars, $_REQUEST);
 
+// Maps 1.5.9 canonical marker URL. Preserve old inbound links but consolidate
+// all public marker detail signals on index.php?mode=marker&mkid=... .
+$legacyMode = isset($_REQUEST['mode']) ? (string) $_REQUEST['mode'] : '';
+$legacyMkid = isset($_REQUEST['mkid']) ? trim((string) $_REQUEST['mkid']) : '';
+if ($legacyMode === 'show' && $legacyMkid !== '') {
+    header('Location: ' . MAPS_markerContentUrl($legacyMkid), true, 301);
+    exit;
+}
+
+// Editing, submission and private marker-management pages are useful to users
+// but must not enter search indexes.
+header('X-Robots-Tag: noindex, follow');
+
 /**
 * List all markers that the user has access to
 *
@@ -150,24 +165,15 @@ function MAPS_listUserMarkers()
 	return $retval = $LANG_MAPS_1['no_marker'];
 	}
 
-    if ($_MAPS_CONF['monetize'] == 1)  {
-	    $header_arr = array(      // display 'text' and use table field 'field'
-			array('text' => $LANG_MAPS_1['name'], 'field' => 'name', 'sort' => true),
-			array('text' => $LANG_MAPS_1['address'], 'field' => 'address', 'sort' => false),
-			array('text' => $LANG_MAPS_1['to_label'], 'field' => 'to', 'sort' => true),
-			array('text' => $LANG_MAPS_1['id'], 'field' => 'mkid', 'sort' => true)
-		);
-	} else {
-		$header_arr = array(      // display 'text' and use table field 'field',
-			array('text' => $LANG_MAPS_1['name'], 'field' => 'name', 'sort' => true),
-			array('text' => $LANG_MAPS_1['address'], 'field' => 'address', 'sort' => false),
-			array('text' => $LANG_MAPS_1['id'], 'field' => 'mkid', 'sort' => true)
-		);
-	}
+    $header_arr = array(
+        array('text' => $LANG_MAPS_1['name'], 'field' => 'sort_name', 'sort' => true),
+        array('text' => $LANG_MAPS_1['address'], 'field' => 'address', 'sort' => false),
+        array('text' => $LANG_MAPS_1['id'], 'field' => 'mkid', 'sort' => true)
+    );
 	
 	if ($_MAPS_CONF['marker_edition'] == 1 || SEC_hasRights('maps.admin')) $header_arr[] = array('text' => $LANG_ADMIN['edit'], 'field' => 'edit', 'sort' => false);
 
-    $defsort_arr = array('field' => 'mk.name', 'direction' => 'asc');
+    $defsort_arr = array('field' => 'sort_name', 'direction' => 'asc');
 
     $text_arr = array(
         'has_extras' => true,
@@ -175,7 +181,7 @@ function MAPS_listUserMarkers()
     );
 	
 	$sql = "SELECT
-	            mk.*, m.free_marker
+	            mk.*, LOWER(TRIM(mk.name)) AS sort_name, m.free_marker
             FROM {$_TABLES['maps_markers']} AS mk
 			LEFT JOIN {$_TABLES['maps_maps']} AS m
 				  ON mk.mid = m.mid";
@@ -205,19 +211,19 @@ function MAPS_listUserMarkers()
 */
 function plugin_getListField_userMarkers($fieldname, $fieldvalue, $A, $icon_arr)
 {
-    global $_CONF, $_MAPS_CONF, $LANG_ADMIN, $LANG_STATIC, $_TABLES;
+    global $_CONF, $_MAPS_CONF, $LANG_ADMIN, $LANG_STATIC, $LANG_MAPS_1, $_TABLES;
 
     switch($fieldname) {
         case "edit":
             $retval = '';
 			if( $A['free_marker'] == 1 || SEC_hasRights('maps.admin') ) $retval = '<div style="text-align:center;">' . COM_createLink($icon_arr['edit'],
-                "{$_MAPS_CONF['site_url']}/markers.php?mode=edit&amp;mkid={$A['mkid']}") . '</div>';
+                "{$_MAPS_CONF['site_url']}/markers.php?mode=edit&mkid={$A['mkid']}") . '</div>';
             break;
 			
-        case "name":
-            $map_title = stripslashes ($A['name']);
+        case "sort_name":
+            $map_title = MAPS_normalizeMarkerText($A['name']);
             $url = $_MAPS_CONF['site_url'] .
-                                 '/markers.php?mode=show&amp;mkid=' . $A['mkid'] . '&amp;mid=' . $A['mid'];
+                                 '/index.php?mode=marker&mkid=' . $A['mkid'];
             $retval = COM_createLink($map_title, $url, array('title'=>$LANG_MAPS_1['title_display']));
             break;
 			
@@ -252,6 +258,29 @@ function getUserMarkerForm($marker = array()) {
 
     global $_CONF, $_TABLES, $_MAPS_CONF, $LANG_MAPS_1, $LANG_configselects, $LANG_ACCESS, $_USER, $_GROUPS, $_SCRIPTS;
     
+    $markerDefaults = array(
+        'mkid' => '', 'mid' => '', 'owner_id' => 0, 'created' => time(), 'modified' => time(),
+        'address' => '', 'lat' => '', 'lng' => '', 'name' => '', 'description' => '',
+        'mk_default' => 1, 'mk_icon' => 0, 'mk_pcolor' => '', 'mk_scolor' => '',
+        'mk_label' => '', 'mk_label_color' => '', 'label_color' => '', 'payed' => 0,
+        'active' => 1, 'hidden' => 0, 'validity' => 0, 'validity_start' => '',
+        'validity_end' => '', 'remark' => '', 'street' => '', 'code' => '', 'city' => '',
+        'state' => '', 'country' => '', 'tel' => '', 'fax' => '', 'web' => '',
+        'group_id' => 0, 'submission' => 0,
+        'perm_owner' => array(0 => 0, 1 => 0),
+        'perm_group' => array(0 => 0, 1 => 0),
+        'perm_members' => array(0 => 0, 1 => 0),
+        'perm_anon' => array(0 => 0, 1 => 0),
+        'item_1' => '', 'item_2' => '', 'item_3' => '', 'item_4' => '', 'item_5' => '',
+        'item_6' => '', 'item_7' => '', 'item_8' => '', 'item_9' => '', 'item_10' => ''
+    );
+    $marker = array_merge($markerDefaults, is_array($marker) ? $marker : array());
+    foreach (array('name', 'description', 'address', 'remark', 'street', 'code', 'city', 'state', 'country', 'tel', 'fax', 'web', 'item_1', 'item_2', 'item_3', 'item_4', 'item_5', 'item_6', 'item_7', 'item_8', 'item_9', 'item_10') as $plainField) {
+        $marker[$plainField] = MAPS_decodeStoredText($marker[$plainField]);
+    }
+
+
+    
 	$display = COM_startBlock('<h1>' . $LANG_MAPS_1['marker_edit'] . ' ' . $marker['name']. '</h1>');
 	
 	$map_options = MAPS_recurseMaps($marker['mid']);
@@ -262,8 +291,10 @@ function getUserMarkerForm($marker = array()) {
         $display .= COM_endBlock('blockfooter-message.thtml');
 
 	} else {
-		$template = new Template($_CONF['path'] . 'plugins/maps/templates');
+		$template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
 		$template->set_file(array('map' => 'marker_user_form.thtml'));
+        $template->set_var('marker_editor_width', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_width', '100%'), '100%'));
+        $template->set_var('marker_editor_height', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_height', '400px'), '400px'));
 		$template->set_var('site_url', $_MAPS_CONF['site_url']);
 		$template->set_var('xhtml', XHTML);
 
@@ -278,14 +309,13 @@ function getUserMarkerForm($marker = array()) {
 		
 		$template->set_var('yes', $LANG_MAPS_1['yes']);
 		$template->set_var('no', $LANG_MAPS_1['no']);
-		$template->set_var('arrow', '<img src="' . $_MAPS_CONF['site_url'] . '/images/arrow.png" alt=""align="absmiddle">&nbsp;');
 		
 		//informations
 		$template->set_var('informations', $LANG_MAPS_1['informations']);
 		$template->set_var('name_label', $LANG_MAPS_1['marker_name_label']);
-		$template->set_var('name', stripslashes($marker['name']));
+		$template->set_var('name', htmlspecialchars($marker['name'], ENT_QUOTES, 'UTF-8'));
 		$template->set_var('address_label', $LANG_MAPS_1['address_label']);
-		$template->set_var('address', stripslashes($marker['address']));
+		$template->set_var('address', htmlspecialchars($marker['address'], ENT_QUOTES, 'UTF-8'));
 		$template->set_var('empty_for_geo', $LANG_MAPS_1['empty_for_geo']);
 		$template->set_var('lat', $LANG_MAPS_1['lat']);
 		$template->set_var('lat_value', $marker['lat']);
@@ -328,9 +358,9 @@ function getUserMarkerForm($marker = array()) {
 		$radio .= '<hr'. XHTML .'>';
 		$template->set_var('icon', $radio);
 		$template->set_var('primary_color_label', $LANG_MAPS_1['primary_color_label']);
-		$template->set_var('primary_color', $marker['mk_pcolor']);
+		$template->set_var('primary_color', MAPS_htmlColor($marker['mk_pcolor'], MAPS_arrayGet($_MAPS_CONF, 'map_primary_color', '#666666')));
 		$template->set_var('stroke_color_label', $LANG_MAPS_1['stroke_color_label']);
-		$template->set_var('stroke_color', $marker['mk_scolor']);
+		$template->set_var('stroke_color', MAPS_htmlColor($marker['mk_scolor'], MAPS_arrayGet($_MAPS_CONF, 'map_stroke_color', '#333333')));
 		$template->set_var('label_label', $LANG_MAPS_1['label']);
 		$template->set_var('label', $marker['mk_label']);	
 		$template->set_var('label_color_label', $LANG_MAPS_1['label_color']);
@@ -352,7 +382,7 @@ function getUserMarkerForm($marker = array()) {
 		//payed
 		$template->set_var('payed', $LANG_MAPS_1['payed']);
 		if ($marker['payed'] == '') {
-			$marker['payed'] = $_MAPS_CONF['payed'];
+			$marker['payed'] = MAPS_arrayGet($_MAPS_CONF, 'payed', 0);
 		}
 		if ($marker['payed'] == 1) {
 			$template->set_var('payed_yes', ' selected');
@@ -423,7 +453,7 @@ function getUserMarkerForm($marker = array()) {
 		
 		//note
 		$template->set_var('remark_label', $LANG_MAPS_1['remark']);
-		$template->set_var('remark', stripslashes($marker['remark']));
+		$template->set_var('remark', htmlspecialchars($marker['remark'], ENT_QUOTES, 'UTF-8'));
 
 		//Tab presentation
 		$template->set_var('presentation_tab', $LANG_MAPS_1['presentation_tab']);
@@ -474,7 +504,7 @@ function getUserMarkerForm($marker = array()) {
 		
 		$template->set_var('fax_label', $LANG_MAPS_1['fax_label']);
 		if ($_MAPS_CONF['fax'] == 1) {
-		  $template->set_var('fax', '<input type="text" name="fax" value="' . $marker['fax'] . '" size="20" maxlength="20">');
+		  $template->set_var('fax', '<input type="text" name="fax" value="' . htmlspecialchars($marker['fax'], ENT_QUOTES, 'UTF-8') . '" size="40" maxlength="255">');
 		} else {
 		  $template->set_var('fax', $LANG_MAPS_1['not_use_see_config']);
 		}
@@ -491,17 +521,21 @@ function getUserMarkerForm($marker = array()) {
 		$template->set_var('max_char', $LANG_MAPS_1['max_char']);
 		
 		$arr = array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-		$ressources ='';
-		foreach ($arr as &$value) {
-			if ($_MAPS_CONF['item_'. $value] == '') {
-				$template->set_var('item_'. $value . '_label', '');
-				$template->set_var('item_'. $value, '');
-				$ressources .= '';
-			} else {
-				$template->set_var('item_'. $value . '_label', $_MAPS_CONF['item_'. $value]);
-				$template->set_var('item_'. $value, $marker['item_'. $value]);
-				$ressources .= '<p>' . $_MAPS_CONF['item_'. $value] . ' <input type"text" name="item_' . $value . '" size="80" maxlength="255" value="' . $marker['item_'. $value] . '"></p>';
+		$ressources = '';
+		foreach ($arr as $value) {
+			$itemConfig = MAPS_arrayGet($_MAPS_CONF, 'item_' . $value, '');
+			$itemValue = MAPS_arrayGet($marker, 'item_' . $value, '');
+			if (!MAPS_shouldShowCustomField($value, $marker)) {
+				$template->set_var('item_' . $value . '_label', '');
+				$template->set_var('item_' . $value, '');
+				continue;
 			}
+
+			$template->set_var('item_' . $value . '_label', $itemConfig);
+			$template->set_var('item_' . $value, $itemValue);
+			$ressources .= '<p>' . htmlspecialchars($itemConfig, ENT_QUOTES, 'UTF-8')
+			    . ' <input type="text" name="item_' . $value . '" size="80" maxlength="255" value="'
+			    . htmlspecialchars($itemValue, ENT_QUOTES, 'UTF-8') . '"></p>';
 		}
 		if ($ressources == '') {
 			$ressources = $LANG_MAPS_1['empty_ressources'];
@@ -549,24 +583,10 @@ function getUserMarkerForm($marker = array()) {
     $display .= COM_endBlock();
 	
 	$_SCRIPTS->setJavaScriptLibrary('jquery');
-	$_SCRIPTS->setJavaScriptFile('maps_simplecolor', '/' . $_MAPS_CONF['maps_folder'] . '/js/simple-color.js');
-	$js = LB . '<script  type="text/javascript" src= "https://maps.googleapis.com/maps/api/js?key=' . $_MAPS_CONF['google_api_key'] . '&sensor=false"> </script>
-    <script type="text/javascript">
+	$js = LB . '<script type="text/javascript">
 	jQuery(document).ready(
         function()
         {
-            jQuery("#primary_color").simpleColor({
-				cellWidth: 9,
-				cellHeight: 9,
-				border: \'1px solid #333333\',
-				displayColorCode: true
-		    });
-            jQuery("#stroke_color").simpleColor({
-				cellWidth: 9,
-				cellHeight: 9,
-				border: \'1px solid #333333\',
-				displayColorCode: true
-		    });
 			$( "#from" ).datepicker();
 		    $( "#to" ).datepicker();
         });
@@ -596,58 +616,59 @@ function getUserMarkerForm($marker = array()) {
 		
 		var geocoder = new google.maps.Geocoder();
 		var map;
+		var editMarker;
+
+		function updateMarkerCoordinates(position) {
+			if (!position) { return; }
+			document.getElementById("lat").value = position.lat().toFixed(6);
+			document.getElementById("lng").value = position.lng().toFixed(6);
+		}
+
+		function moveEditMarker(position, recenter) {
+			if (!editMarker || !position) { return; }
+			editMarker.setPosition(position);
+			updateMarkerCoordinates(position);
+			if (recenter) { map.panTo(position); }
+		}
 
 		function initializeGMap() {
-			
+			var initialPosition = {lat:Number(' . MAPS_jsNumber($marker['lat'], 0) . '), lng:Number(' . MAPS_jsNumber($marker['lng'], 0) . ')};
 			var mapOptions = {
-			  center: new google.maps.LatLng(' . $marker['lat'] . ', ' . $marker['lng'] . '),
-			  zoom: 10,
-			  mapTypeId: google.maps.MapTypeId.ROADMAP
+			  center: initialPosition,
+			  zoom: ' . (int) MAPS_arrayGet($_MAPS_CONF, 'marker_editor_zoom', 10) . ',
+			  mapTypeId: google.maps.MapTypeId.' . MAPS_mapType(MAPS_arrayGet($_MAPS_CONF, 'marker_editor_type', 'ROADMAP')) . '
 			};
-			
-			map = new google.maps.Map(document.getElementById("map_canvas"),
-				mapOptions);
-				
-			var marker = new google.maps.Marker({
+
+			map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+			editMarker = new google.maps.Marker({
 			  map: map,
-			  position: new google.maps.LatLng('. $marker['lat']. ', '. $marker['lng'] .'),
-			  title: "' .  $marker['name'] . '",
-			  draggable:true,
-              animation: google.maps.Animation.DROP,
+			  position: initialPosition,
+			  title: ' . MAPS_jsString($marker['name']) . ',
+			  draggable: true,
+              animation: google.maps.Animation.DROP
 			});
-			
-			google.maps.event.addDomListener(marker, "dragend", function(evt) {
-				document.getElementById(\'lat\').value = evt.latLng.lat().toFixed(6);
-				document.getElementById(\'lng\').value = evt.latLng.lng().toFixed(6);
-				//showInfoWindowHtml(marker);
+
+			google.maps.event.addListener(editMarker, "dragend", function(evt) {
+				updateMarkerCoordinates(evt.latLng);
 			});
-			
-		}
-		
-		google.maps.event.addDomListener(window, \'load\', initializeGMap);
-		
-		function showInfoWindowHtml (marker) {
-		  var latlng= marker.getLatLng();
-		  var lat=latlng.lat();
-		  var lng=latlng.lng();
-		  //marker.openInfoWindowHtml(\'<p>{lat} \' + lat.toString() + \'</p><p>{lng} \' + lng.toString());
-		  document.getElementById(\'lat\').value = lat;
-		  document.getElementById(\'lng\').value = lng;
+			google.maps.event.addListener(map, "click", function(evt) {
+				moveEditMarker(evt.latLng, false);
+			});
 		}
 
+		if (document.readyState === "complete") { initializeGMap(); } else { window.addEventListener("load", initializeGMap); }
+
 		function codeAddress() {
-		  var address = document.getElementById(\'geoaddress\').value;
-		  geocoder.geocode( { \'address\': address}, function(results, status) {
-			if (status == google.maps.GeocoderStatus.OK) {
-			  map.setCenter(results[0].geometry.location);
-			  var marker = new google.maps.Marker({
-				  map: map,
-				  position: results[0].geometry.location
-			  });
-			  document.getElementById(\'lat\').value = results[0].geometry.location.lat(); 
-              document.getElementById(\'lng\').value = results[0].geometry.location.lng(); 
+		  var address = document.getElementById("geoaddress").value;
+		  if (!address) { return; }
+		  geocoder.geocode({"address": address}, function(results, status) {
+			if (status == google.maps.GeocoderStatus.OK && results.length > 0) {
+			  moveEditMarker(results[0].geometry.location, true);
+			  if (results[0].geometry.viewport) { map.fitBounds(results[0].geometry.viewport); }
+			  document.getElementById("geoaddress").value = results[0].formatted_address;
+			  document.getElementById("address").value = results[0].formatted_address;
 			} else {
-			  alert(\'Geocode was not successful for the following reason: \' + status);
+			  alert("Geocode was not successful for the following reason: " + status);
 			}
 		  });
 		}
@@ -682,7 +703,7 @@ $display = '';
 switch ($_REQUEST['mode']) {
     case 'edit':
 	    if (SEC_hasRights('maps.admin')) {
-			    echo COM_refresh($_CONF['site_admin_url'] . '/plugins/maps/marker_edit.php?mode=edit&amp;mkid='. $_REQUEST['mkid'] );
+			    echo COM_refresh($_CONF['site_admin_url'] . '/plugins/maps/marker_edit.php?mode=edit&mkid='. $_REQUEST['mkid'] );
 				exit();
 		}
 		// Get the marker to edit and display the form
@@ -692,12 +713,13 @@ switch ($_REQUEST['mode']) {
             FROM {$_TABLES['maps_markers']} AS mk
 			LEFT JOIN {$_TABLES['maps_maps']} AS m
 				  ON mk.mid = m.mid
-			WHERE mkid = {$_REQUEST['mkid']} LIMIT 1";
+			WHERE mkid = '{$safeMkid}' LIMIT 1";
 
             $res = DB_query($sql, 0);
             $A = DB_fetchArray($res);			
 			
-			if (($A['owner_id'] != $_USER['uid']) OR ($_MAPS_CONF['marker_edition'] == 0) OR  $A['free_marker'] != 1) {
+            $referentUid = MAPS_resolveMarkerOwnerUid($A);
+			if (($referentUid != $_USER['uid']) OR ($_MAPS_CONF['marker_edition'] == 0) OR  $A['free_marker'] != 1) {
 			    echo COM_refresh($_CONF['site_url']);
 				exit();
 			}
@@ -711,11 +733,20 @@ switch ($_REQUEST['mode']) {
 	
 	case 'save':
 
-		if (empty($_REQUEST['name']) || empty($_REQUEST['address'])) {
+        $safeMkid = isset($_REQUEST['mkid']) ? preg_replace('/[^0-9]/', '', (string) $_REQUEST['mkid']) : '';
+        foreach (array('name', 'address', 'street', 'code', 'tel', 'fax', 'web') as $markerField) {
+            $_REQUEST[$markerField] = MAPS_normalizeMarkerText(isset($_REQUEST[$markerField]) ? $_REQUEST[$markerField] : '');
+        }
+        foreach (array('city', 'state', 'country') as $markerPlaceField) {
+            $_REQUEST[$markerPlaceField] = MAPS_normalizeMarkerPlace(isset($_REQUEST[$markerPlaceField]) ? $_REQUEST[$markerPlaceField] : '');
+        }
+        $_REQUEST['description'] = trim(isset($_REQUEST['description']) ? (string) $_REQUEST['description'] : '');
+
+		if ($_REQUEST['name'] === '' || $_REQUEST['address'] === '') {
             $display .= COM_startBlock($LANG_MAPS_1['error'],'','blockheader-message.thtml');
             $display .= $LANG_MAPS_1['missing_field'];
             $display .= COM_endBlock('blockfooter-message.thtml');
-            $display .= getMarkerForm($_REQUEST);
+            $display .= getUserMarkerForm($_REQUEST);
             break;
         }
 		
@@ -724,12 +755,13 @@ switch ($_REQUEST['mode']) {
             FROM {$_TABLES['maps_markers']} AS mk
 			LEFT JOIN {$_TABLES['maps_maps']} AS m
 				  ON mk.mid = m.mid
-			WHERE mkid = {$_REQUEST['mkid']} LIMIT 1";
+			WHERE mkid = '{$safeMkid}' LIMIT 1";
 		
 		$res = DB_query($sql, 0);
 		$A = DB_fetchArray($res);
 		
-		if (($A['owner_id'] != $_USER['uid']) OR ($_MAPS_CONF['marker_edition'] == 0) OR $A['free_marker'] != 1) {
+        $referentUid = MAPS_resolveMarkerOwnerUid($A);
+		if (($referentUid != $_USER['uid']) OR ($_MAPS_CONF['marker_edition'] == 0) OR $A['free_marker'] != 1) {
 			echo COM_refresh($_CONF['site_url']);
 			exit();
 		}
@@ -743,9 +775,9 @@ switch ($_REQUEST['mode']) {
 		    $address = $_REQUEST['address'];
 		    $coords = MAPS_getCoords($address, $lat, $lng);
 			if ($lat == 0 && $lng == 0) {
-			    $display .= getMarkerForm($_REQUEST);
-				$display .= COM_siteFooter();
-				COM_output($display);
+			    $display .= getUserMarkerForm($_REQUEST);
+				$display .= MAPS_compatSiteFooter();
+				MAPS_compatOutput($display);
 				exit();
 			}
 			
@@ -754,17 +786,14 @@ switch ($_REQUEST['mode']) {
 			$lng = strval ($_REQUEST['lng']);
 		}
 		
-		// addslashes
-		$_REQUEST['name'] = addslashes($_REQUEST['name']);
-		$_REQUEST['description'] = addslashes($_REQUEST['description']);
-        $_REQUEST['address'] = addslashes($_REQUEST['address']);
-		$_REQUEST['street'] = addslashes($_REQUEST['street']);
-		$_REQUEST['city'] = addslashes($_REQUEST['city']);
-		$_REQUEST['state'] = addslashes($_REQUEST['state']);
-		$_REQUEST['country'] = addslashes($_REQUEST['country']);
-		$_REQUEST['tel'] = addslashes($_REQUEST['tel']);
-		$_REQUEST['fax'] = addslashes($_REQUEST['fax']);
-		$_REQUEST['web'] = addslashes($_REQUEST['web']);
+        // Store plain text and escape only for the database context.
+        foreach (array('name', 'description', 'address', 'street', 'city', 'state',
+                       'country', 'tel', 'fax', 'web', 'code') as $stringField) {
+            $_REQUEST[$stringField] = MAPS_dbEscape(isset($_REQUEST[$stringField]) ? $_REQUEST[$stringField] : '');
+        }
+        $lat = MAPS_canonicalNumberString($lat, '0');
+        $lng = MAPS_canonicalNumberString($lng, '0');
+        $safeMkid = preg_replace('/[^0-9]/', '', (string) $_REQUEST['mkid']);
 
 
 		$sql = "name = '{$_REQUEST['name']}', "
@@ -783,10 +812,12 @@ switch ($_REQUEST['mode']) {
 			 . "web = '{$_REQUEST['web']}'";
 			 
         $sql = "UPDATE {$_TABLES['maps_markers']} SET $sql "
-                 . "WHERE mkid = {$_REQUEST['mkid']}";
+                 . "WHERE mkid = '{$safeMkid}'";
         
         DB_query($sql);
-		updateMap($_REQUEST['mid']);
+        if (!DB_error()) {
+            MAPS_notifyMarkerSaved($safeMkid, (int) $_REQUEST['mid']);
+        }
 		
 		//Send notification to admin		
         MAPS_sendNotification ($_REQUEST, true);
@@ -797,7 +828,7 @@ switch ($_REQUEST['mode']) {
             $msg = $LANG_MAPS_1['save_success'];
         }
         // save complete, return to markers list
-        echo COM_refresh($_MAPS_CONF['site_url'] . '/markers.php?mode=show&mkid=' . $_REQUEST['mkid'] . '&mid=' . $_REQUEST['mid'] . '&msg=' . urlencode($msg));
+        echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php?mode=marker&mkid=' . $_REQUEST['mkid'] . '&msg=' . urlencode($msg));
         exit();
 		
         break;
@@ -805,33 +836,27 @@ switch ($_REQUEST['mode']) {
 		break;
 	 
 	case 'show':
-		
-		if (isset($_REQUEST['mid']) && isset($_REQUEST['mkid'])) {
-            $display .= MAPS_getMarkerDetail($_REQUEST['mid'], $_REQUEST['mkid']);
-			if (!empty($_REQUEST['msg'])) {
-				$display .= COM_startBlock($LANG_MAPS_1['message'],'','blockheader-message.thtml');
-				$display .= $_REQUEST['msg'];
-				$display .= COM_endBlock('blockfooter-message.thtml');
-			}
-            $display .= MAPS_ViewMarkerInfos($_REQUEST['mkid']);
+        $showMid = isset($_REQUEST['mid']) ? (int) $_REQUEST['mid'] : 0;
+        $showMkid = isset($_REQUEST['mkid']) ? trim((string) $_REQUEST['mkid']) : '';
+        if ($showMid > 0 && $showMkid !== '') {
+            $detail = MAPS_getMarkerDetail($showMid, $showMkid);
+            $infos = MAPS_ViewMarkerInfos($showMkid);
+            if ($detail === '' && $infos === '') {
+                $display .= MAPS_message(isset($LANG_MAPS_1['marker_not_found']) ? $LANG_MAPS_1['marker_not_found'] : 'Marker not found or not accessible.', $LANG_MAPS_1['error']);
+            } else {
+                $display .= $detail;
+                if (!empty($_REQUEST['msg'])) {
+                    $display .= COM_startBlock($LANG_MAPS_1['message'],'','blockheader-message.thtml');
+                    $display .= htmlspecialchars((string) $_REQUEST['msg'], ENT_QUOTES, 'UTF-8');
+                    $display .= COM_endBlock('blockfooter-message.thtml');
+                }
+                $display .= $infos;
+            }
         } else {
-		    echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php' );
-		}
+            $display .= MAPS_message(isset($LANG_MAPS_1['marker_not_found']) ? $LANG_MAPS_1['marker_not_found'] : 'Marker not found or not accessible.', $LANG_MAPS_1['error']);
+        }
         break;
 		
-	case 'print':
-		
-		if (isset($_REQUEST['mid']) && isset($_REQUEST['mkid'])) {
-            $display = COM_siteHeader('none', $LANG_MAPS_1['maps'] . ' | ' . $A['name'] . $more_title);
-			$display = MAPS_getMarkerDetail($_REQUEST['mid'], $_REQUEST['mkid']);
-            $display .= MAPS_ViewMarkerInfos($_REQUEST['mkid']);
-			$display .= COM_siteFooter(-1);
-			COM_output($display);
-			exit();
-        } else {
-		    echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php' );
-		}
-        break;
 
     default:	
         $display .= '<h1>' . $LANG_MAPS_1['my_markers'] . '</h1>';
@@ -842,10 +867,10 @@ switch ($_REQUEST['mode']) {
 $pagetitle = '';
 if(defined('MAPS_PAGE_TITLE')) $pagetitle = ' | ' . MAPS_PAGE_TITLE;
 
-$page = COM_siteHeader('menu', $LANG_MAPS_1['maps'] . $pagetitle);
+$page = MAPS_compatSiteHeader('menu', $LANG_MAPS_1['maps'] . $pagetitle);
 $page .= MAPS_user_menu() . $display;
-$page .= COM_siteFooter(0);
+$page .= MAPS_compatSiteFooter(0);
 
-COM_output($page);
+MAPS_compatOutput($page);
 
 ?>

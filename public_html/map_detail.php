@@ -2,13 +2,13 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.0                                                           |
+// | Maps Plugin 1.6.0                                                           |
 // +---------------------------------------------------------------------------+
 // | index.php                                                                 |
 // |                                                                           |
 // | Public plugin page                                                        |
 // +---------------------------------------------------------------------------+
-// | Copyright (C) 2010 by the following authors:                              |
+// | Copyright (C) 2010-2026 by the following authors:                              |
 // |                                                                           |
 // | Authors: ::Ben                                                            |
 // +---------------------------------------------------------------------------+
@@ -51,7 +51,7 @@ $display = '';
 
 // Ensure user has the rights to access this page
 if (COM_isAnonUser() && (($_CONF['loginrequired'] == 1) || ($_MAPS_CONF['maps_login_required'] == 1))) {
-	$display .= COM_siteHeader('');
+	$display .= MAPS_compatSiteHeader('');
 	$display .= MAPS_user_menu();
     $display .= COM_startBlock ($LANG_LOGIN[1], '',
                                 COM_getBlockTemplate ('_msg_block', 'header'));
@@ -67,8 +67,8 @@ if (COM_isAnonUser() && (($_CONF['loginrequired'] == 1) || ($_MAPS_CONF['maps_lo
     $login->parse ('output', 'login');
     $display .= $login->finish ($login->get_var('output'));
     $display .= COM_endBlock (COM_getBlockTemplate ('_msg_block', 'footer'));
-    $display .= COM_siteFooter();
-    COM_output($display);
+    $display .= MAPS_compatSiteFooter();
+    MAPS_compatOutput($display);
     exit;
 }
 
@@ -76,7 +76,7 @@ if (COM_isAnonUser() && (($_CONF['loginrequired'] == 1) || ($_MAPS_CONF['maps_lo
 $vars = array('mid' => 'number');
 MAPS_filterVars($vars, $_REQUEST);
 
-$display .= COM_siteHeader('menu', $LANG_MAPS_1['maps'] . ' | ' . $A['name'] . $more_title);
+$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['maps'] . ' | ' . $A['name'] . $more_title);
 $display .= MAPS_user_menu();
 
 // query database for map
@@ -89,8 +89,8 @@ if ($_REQUEST['mid'] !=0 && $_REQUEST['mid']>0) {
     echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php');
 }
 
-$display .= COM_siteFooter();
+$display .= MAPS_compatSiteFooter();
 
-echo $display;
+MAPS_compatOutput($display);
 
 ?>

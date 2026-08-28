@@ -2,13 +2,13 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.4                                                           |
+// | Maps Plugin 1.6.0                                                         |
 // +---------------------------------------------------------------------------+
 // | mysql_install.php                                                         |
 // |                                                                           |
 // | Installation SQL                                                          |
 // +---------------------------------------------------------------------------+
-// | Copyright (C) 2014 by the following authors:                              |
+// | Copyright (C) 2014-2026 by the following authors:                              |
 // |                                                                           |
 // | Authors: ::Ben                                                            |
 // +---------------------------------------------------------------------------+
@@ -103,8 +103,8 @@ CREATE TABLE {$_TABLES['maps_markers']} (
   validity_end datetime NOT NULL,
   active tinyint(1) unsigned NOT NULL default '1',
   hidden tinyint(1) unsigned NOT NULL default '0',
-  remark text NOT NULL default '',
-  description TEXT NOT NULL default '',
+  remark text NOT NULL,
+  description TEXT NOT NULL,
   street varchar(255) NOT NULL default '',
   code varchar(10) NOT NULL default '',
   city varchar(255) NOT NULL default '',
@@ -154,8 +154,8 @@ CREATE TABLE {$_TABLES['maps_submission']} (
   validity_end datetime NOT NULL,
   active tinyint(1) unsigned NOT NULL default '1',
   hidden tinyint(1) unsigned NOT NULL default '0',
-  remark text NOT NULL default '',
-  description TEXT NOT NULL default '',
+  remark text NOT NULL,
+  description TEXT NOT NULL,
   street varchar(255) NOT NULL default '',
   code varchar(10) NOT NULL default '',
   city varchar(255) NOT NULL default '',
@@ -233,3 +233,18 @@ CREATE TABLE {$_TABLES['maps_overlays_groups']} (
 
 $_SQL[] = "INSERT INTO {$_TABLES['vars']} (name, value) VALUES ('globalMapHits', '0')";
 ?>
+
+
+$_SQL[] = "
+CREATE TABLE {$_TABLES['maps_service_operations']} (
+  operation_key char(64) NOT NULL,
+  operation_id varchar(255) NOT NULL default '',
+  action varchar(32) NOT NULL default '',
+  marker_id BIGINT NOT NULL,
+  source varchar(64) NOT NULL default '',
+  source_id varchar(255) NOT NULL default '',
+  created datetime NOT NULL,
+  PRIMARY KEY (operation_key),
+  KEY marker_id (marker_id)
+) ENGINE=MyISAM
+";

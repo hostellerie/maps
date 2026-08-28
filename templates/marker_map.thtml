@@ -1,0 +1,91 @@
+<style type="text/css">
+.maps-page-title { margin-bottom: 1rem; }
+.maps-marker-map-shell, .maps-public-map-shell { margin: 0 0 1.25rem; }
+#map_contener_m{mid} { width: {map_width}; max-width: 100%; margin: 0; }
+#map_canvas_m{mid} { width: 100%; height: {map_height}; min-height: 320px; border-radius: 14px; overflow: hidden; background: #f2f2f2; box-shadow: 0 2px 14px rgba(0,0,0,.10); }
+.maps-route-shell { width: {map_width}; max-width: 100%; margin: .9rem 0 1.5rem; }
+.maps-directions-panel { padding: 1rem; border: 1px solid rgba(127,127,127,.25); border-radius: 12px; background: rgba(127,127,127,.06); }
+.maps-directions-panel h2 { margin: 0 0 .75rem; font-size: 1.15rem; }
+.maps-directions-panel label { display: block; margin-bottom: .4rem; font-weight: 600; }
+.maps-directions-form { display: flex; gap: .6rem; align-items: stretch; flex-wrap: wrap; }
+.maps-directions-form input[type="text"] { flex: 1 1 260px; min-width: 0; box-sizing: border-box; padding: .7rem .8rem; border: 1px solid rgba(127,127,127,.4); border-radius: 8px; font: inherit; background: inherit; color: inherit; }
+.maps-directions-form input[type="button"] { padding: .7rem 1rem; border: 0; border-radius: 8px; cursor: pointer; font: inherit; font-weight: 600; }
+.maps-directions-result { margin-top: 1rem; }
+.maps-marker-card { margin: 1.25rem 0; padding: 1.1rem; border: 1px solid rgba(127,127,127,.22); border-radius: 14px; background: rgba(127,127,127,.035); }
+.maps-marker-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.45fr); gap: 1rem; }
+.maps-marker-panel { min-width: 0; }
+.maps-marker-address, .maps-marker-contact, .maps-marker-description, .maps-marker-resources { line-height: 1.65; }
+.maps-marker-contact:not(:empty), .maps-marker-resources:not(:empty) { margin-top: .75rem; }
+.maps-marker-meta { display: flex; gap: .75rem 1.25rem; flex-wrap: wrap; align-items: center; margin-top: 1rem; padding-top: .8rem; border-top: 1px solid rgba(127,127,127,.2); font-size: .9em; opacity: .85; }
+.maps-marker-meta-actions { margin-left: auto; }
+.maps-marker-map-link { margin: 1rem 0 0; }
+@media (max-width: 680px) { .maps-marker-grid { grid-template-columns: 1fr; } .maps-marker-meta-actions { margin-left: 0; } #map_canvas_m{mid} { min-height: 280px; } }
+</style>
+
+{markerclusterer}
+
+<script type="text/javascript">
+var map{mid};
+var directionsDisplay{gid};
+var current_address{gid} = {current_address_js};
+var alloverlays = [];
+var map = [];
+var zoommax = [];
+var zoommin = [];
+
+{overlays_js}
+
+function initialize{mid}() {
+    var element = document.getElementById('map_canvas_m{mid}');
+    if (!element || typeof google === 'undefined' || !google.maps) { return; }
+    try {
+        map{mid} = new google.maps.Map(element, {
+            center: {lat: Number({lat_js}), lng: Number({lng_js})},
+            zoom: Number({zoom_js}),
+            mapTypeId: google.maps.MapTypeId.{map_type}
+        });
+    } catch (error) {
+        if (window.console && console.error) { console.error('Maps: initialization failed for map {mid}', error); }
+        return;
+    }
+    map[{mid}] = map{mid};
+    {overlays}
+    {markers}
+    var directionsPanel = document.getElementById('directions{gid}');
+    if (directionsPanel) {
+        directionsDisplay{gid} = new google.maps.DirectionsRenderer({ map: map{mid}, panel: directionsPanel });
+    }
+}
+if (window.addEventListener) { window.addEventListener('load', initialize{mid}, false); }
+else { window.attachEvent('onload', initialize{mid}); }
+
+function get_directions{gid}() {
+    var input = document.getElementById('from_address{gid}');
+    var panel = document.getElementById('directions{gid}');
+    if (!input || !directionsDisplay{gid}) { return; }
+    if (panel) { panel.innerHTML = ''; }
+    var start = input.value;
+    if (!start) { alert({error_address_empty_js}); return; }
+    var directionsService = new google.maps.DirectionsService();
+    directionsService.route({
+        origin: start,
+        destination: current_address{gid},
+        travelMode: google.maps.TravelMode.DRIVING
+    }, function (response, status) {
+        if (status === 'OK' || status === google.maps.DirectionsStatus.OK) {
+            directionsDisplay{gid}.setDirections(response);
+            scrollToAnchor{gid}('directions_{gid}_table');
+        } else { alert({error_google_error_js} + ' (' + status + ')'); }
+    });
+}
+function scrollToAnchor{gid}(id) {
+    var anchor = document.getElementById(id);
+    if (anchor && anchor.scrollIntoView) { anchor.scrollIntoView({behavior: 'smooth', block: 'start'}); }
+}
+</script>
+
+<div class="maps-marker-map-shell">
+    <div id="map_contener_m{mid}"><div id="map_canvas_m{mid}"></div></div>
+</div>
+<div class="maps-route-shell">{directions_input}</div>
+{overlays_checkboxes}

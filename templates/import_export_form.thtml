@@ -1,57 +1,77 @@
-<script language="JavaScript">
-    checked = false;
-    function checkedAllExport () {
-        if (checked == false) {
-		    checked = true;
-		} else { 
-		    checked = false
-		}
-	    for (var i = 0; i < document.getElementById('export').elements.length; i++) {
-	        document.getElementById('export').elements[i].checked = checked;
-	    }
+<script type="text/javascript">
+(function () {
+    function toggleAll(formId, source) {
+        var form = document.getElementById(formId);
+        if (!form) { return; }
+        var boxes = form.querySelectorAll('input[name="import_export[]"]');
+        for (var i = 0; i < boxes.length; i++) { boxes[i].checked = source.checked; }
     }
-	function checkedAllImport () {
-        if (checked == false){
-		    checked = true;
-		} else { 
-		    checked = false;
-		}
-	    for (var i = 0; i < document.getElementById('import').elements.length; i++) {
-	        document.getElementById('import').elements[i].checked = checked;
-	    }
+    function setImportPreset(className) {
+        var form = document.getElementById('maps-import-form');
+        if (!form) { return; }
+        var boxes = form.querySelectorAll('input[name="import_export[]"]');
+        for (var i = 0; i < boxes.length; i++) {
+            boxes[i].checked = className !== '' && boxes[i].classList.contains(className);
+        }
     }
-</script>	
-<div id="import_form">
-	<form name="import" id="import" action="{site_url}/admin/plugins/maps/import_export.php" method="POST"  enctype="multipart/form-data">
-		<fieldset style="margin-top: 10px;padding:10px;">
-		<legend><b>{import}</b></legend>
-			<p>{import_message}</p>
-			<p><b>{mid_label}</b> &nbsp;<select id="mid" name="mid">{map_options}</select></p>
-			<p><b>{select_file}</b> <input type="file" dir="ltr" name="file"{xhtml}>
-			<p><b>{separator_in}</b> &nbsp;<select id="separator_in" name="separator_in">{separator_options_in}</select></p>
-			<p><b>{choose_fields_import}</b></p>
-			<p>{fields_selector}</p>
-			<p><input type="checkbox" name="checkallimport" onclick="checkedAllImport();"> {checkall}</p>
-			<input type="hidden" name="mode" value="import">
-			<p><input type="submit" name="submit" value="{import}"></p>
-			
-		</fieldset>
-		
-	</form>
+    window.MAPS_toggleImportFields = function (source) { toggleAll('maps-import-form', source); };
+    window.MAPS_toggleExportFields = function (source) { toggleAll('maps-export-form', source); };
+    window.MAPS_importPreset = setImportPreset;
+}());
+</script>
+
+<div class="maps-import-assistant">
+    <div class="maps-import-steps" aria-label="Import workflow">
+        <div class="maps-import-step is-active"><span>1</span><div><strong>{import_step_1}</strong><p>{import_step_1_text}</p></div></div>
+        <div class="maps-import-step"><span>2</span><div><strong>{import_step_2}</strong><p>{import_step_2_text}</p></div></div>
+        <div class="maps-import-step"><span>3</span><div><strong>{import_step_3}</strong><p>{import_step_3_text}</p></div></div>
+    </div>
+    <form id="maps-import-form" class="maps-admin-form maps-import-form" action="{site_admin_url}/plugins/maps/import_export.php" method="post" enctype="multipart/form-data">
+        {csrf_token}
+        <fieldset class="maps-import-panel">
+            <legend>{import}</legend>
+            <p>{import_message}</p>
+            <div class="maps-import-requirements">
+                <div><strong>{import_minimum}</strong><p>{import_minimum_help}</p></div>
+                <div><strong>{import_recommended}</strong><p>{import_recommended_help}</p></div>
+            </div>
+            <div class="maps-import-core-fields">
+                <label><span>{mid_label}</span><select name="mid">{map_options}</select></label>
+                <label><span>{select_file}</span><input type="file" name="file" accept=".csv,text/csv" required></label>
+                <label><span>{separator_in}</span><select name="separator_in">{separator_options_in}</select></label>
+            </div>
+            <div class="maps-import-field-header">
+                <div><strong>{choose_fields_import}</strong><p>{import_order_help}</p></div>
+                <div class="maps-admin-actions">
+                    <button type="button" class="maps-secondary-action" onclick="MAPS_importPreset('maps-import-minimum')">{import_select_minimum}</button>
+                    <button type="button" class="maps-secondary-action" onclick="MAPS_importPreset('maps-import-recommended')">{import_select_recommended}</button>
+                    <button type="button" class="maps-secondary-action" onclick="MAPS_importPreset('')">{import_clear_fields}</button>
+                </div>
+            </div>
+            <div class="maps-import-fields-grid">{import_fields_selector}</div>
+            <p><label><input type="checkbox" onclick="MAPS_toggleImportFields(this)"> {checkall}</label></p>
+            <input type="hidden" name="mode" value="import">
+            <p><input type="submit" name="submit" value="{import}"></p>
+        </fieldset>
+    </form>
 </div>
-<div id="export_form">
-	<form name="export" id="export" action="{site_url}/admin/plugins/maps/import_export.php" method="POST">
-		<fieldset style="margin-top: 10px;padding:10px;">
-		<legend><b>{export}</b></legend>
-			<p>{export_message}</p>
-			<p><b>{mid_label}</b> &nbsp;<select id="mid" name="mid">{map_options}</select>
-			<p><b>{separator_out}</b> &nbsp;<select id="separator_out" name="separator_out">{separator_options_out}</select></p>
-			<p><b>{choose_fields_export}</b></p>
-			<p>{fields_selector}</p>
-			<p><input type="checkbox" name="checkallexport" onclick="checkedAllExport();"> {checkall}</p>
-			<input type="hidden" name="mode" value="export">
-			<p><input type="submit" name="submit" value="{export}"></p>
-		</fieldset>
-		
-	</form>
-</div>
+
+<details class="maps-import-export-secondary">
+    <summary>{export}</summary>
+    <form id="maps-export-form" class="maps-admin-form" action="{site_admin_url}/plugins/maps/import_export.php" method="post">
+        {csrf_token}
+        <fieldset class="maps-import-panel">
+            <legend>{export}</legend>
+            <p>{export_message}</p>
+            <div class="maps-import-core-fields">
+                <label><span>{mid_label}</span><select name="mid">{map_options}</select></label>
+                <label><span>{separator_out}</span><select name="separator_out">{separator_options_out}</select></label>
+            </div>
+            <p><strong>{choose_fields_export}</strong></p>
+            <div class="maps-import-fields-grid">{export_fields_selector}</div>
+            <p><label><input type="checkbox" onclick="MAPS_toggleExportFields(this)"> {checkall}</label></p>
+            <input type="hidden" name="mode" value="export">
+            <p><input type="submit" name="submit" value="{export}"></p>
+        </fieldset>
+    </form>
+</details>

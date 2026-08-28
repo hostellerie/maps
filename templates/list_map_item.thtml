@@ -1,1 +1,6 @@
- {edit_button} <p class="maps_list_item"><b><a href="{map_detail}">{name}</a>&nbsp;</b>{description}<br{xhtml}><small>{update} {markers} {hits} </small></p>
+<article class="maps-list-card">
+    <div class="maps-list-card-actions">{edit_button}</div>
+    <h2 class="maps-list-card-title"><a href="{map_detail}">{name}</a></h2>
+    <div class="maps-list-card-description">{description}</div>
+    <div class="maps-list-card-meta">{update} {markers} {hits}</div>
+</article>

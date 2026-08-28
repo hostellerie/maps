@@ -2,11 +2,11 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.3.2                                                         |
+// | Maps Plugin 1.6.0                                                         |
 // +---------------------------------------------------------------------------+
 // | markers.php                                                               |
 // +---------------------------------------------------------------------------+
-// | Copyright (C) 2014 by the following authors:                              |
+// | Copyright (C) 2014-2026 by the following authors:                         |
 // |                                                                           |
 // | Authors: ::Ben                                                            |
 // +---------------------------------------------------------------------------+
@@ -42,14 +42,14 @@ $display = '';
 
 // Ensure user even has the rights to access this page
 if (! SEC_hasRights('maps.admin')) {
-    $display .= COM_siteHeader('menu', $MESSAGE[30])
+    $display .= MAPS_compatSiteHeader('menu', $MESSAGE[30])
              . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
-             . COM_siteFooter();
+             . MAPS_compatSiteFooter();
 
     // Log attempt to access.log
     COM_accessLog("User {$_USER['username']} tried to illegally access the Maps plugin administration screen.");
 
-    echo $display;
+    MAPS_compatOutput($display);
     exit;
 }
 
@@ -66,42 +66,54 @@ function MAPS_listMarkersAdmin()
     require_once $_CONF['path_system'] . 'lib-admin.php';
 
     $retval = '';
-	
-	if (DB_count($_TABLES['maps_markers']) == 0){
-	return $retval = '';
-	}
 
-    $header_arr = array(      // display 'text' and use table field 'field'
+    if (DB_count($_TABLES['maps_markers']) == 0) {
+        return $retval;
+    }
+
+    $modifiedLabel = isset($LANG_MAPS_1['last_modification'])
+        ? rtrim($LANG_MAPS_1['last_modification'], ': ')
+        : 'Last modification';
+
+    $header_arr = array(
         array('text' => $LANG_MAPS_1['id'], 'field' => 'mkid', 'sort' => true),
-        array('text' => $LANG_MAPS_1['name'], 'field' => 'name', 'sort' => true),
-		array('text' => $LANG_MAPS_1['map_label'], 'field' => 'mapname', 'sort' => true),
+        array('text' => $LANG_MAPS_1['name'], 'field' => 'sort_name', 'sort' => true),
+        array('text' => $LANG_MAPS_1['map_label'], 'field' => 'mapname', 'sort' => true),
+        array('text' => $modifiedLabel, 'field' => 'modified', 'sort' => true),
         array('text' => $LANG_MAPS_1['active_field'], 'field' => 'active', 'sort' => true),
         array('text' => $LANG_MAPS_1['hidden_field'], 'field' => 'hidden', 'sort' => true),
         array('text' => $LANG_ADMIN['edit'], 'field' => 'edit', 'sort' => false),
     );
-    
-	$defsort_arr = array('field' => 'modified', 'direction' => 'desc');
+
+    $defsort_arr = array('field' => 'modified', 'direction' => 'desc');
 
     $text_arr = array(
         'has_extras' => true,
         'form_url' => $_CONF['site_admin_url'] . '/plugins/maps/markers.php'
     );
-	
-	$sql = "SELECT
-	            a.*, b.name as mapname
+
+    $sql = "SELECT
+                a.*, LOWER(TRIM(a.name)) AS sort_name, b.name as mapname
             FROM {$_TABLES['maps_markers']} AS a
-			LEFT JOIN
-			     {$_TABLES['maps_maps']} AS b
-			ON a.mid = b.mid
-			WHERE 1=1";
-	
+            LEFT JOIN
+                 {$_TABLES['maps_maps']} AS b
+            ON a.mid = b.mid
+            WHERE 1=1";
+
     $query_arr = array(
         'sql'            => $sql,
-        'default_filter' => COM_getPermSQL ('AND', 0, 3)
+        'query_fields'   => array('a.name', 'a.address', 'b.name'),
+        'default_filter' => COM_getPermSQL('AND', 0, 3)
     );
 
-    $retval .= ADMIN_list('markers', 'plugin_getListField_markers',
-                          $header_arr, $text_arr, $query_arr, $defsort_arr);
+    $retval .= ADMIN_list(
+        'markers',
+        'plugin_getListField_markers',
+        $header_arr,
+        $text_arr,
+        $query_arr,
+        $defsort_arr
+    );
 
     return $retval;
 }
@@ -118,55 +130,81 @@ function MAPS_listMarkersAdmin()
 */
 function plugin_getListField_markers($fieldname, $fieldvalue, $A, $icon_arr)
 {
-    global $_CONF, $_MAPS_CONF, $LANG_ADMIN, $LANG_STATIC, $_TABLES;
+    global $_CONF, $_MAPS_CONF, $LANG_ADMIN, $LANG_STATIC, $LANG_MAPS_1, $_TABLES;
 
-    switch($fieldname) {
-        case "edit":
-            $retval = COM_createLink($icon_arr['edit'],
-                "{$_CONF['site_admin_url']}/plugins/maps/marker_edit.php?mode=edit&amp;mkid={$A['mkid']}");
-            break;
-        case "name":
-            $map_title = stripslashes ($A['name']);
-            $url = $_MAPS_CONF['site_url'] .
-                                 '/markers.php?mode=show&amp;mkid=' . $A['mkid'] . '&amp;mid=' . $A['mid'];
-            $retval = COM_createLink($map_title, $url, array('title'=>$LANG_MAPS_1['title_display']));
+    switch ($fieldname) {
+        case 'edit':
+            $retval = COM_createLink(
+                $icon_arr['edit'],
+                "{$_CONF['site_admin_url']}/plugins/maps/marker_edit.php?mode=edit&mkid={$A['mkid']}"
+            );
             break;
 
-        case "id":
-            $retval = $A['mkid'];
+        case 'sort_name':
+            $map_title = MAPS_normalizeMarkerText($A['name']);
+            $url = $_MAPS_CONF['site_url']
+                . '/markers.php?mode=show&mkid=' . $A['mkid'] . '&mid=' . $A['mid'];
+            $retval = COM_createLink(
+                $map_title,
+                $url,
+                array('title' => $LANG_MAPS_1['title_display'])
+            );
             break;
-		case "active":
-            if ($fieldvalue == 1) {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/green_dot.gif" alt="" valign="center">';
-			} else {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/red_dot.gif" alt="">';
-			}
+
+        case 'modified':
+            $modifiedValue = trim((string) $fieldvalue);
+            $modified = $modifiedValue === '' ? false : strtotime($modifiedValue);
+            if ($modified !== false && $modified > 0) {
+                $date = COM_getUserDateTimeFormat($modified);
+                $retval = htmlspecialchars($date[0], ENT_QUOTES, 'UTF-8');
+            } else {
+                $retval = MAPS_markerEmptyValue();
+            }
             break;
-		case "hidden":
-            if ($fieldvalue == 0) {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/green_dot.gif" alt="">';
-			} else {
-			$retval = '<img src="'. $_CONF['site_admin_url'] . '/plugins/maps/images/red_dot.gif" alt="">';
-			}
+
+        case 'mkid':
+            $retval = htmlspecialchars((string) $A['mkid'], ENT_QUOTES, 'UTF-8');
             break;
+
+        case 'active':
+            $retval = MAPS_adminStatusBadge(
+                $fieldvalue,
+                $LANG_MAPS_1['status_active'],
+                $LANG_MAPS_1['status_inactive']
+            );
+            break;
+
+        case 'hidden':
+            $retval = MAPS_adminStatusBadge(
+                $fieldvalue,
+                $LANG_MAPS_1['status_hidden'],
+                $LANG_MAPS_1['status_visible'],
+                'is-warning',
+                'is-positive'
+            );
+            break;
+
         default:
-            $retval = stripslashes($fieldvalue);
+            $retval = htmlspecialchars(MAPS_decodeStoredText($fieldvalue), ENT_QUOTES, 'UTF-8');
             break;
     }
+
     return $retval;
 }
 
 // MAIN
-$display .= COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
-$display .= maps_admin_menu();
+$display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
+$display .= MAPS_admin_menu();
 
-$display .= '<br /><h1>' . $LANG_MAPS_1['markers_list'] . '</h1>';
-$display .= '<p>' . $LANG_MAPS_1['you_can'] . '<a href="' . $_CONF['site_url'] . '/admin/plugins/maps/marker_edit.php">' . $LANG_MAPS_1['create_marker'] . '</a>.</p>';
+$display .= '<h1 class="maps-admin-title">' . $LANG_MAPS_1['markers_list'] . '</h1>';
+$display .= '<p class="maps-list-actions"><a class="maps-primary-action" href="'
+    . $_CONF['site_admin_url'] . '/plugins/maps/marker_edit.php">'
+    . htmlspecialchars($LANG_MAPS_1['create_marker'], ENT_QUOTES, 'UTF-8') . '</a></p>';
 
 $display .= MAPS_listMarkersAdmin();
 
-$display .= COM_siteFooter(0);
+$display .= MAPS_compatSiteFooter(0);
 
-COM_output($display);
+MAPS_compatOutput($display);
 
 ?>

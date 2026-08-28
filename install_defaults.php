@@ -2,90 +2,53 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | maps plugin 1.4                                                           |
+// | Maintainer: ::Ben                                                         |
+// | Maps Plugin 1.6.0                                                         |
 // +---------------------------------------------------------------------------+
 // | install_defaults.php                                                      |
-// |                                                                           |
-// | Initial Installation Defaults used when loading the online configuration  |
-// | records. These settings are only used during the initial installation     |
-// | and not referenced any more once the plugin is installed.                 |
 // +---------------------------------------------------------------------------+
-// | Copyright (C) 2010 by the following authors:                              |
-// |                                                                           |
-// | Authors: ::Ben                                                            |
-// +---------------------------------------------------------------------------+
-// |                                                                           |
-// | This program is free software; you can redistribute it and/or             |
-// | modify it under the terms of the GNU General Public License               |
-// | as published by the Free Software Foundation; either version 2            |
-// | of the License, or (at your option) any later version.                    |
-// |                                                                           |
-// | This program is distributed in the hope that it will be useful,           |
-// | but WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             |
-// | GNU General Public License for more details.                              |
-// |                                                                           |
-// | You should have received a copy of the GNU General Public License         |
-// | along with this program; if not, write to the Free Software Foundation,   |
-// | Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.           |
-// |                                                                           |
-// +---------------------------------------------------------------------------+
-//
 
-if (strpos(strtolower($_SERVER['PHP_SELF']), 'install_defaults.php') !== false) {
+if (strpos(strtolower(isset($_SERVER['PHP_SELF']) ? $_SERVER['PHP_SELF'] : ''), 'install_defaults.php') !== false) {
     die('This file can not be used on its own!');
 }
 
-/*
- * maps default settings
- *
- * Initial Installation Defaults used when loading the online configuration
- * records. These settings are only used during the initial installation
- * and not referenced any more once the plugin is installed
- *
- */
- 
-/**
-*   Default values to be used during plugin installation/upgrade
-*   @global array $_MAPS_DEFAULT
-*/
-global $_DB_table_prefix, $_MAPS_DEFAULT, $LANG_MAPS_1;
+global $_MAPS_DEFAULT;
+
 $_MAPS_DEFAULT = array();
+$_MAPS_DEFAULT['pi_name'] = 'maps';
 
-$_MAPS_DEFAULT['pi_name']    = 'maps'; // Plugin name
-
-/**
-*   Main settings
-*/
-$_MAPS_DEFAULT['maps_folder']    = 'maps'; //Allow to move the directory where the users's Maps program is store
+/* General */
 $_MAPS_DEFAULT['maps_login_required'] = 0;
-
-// Set to 1 to hide the "Maps" entry from the top menu:
 $_MAPS_DEFAULT['hide_maps_menu'] = 0;
-$_MAPS_DEFAULT['monetize'] = 0;
 $_MAPS_DEFAULT['marker_submission'] = 1;
 $_MAPS_DEFAULT['marker_edition'] = 1;
 $_MAPS_DEFAULT['submit_login_required'] = 1;
+$_MAPS_DEFAULT['default_permissions'] = array(3, 3, 2, 2);
 
-//Google Ads
-$_MAPS_DEFAULT['AdsOnMap'] = 0;
-$_MAPS_DEFAULT['publisher_id'] = 'ca-pub-3822023659914251';
-$_MAPS_DEFAULT['channel_id'] = '5373779113';
-$_MAPS_DEFAULT['maxAdsOnMap'] = '1';
+/* Image uploads */
+$_MAPS_DEFAULT['max_image_width'] = 2000;
+$_MAPS_DEFAULT['max_image_height'] = 2000;
+$_MAPS_DEFAULT['max_image_size'] = 4194304;
 
-//Google maps API
-$_MAPS_DEFAULT['google_api_key'] = '';   // User must supply their own
-$_MAPS_DEFAULT['url_MAPScode']  = 'http://maps.googleapis.com/maps/api/geocode/json?address=%address%&sensor=false';
+/* Google Maps Platform */
+$_MAPS_DEFAULT['autofill_coord'] = 1;
+$_MAPS_DEFAULT['google_api_key'] = '';
+$_MAPS_DEFAULT['google_server_api_key'] = '';
+$_MAPS_DEFAULT['google_map_id'] = '';
+$_MAPS_DEFAULT['google_language'] = '';
+$_MAPS_DEFAULT['google_region'] = '';
+$_MAPS_DEFAULT['url_geocode'] = 'https://maps.googleapis.com/maps/api/geocode/json';
 
-// Set the default permissions
-$_MAPS_DEFAULT['default_permissions'] =  array (3, 3, 2, 2);
+/* Maps display */
+$_MAPS_DEFAULT['map_main_header'] = '';
+$_MAPS_DEFAULT['map_main_footer'] = '';
+$_MAPS_DEFAULT['maps_page_title'] = '';
+$_MAPS_DEFAULT['maps_page_h1'] = '';
+$_MAPS_DEFAULT['maps_meta_description'] = '';
+$_MAPS_DEFAULT['use_cluster'] = 1;
+$_MAPS_DEFAULT['display_events_map'] = 1;
 
-
-/**
-*   Display Settings
-*/
-
-//Global Map
+/* Global/users map */
 $_MAPS_DEFAULT['users_map'] = 1;
 $_MAPS_DEFAULT['global_map'] = 1;
 $_MAPS_DEFAULT['global_type'] = 'ROADMAP';
@@ -93,23 +56,22 @@ $_MAPS_DEFAULT['global_zoom'] = '2';
 $_MAPS_DEFAULT['global_width'] = '100%';
 $_MAPS_DEFAULT['global_height'] = '600px';
 
-//Profile
+/* Profile map */
 $_MAPS_DEFAULT['display_geo_profile'] = 1;
 $_MAPS_DEFAULT['map_type_profile'] = 'ROADMAP';
-$_MAPS_DEFAULT['map_zoom_profile'] = '10';
 $_MAPS_DEFAULT['map_width_profile'] = '100%';
 $_MAPS_DEFAULT['map_height_profile'] = '400px';
 $_MAPS_DEFAULT['show_directions_profile'] = 0;
 $_MAPS_DEFAULT['zoom_profile'] = 10;
 
-//geo autotag
+/* Geo autotag */
 $_MAPS_DEFAULT['map_type_geotag'] = 'ROADMAP';
 $_MAPS_DEFAULT['map_zoom_geotag'] = '10';
 $_MAPS_DEFAULT['map_width_geotag'] = '100%';
 $_MAPS_DEFAULT['map_height_geotag'] = '400px';
 $_MAPS_DEFAULT['show_directions_geo'] = 0;
 
-//Map default settings
+/* Defaults for newly created maps */
 $_MAPS_DEFAULT['map_type'] = 'ROADMAP';
 $_MAPS_DEFAULT['map_zoom'] = '6';
 $_MAPS_DEFAULT['map_width'] = '100%';
@@ -118,20 +80,35 @@ $_MAPS_DEFAULT['map_active'] = 1;
 $_MAPS_DEFAULT['map_hidden'] = 0;
 $_MAPS_DEFAULT['free_markers'] = 1;
 $_MAPS_DEFAULT['paid_markers'] = 1;
+$_MAPS_DEFAULT['map_primary_color'] = '#666666';
+$_MAPS_DEFAULT['map_stroke_color'] = '#333333';
+$_MAPS_DEFAULT['map_label'] = '';
+$_MAPS_DEFAULT['map_label_color'] = 0;
 
-//Marker default settings
+/* Event map */
+$_MAPS_DEFAULT['events_map_zoom'] = 8;
+$_MAPS_DEFAULT['events_map_height'] = '300px';
+/* Marker defaults */
 $_MAPS_DEFAULT['marker_active'] = 1;
 $_MAPS_DEFAULT['marker_hidden'] = 0;
 $_MAPS_DEFAULT['marker_payed'] = 0;
 $_MAPS_DEFAULT['marker_validity'] = 0;
-$_MAPS_DEFAULT['use_cluster'] = 1;
-
 $_MAPS_DEFAULT['star_primary_color'] = '#FFFF00';
 $_MAPS_DEFAULT['star_stroke_color'] = '#333333';
 $_MAPS_DEFAULT['label_color'] = 0;
 
+/* Marker editor/detail/popup */
+$_MAPS_DEFAULT['marker_editor_zoom'] = 10;
+$_MAPS_DEFAULT['marker_editor_type'] = 'ROADMAP';
+$_MAPS_DEFAULT['marker_editor_width'] = '100%';
+$_MAPS_DEFAULT['marker_editor_height'] = '400px';
 $_MAPS_DEFAULT['detail_zoom'] = '8';
+$_MAPS_DEFAULT['detail_width'] = '100%';
+$_MAPS_DEFAULT['detail_height'] = '300px';
+$_MAPS_DEFAULT['popup_width'] = '250px';
+$_MAPS_DEFAULT['popup_height'] = '150px';
 
+/* Marker fields */
 $_MAPS_DEFAULT['street'] = 1;
 $_MAPS_DEFAULT['code'] = 1;
 $_MAPS_DEFAULT['city'] = 1;
@@ -141,213 +118,170 @@ $_MAPS_DEFAULT['tel'] = 1;
 $_MAPS_DEFAULT['fax'] = 1;
 $_MAPS_DEFAULT['web'] = 1;
 
-$_MAPS_DEFAULT['item_1'] = 'Ressource #1';
-$_MAPS_DEFAULT['item_2'] = 'Ressource #2';
-$_MAPS_DEFAULT['item_3'] = 'Ressource #3';
-$_MAPS_DEFAULT['item_4'] = 'Ressource #4';
-$_MAPS_DEFAULT['item_5'] = 'Ressource #5';
-$_MAPS_DEFAULT['item_6'] = 'Ressource #6';
-$_MAPS_DEFAULT['item_7'] = 'Ressource #7';
-$_MAPS_DEFAULT['item_8'] = 'Ressource #8';
-$_MAPS_DEFAULT['item_9'] = 'Ressource #9';
-$_MAPS_DEFAULT['item_10'] = 'Ressource #10';
-
-$_MAPS_DEFAULT['infos_label'] = 'Infos';
+for ($i = 1; $i <= 10; $i++) {
+    $_MAPS_DEFAULT['item_' . $i] = 'Custom field ' . $i;
+}
 
 /**
-* Initialize maps plugin configuration
-*
-* Creates the database entries for the configuation if they don't already
-* exist. 
-*
-* @return   boolean     true: success; false: an error occurred
-*
-*/
+ * Return the complete Maps 1.5.8 configuration presentation definition.
+ *
+ * Each entry is: value, type, subgroup, fieldset, selectionArray, sort_order, tab.
+ * Geeklog renders entries of type 'tab' as the visible configuration tabs.
+ *
+ * @return array
+ */
+function MAPS_configDefinition155()
+{
+    global $_MAPS_DEFAULT;
+
+    $rows = array(
+        /* Tab 0: General */
+        'sg_main' => array(null, 'subgroup', 0, 0, null, 0, 0),
+        'tab_general' => array(null, 'tab', 0, 0, null, 0, 0),
+        'fs_main' => array(null, 'fieldset', 0, 0, null, 0, 0),
+        'maps_login_required' => array($_MAPS_DEFAULT['maps_login_required'], 'select', 0, 0, 3, 10, 0),
+        'hide_maps_menu' => array($_MAPS_DEFAULT['hide_maps_menu'], 'select', 0, 0, 3, 20, 0),
+        'marker_submission' => array($_MAPS_DEFAULT['marker_submission'], 'select', 0, 0, 3, 30, 0),
+        'submit_login_required' => array($_MAPS_DEFAULT['submit_login_required'], 'select', 0, 0, 3, 40, 0),
+        'marker_edition' => array($_MAPS_DEFAULT['marker_edition'], 'select', 0, 0, 3, 50, 0),
+        'fs_permissions' => array(null, 'fieldset', 0, 1, null, 0, 0),
+        'default_permissions' => array($_MAPS_DEFAULT['default_permissions'], '@select', 0, 1, 12, 10, 0),
+        'fs_uploads' => array(null, 'fieldset', 0, 2, null, 0, 0),
+        'max_image_width' => array($_MAPS_DEFAULT['max_image_width'], 'text', 0, 2, 0, 10, 0),
+        'max_image_height' => array($_MAPS_DEFAULT['max_image_height'], 'text', 0, 2, 0, 20, 0),
+        'max_image_size' => array($_MAPS_DEFAULT['max_image_size'], 'text', 0, 2, 0, 30, 0),
+
+        /* Tab 1: Google Maps */
+        'tab_google' => array(null, 'tab', 0, 0, null, 0, 1),
+        'fs_google' => array(null, 'fieldset', 0, 0, null, 0, 1),
+        'autofill_coord' => array($_MAPS_DEFAULT['autofill_coord'], 'select', 0, 0, 3, 10, 1),
+        'google_api_key' => array($_MAPS_DEFAULT['google_api_key'], 'text', 0, 0, 0, 20, 1),
+        'google_server_api_key' => array($_MAPS_DEFAULT['google_server_api_key'], 'text', 0, 0, 0, 30, 1),
+        'google_map_id' => array($_MAPS_DEFAULT['google_map_id'], 'text', 0, 0, 0, 40, 1),
+        'google_language' => array($_MAPS_DEFAULT['google_language'], 'text', 0, 0, 0, 50, 1),
+        'google_region' => array($_MAPS_DEFAULT['google_region'], 'text', 0, 0, 0, 60, 1),
+        'url_geocode' => array($_MAPS_DEFAULT['url_geocode'], 'text', 0, 0, 0, 70, 1),
+
+        /* Tab 2: Maps */
+        'tab_maps' => array(null, 'tab', 0, 0, null, 0, 2),
+        'fs_display' => array(null, 'fieldset', 0, 0, null, 0, 2),
+        'map_main_header' => array($_MAPS_DEFAULT['map_main_header'], 'text', 0, 0, 0, 10, 2),
+        'map_main_footer' => array($_MAPS_DEFAULT['map_main_footer'], 'text', 0, 0, 0, 20, 2),
+        'use_cluster' => array($_MAPS_DEFAULT['use_cluster'], 'select', 0, 0, 3, 30, 2),
+        'display_events_map' => array($_MAPS_DEFAULT['display_events_map'], 'select', 0, 0, 3, 40, 2),
+        'fs_seo' => array(null, 'fieldset', 0, 6, null, 0, 2),
+        'maps_page_title' => array($_MAPS_DEFAULT['maps_page_title'], 'text', 0, 6, 0, 10, 2),
+        'maps_page_h1' => array($_MAPS_DEFAULT['maps_page_h1'], 'text', 0, 6, 0, 20, 2),
+        'maps_meta_description' => array($_MAPS_DEFAULT['maps_meta_description'], 'text', 0, 6, 0, 30, 2),
+        'fs_global_map' => array(null, 'fieldset', 0, 1, null, 0, 2),
+        'users_map' => array($_MAPS_DEFAULT['users_map'], 'select', 0, 1, 3, 10, 2),
+        'global_map' => array($_MAPS_DEFAULT['global_map'], 'select', 0, 1, 3, 20, 2),
+        'global_type' => array($_MAPS_DEFAULT['global_type'], 'select', 0, 1, 20, 30, 2),
+        'global_width' => array($_MAPS_DEFAULT['global_width'], 'text', 0, 1, 0, 40, 2),
+        'global_height' => array($_MAPS_DEFAULT['global_height'], 'text', 0, 1, 0, 50, 2),
+        'global_zoom' => array($_MAPS_DEFAULT['global_zoom'], 'text', 0, 1, 0, 60, 2),
+        'fs_display_profile' => array(null, 'fieldset', 0, 2, null, 0, 2),
+        'display_geo_profile' => array($_MAPS_DEFAULT['display_geo_profile'], 'select', 0, 2, 3, 10, 2),
+        'map_type_profile' => array($_MAPS_DEFAULT['map_type_profile'], 'select', 0, 2, 20, 20, 2),
+        'map_width_profile' => array($_MAPS_DEFAULT['map_width_profile'], 'text', 0, 2, 0, 30, 2),
+        'map_height_profile' => array($_MAPS_DEFAULT['map_height_profile'], 'text', 0, 2, 0, 40, 2),
+        'zoom_profile' => array($_MAPS_DEFAULT['zoom_profile'], 'text', 0, 2, 0, 50, 2),
+        'show_directions_profile' => array($_MAPS_DEFAULT['show_directions_profile'], 'select', 0, 2, 3, 60, 2),
+        'fs_display_geo' => array(null, 'fieldset', 0, 3, null, 0, 2),
+        'map_type_geotag' => array($_MAPS_DEFAULT['map_type_geotag'], 'select', 0, 3, 20, 10, 2),
+        'map_width_geotag' => array($_MAPS_DEFAULT['map_width_geotag'], 'text', 0, 3, 0, 20, 2),
+        'map_height_geotag' => array($_MAPS_DEFAULT['map_height_geotag'], 'text', 0, 3, 0, 30, 2),
+        'map_zoom_geotag' => array($_MAPS_DEFAULT['map_zoom_geotag'], 'text', 0, 3, 0, 40, 2),
+        'show_directions_geo' => array($_MAPS_DEFAULT['show_directions_geo'], 'select', 0, 3, 3, 50, 2),
+        'fs_map_defaults' => array(null, 'fieldset', 0, 4, null, 0, 2),
+        'map_type' => array($_MAPS_DEFAULT['map_type'], 'select', 0, 4, 20, 10, 2),
+        'map_width' => array($_MAPS_DEFAULT['map_width'], 'text', 0, 4, 0, 20, 2),
+        'map_height' => array($_MAPS_DEFAULT['map_height'], 'text', 0, 4, 0, 30, 2),
+        'map_zoom' => array($_MAPS_DEFAULT['map_zoom'], 'text', 0, 4, 0, 40, 2),
+        'map_active' => array($_MAPS_DEFAULT['map_active'], 'select', 0, 4, 3, 50, 2),
+        'map_hidden' => array($_MAPS_DEFAULT['map_hidden'], 'select', 0, 4, 3, 60, 2),
+        'free_markers' => array($_MAPS_DEFAULT['free_markers'], 'select', 0, 4, 3, 70, 2),
+        'paid_markers' => array($_MAPS_DEFAULT['paid_markers'], 'select', 0, 4, 3, 80, 2),
+        'map_primary_color' => array($_MAPS_DEFAULT['map_primary_color'], 'text', 0, 4, 0, 90, 2),
+        'map_stroke_color' => array($_MAPS_DEFAULT['map_stroke_color'], 'text', 0, 4, 0, 100, 2),
+        'map_label' => array($_MAPS_DEFAULT['map_label'], 'text', 0, 4, 0, 110, 2),
+        'map_label_color' => array($_MAPS_DEFAULT['map_label_color'], 'select', 0, 4, 30, 120, 2),
+        'fs_events_map' => array(null, 'fieldset', 0, 5, null, 0, 2),
+        'events_map_zoom' => array($_MAPS_DEFAULT['events_map_zoom'], 'text', 0, 5, 0, 10, 2),
+        'events_map_height' => array($_MAPS_DEFAULT['events_map_height'], 'text', 0, 5, 0, 20, 2),
+
+        /* Tab 3: Markers */
+        'tab_markers' => array(null, 'tab', 0, 0, null, 0, 3),
+        'fs_marker_defaults' => array(null, 'fieldset', 0, 0, null, 0, 3),
+        'marker_active' => array($_MAPS_DEFAULT['marker_active'], 'select', 0, 0, 3, 10, 3),
+        'marker_hidden' => array($_MAPS_DEFAULT['marker_hidden'], 'select', 0, 0, 3, 20, 3),
+        'marker_payed' => array($_MAPS_DEFAULT['marker_payed'], 'select', 0, 0, 3, 30, 3),
+        'marker_validity' => array($_MAPS_DEFAULT['marker_validity'], 'select', 0, 0, 3, 40, 3),
+        'star_primary_color' => array($_MAPS_DEFAULT['star_primary_color'], 'text', 0, 0, 0, 50, 3),
+        'star_stroke_color' => array($_MAPS_DEFAULT['star_stroke_color'], 'text', 0, 0, 0, 60, 3),
+        'label_color' => array($_MAPS_DEFAULT['label_color'], 'select', 0, 0, 30, 70, 3),
+        'fs_marker_editor' => array(null, 'fieldset', 0, 1, null, 0, 3),
+        'marker_editor_type' => array($_MAPS_DEFAULT['marker_editor_type'], 'select', 0, 1, 20, 10, 3),
+        'marker_editor_zoom' => array($_MAPS_DEFAULT['marker_editor_zoom'], 'text', 0, 1, 0, 20, 3),
+        'marker_editor_width' => array($_MAPS_DEFAULT['marker_editor_width'], 'text', 0, 1, 0, 30, 3),
+        'marker_editor_height' => array($_MAPS_DEFAULT['marker_editor_height'], 'text', 0, 1, 0, 40, 3),
+        'fs_marker_detail' => array(null, 'fieldset', 0, 2, null, 0, 3),
+        'detail_width' => array($_MAPS_DEFAULT['detail_width'], 'text', 0, 2, 0, 10, 3),
+        'detail_height' => array($_MAPS_DEFAULT['detail_height'], 'text', 0, 2, 0, 20, 3),
+        'detail_zoom' => array($_MAPS_DEFAULT['detail_zoom'], 'text', 0, 2, 0, 30, 3),
+        'fs_marker_popup' => array(null, 'fieldset', 0, 3, null, 0, 3),
+        'popup_width' => array($_MAPS_DEFAULT['popup_width'], 'text', 0, 3, 0, 10, 3),
+        'popup_height' => array($_MAPS_DEFAULT['popup_height'], 'text', 0, 3, 0, 20, 3),
+
+        /* Tab 4: Marker fields */
+        'tab_fields' => array(null, 'tab', 0, 0, null, 0, 4),
+        'fs_marker_fields' => array(null, 'fieldset', 0, 0, null, 0, 4)
+    );
+
+    $order = 10;
+    foreach (array('street', 'code', 'city', 'state', 'country', 'tel', 'fax', 'web') as $name) {
+        $rows[$name] = array($_MAPS_DEFAULT[$name], 'select', 0, 0, 3, $order, 4);
+        $order += 10;
+    }
+    for ($i = 1; $i <= 10; $i++) {
+        $name = 'item_' . $i;
+        $rows[$name] = array($_MAPS_DEFAULT[$name], 'text', 0, 0, 0, $order, 4);
+        $order += 10;
+    }
+
+    return $rows;
+}
+
+/**
+ * Backward-compatible alias used by the 1.5.4 step when upgrading directly
+ * from an older Maps release. The following 1.5.6 step then enforces tab
+ * metadata in the database.
+ *
+ * @return array
+ */
+function MAPS_configDefinition154()
+{
+    return MAPS_configDefinition155();
+}
+
+/**
+ * Initialize Maps configuration.
+ *
+ * @return bool
+ */
 function plugin_initconfig_maps()
 {
-    global $_CONF, $_MAPS_DEFAULT;
-	
-    $c = config::get_instance();
-    if (!$c->group_exists('maps')) {
+    global $_MAPS_DEFAULT;
 
-        //This is main subgroup #0
-		$c->add('sg_main', NULL, 'subgroup', 0, 0, NULL, 0, true, $_MAPS_DEFAULT['pi_name']);
-		
-		//Main settings   
-		$c->add('fs_main', NULL, 'fieldset', 0, 0, NULL, 0, true, $_MAPS_DEFAULT['pi_name']);
-        $c->add('maps_folder', $_MAPS_DEFAULT['maps_folder'],
-                'text', 0, 0, 0, 1, true, 'maps');
-		$c->add('maps_login_required', $_MAPS_DEFAULT['maps_login_required'],
-                'select', 0, 0, 3, 2, true, 'maps');
-		$c->add('hide_maps_menu', $_MAPS_DEFAULT['hide_maps_menu'],
-                'select', 0, 0, 3, 3, true, 'maps');
-		$c->add('marker_submission', $_MAPS_DEFAULT['marker_submission'],
-                'select', 0, 0, 3, 4, true, 'maps');
-		$c->add('submit_login_required', $_MAPS_DEFAULT['submit_login_required'],
-                'select', 0, 0, 3, 5, true, 'maps');
-		$c->add('marker_edition', $_MAPS_DEFAULT['marker_edition'],
-                'select', 0, 0, 3, 6, true, 'maps');
-		$c->add('monetize', $_MAPS_DEFAULT['monetize'],
-                'select', 0, 0, 3, 7, true, 'maps');
-				
-        // Google  Ads   
-		$c->add('fs_ads', NULL, 'fieldset', 0, 2, NULL, 0, true, $_MAPS_DEFAULT['pi_name']);
-        $c->add('AdsOnMap', $_MAPS_DEFAULT['AdsOnMap'], 
-                'select', 0, 2, 3, 150, true, $_MAPS_DEFAULT['pi_name']);
-        $c->add('publisher_id', $_MAPS_DEFAULT['publisher_id'], 
-                'text', 0, 2, 0, 160, true, $_MAPS_DEFAULT['pi_name']);
-        $c->add('channel_id', $_MAPS_DEFAULT['channel_id'], 
-                'text', 0, 2, 0, 170, true, $_MAPS_DEFAULT['pi_name']);
-        $c->add('maxAdsOnMap', $_MAPS_DEFAULT['maxAdsOnMap'], 
-                'text', 0, 2, 0, 180, true, $_MAPS_DEFAULT['pi_name']);
-				
-		// Google  maps API   
-		$c->add('fs_google', NULL, 'fieldset', 0, 3, NULL, 0, true, $_MAPS_DEFAULT['pi_name']);
-        $c->add('autofill_coord', $_MAPS_DEFAULT['autofill_coord'], 
-                'select', 0, 3, 3, 290, true, $_MAPS_DEFAULT['pi_name']);
-        $c->add('google_api_key', $_MAPS_DEFAULT['google_api_key'], 
-                'text', 0, 3, 0, 300, true, $_MAPS_DEFAULT['pi_name']);
-        $c->add('url_geocode', $_MAPS_DEFAULT['url_MAPScode'], 
-                'text', 0, 3, 0, 310, true, $_MAPS_DEFAULT['pi_name']);
-				
-		// Permissions
-        $c->add('fs_permissions', NULL, 'fieldset', 0, 4, NULL, 0, true, $_MAPS_DEFAULT['pi_name']);
-        $c->add('default_permissions', $_MAPS_DEFAULT['default_permissions'],
-                '@select', 0, 4, 12, 450, true, $_MAPS_DEFAULT['pi_name']);
-				
-		//This is display subgroup #1
-		$c->add('sg_display', NULL, 'subgroup', 1, 0, NULL, 0, true, $_MAPS_DEFAULT['pi_name']);
-		
-		// Display settings
-		//Map
-		$c->add('fs_display', NULL, 'fieldset', 1, 8, NULL, 0, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_main_header', NULL, 'text', 1, 8, 0, 2, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_main_footer', NULL, 'text', 1, 8, 0, 4, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('use_cluster', $_MAPS_DEFAULT['use_cluster'], 
-                'select', 1, 8, 3, 6, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('display_events_map', true, 
-                'select', 1, 8, 3, 8, true, $_MAPS_DEFAULT['pi_name']);
-		
-		//Global Maps
-		$c->add('fs_global_map', NULL, 'fieldset', 1, 9, NULL, 0, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('users_map', $_MAPS_DEFAULT['users_map'], 
-                'select', 1, 9, 3, 6, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('global_map', $_MAPS_DEFAULT['global_map'], 
-                'select', 1, 9, 3, 8, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('global_type', $_MAPS_DEFAULT['global_type'], 
-                'select', 1, 9, 20, 10, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('global_width', $_MAPS_DEFAULT['global_width'], 
-                'text', 1, 9, 0, 12, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('global_height', $_MAPS_DEFAULT['global_height'], 
-                'text', 1, 9, 0, 14, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('global_zoom', $_MAPS_DEFAULT['global_zoom'], 
-                'text', 1, 9, 0, 16, true, $_MAPS_DEFAULT['pi_name']);
-				
-		//profile fieldset
-		$c->add('fs_display_profile', NULL, 'fieldset', 1, 10, NULL, 0, true, $_MAPS_DEFAULT['pi_name']);
-        $c->add('display_geo_profile', $_MAPS_DEFAULT['display_geo_profile'], 
-                'select', 1, 10, 3, 20, true, $_MAPS_DEFAULT['pi_name']);
-        $c->add('map_type_profile', $_MAPS_DEFAULT['map_type_profile'], 
-                'select', 1, 10, 20, 30, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_width_profile', $_MAPS_DEFAULT['map_width_profile'], 
-                'text', 1, 10, 0, 40, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_height_profile', $_MAPS_DEFAULT['map_height_profile'], 
-                'text', 1, 10, 0, 50, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('zoom_profile', $_MAPS_DEFAULT['zoom_profile'], 
-                'text', 1, 10, 0, 55, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('show_directions_profile', $_MAPS_DEFAULT['show_directions_profile'], 
-                'select', 1, 10, 3, 60, true, $_MAPS_DEFAULT['pi_name']);
-		//geotag fieldset
-		$c->add('fs_display_geo', NULL, 'fieldset', 1, 20, NULL, 0, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_type_geotag', $_MAPS_DEFAULT['map_type_geotag'], 
-                'select', 1, 20, 20, 70, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_width_geotag', $_MAPS_DEFAULT['map_width_geotag'], 
-                'text', 1, 20, 0, 80, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_height_geotag', $_MAPS_DEFAULT['map_height_geotag'], 
-                'text', 1, 20, 0, 90, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_zoom_geotag', $_MAPS_DEFAULT['map_zoom_geotag'], 
-                'text', 1, 20, 0, 100, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('show_directions_geo', $_MAPS_DEFAULT['show_directions_geo'], 
-                'select', 1, 20, 3, 110, true, $_MAPS_DEFAULT['pi_name']);
-		//map fieldset
-		$c->add('fs_map_default', NULL, 'fieldset', 1, 30, NULL, 0, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_type', $_MAPS_DEFAULT['map_type'], 
-                'select', 1, 30, 20, 120, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_width', $_MAPS_DEFAULT['map_width'], 
-                'text', 1, 30, 0, 121, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_height', $_MAPS_DEFAULT['map_height'], 
-                'text', 1, 30, 0, 122, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_zoom', $_MAPS_DEFAULT['map_zoom'], 
-                'text', 1, 30, 0, 123, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('map_active', $_MAPS_DEFAULT['map_active'], 
-                'select', 1, 30, 3, 130, true, $_MAPS_DEFAULT['pi_name']);
-        $c->add('map_hidden', $_MAPS_DEFAULT['map_hidden'], 
-                'select', 1, 30, 3, 131, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('free_markers', $_MAPS_DEFAULT['free_markers'], 
-                'select', 1, 30, 3, 132, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('paid_markers', $_MAPS_DEFAULT['paid_markers'], 
-                'select', 1, 30, 3, 133, true, $_MAPS_DEFAULT['pi_name']);
-		//marker fieldset
-		$c->add('fs_marker_default', NULL, 'fieldset', 1, 40, NULL, 0, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('marker_active', $_MAPS_DEFAULT['marker_active'], 
-                'select', 1, 40, 3, 135, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('marker_hidden', $_MAPS_DEFAULT['marker_hidden'], 
-                'select', 1, 40, 3, 136, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('marker_payed', $_MAPS_DEFAULT['marker_payed'], 
-                'select', 1, 40, 3, 137, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('marker_validity', $_MAPS_DEFAULT['marker_validity'], 
-                'select', 1, 40, 31, 138, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('label_color', $_MAPS_DEFAULT['label_color'], 
-                'select', 1, 40, 30, 140, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('star_primary_color', $_MAPS_DEFAULT['star_primary_color'], 
-                'text', 1, 40, 0, 142, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('star_stroke_color', $_MAPS_DEFAULT['star_stroke_color'], 
-                'text', 1, 40, 0, 144, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('detail_zoom', $_MAPS_DEFAULT['detail_zoom'], 
-                'text', 1, 40, 0, 148, true, $_MAPS_DEFAULT['pi_name']);
-		//Presentation		
-		$c->add('street', $_MAPS_DEFAULT['street'], 
-                'select', 1, 40, 3, 150, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('code', $_MAPS_DEFAULT['code'], 
-                'select', 1, 40, 3, 152, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('city', $_MAPS_DEFAULT['city'], 
-                'select', 1, 40, 3, 154, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('state', $_MAPS_DEFAULT['state'], 
-                'select', 1, 40, 3, 156, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('country', $_MAPS_DEFAULT['country'], 
-                'select', 1, 40, 3, 158, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('tel', $_MAPS_DEFAULT['tel'], 
-                'select', 1, 40, 3, 160, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('fax', $_MAPS_DEFAULT['fax'], 
-                'select', 1, 40, 3, 162, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('web', $_MAPS_DEFAULT['web'], 
-                'select', 1, 40, 3, 162, true, $_MAPS_DEFAULT['pi_name']);
-		//Ressources
-		$c->add('item_1', $_MAPS_DEFAULT['item_1'], 
-                'text', 1, 40, 0, 264, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('item_2', $_MAPS_DEFAULT['item_2'], 
-                'text', 1, 40, 0, 274, true, $_MAPS_DEFAULT['pi_name']);				
-		$c->add('item_3', $_MAPS_DEFAULT['item_3'], 
-                'text', 1, 40, 0, 284, true, $_MAPS_DEFAULT['pi_name']);				
-		$c->add('item_4', $_MAPS_DEFAULT['item_4'], 
-                'text', 1, 40, 0, 294, true, $_MAPS_DEFAULT['pi_name']);				
-		$c->add('item_5', $_MAPS_DEFAULT['item_5'], 
-                'text', 1, 40, 0, 304, true, $_MAPS_DEFAULT['pi_name']);				
-		$c->add('item_6', $_MAPS_DEFAULT['item_6'], 
-                'text', 1, 40, 0, 304, true, $_MAPS_DEFAULT['pi_name']);				
-		$c->add('item_7', $_MAPS_DEFAULT['item_7'], 
-                'text', 1, 40, 0, 314, true, $_MAPS_DEFAULT['pi_name']);				
-		$c->add('item_8', $_MAPS_DEFAULT['item_8'], 
-                'text', 1, 40, 0, 324, true, $_MAPS_DEFAULT['pi_name']);				
-		$c->add('item_9', $_MAPS_DEFAULT['item_9'], 
-                'text', 1, 40, 0, 334, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('item_10', $_MAPS_DEFAULT['item_10'], 
-                'text', 1, 40, 0, 344, true, $_MAPS_DEFAULT['pi_name']);
-		$c->add('infos_label', $_MAPS_DEFAULT['infos_label'], 
-                'text', 1, 40, 0, 400, true, $_MAPS_DEFAULT['pi_name']);
-    }				
+    $c = config::get_instance();
+    if ($c->group_exists('maps')) {
+        return true;
+    }
+
+    $group = $_MAPS_DEFAULT['pi_name'];
+    foreach (MAPS_configDefinition155() as $name => $def) {
+        $c->add($name, $def[0], $def[1], $def[2], $def[3], $def[4], $def[5], true, $group, $def[6]);
+    }
 
     return true;
 }
-
-?>

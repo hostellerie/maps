@@ -2,592 +2,394 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.4                                                           |
+// | Maintainer: ::Ben                                                         |
+// | Maps Plugin 1.6.0                                                         |
 // +---------------------------------------------------------------------------+
 // | map_edit.php                                                              |
 // +---------------------------------------------------------------------------+
-// | Copyright (C) 2010-2014 by the following authors:                         |
-// |                                                                           |
-// | Authors: ::Ben                                                            |
-// +---------------------------------------------------------------------------+
-// | Created with the Geeklog Plugin Toolkit.                                  |
-// +---------------------------------------------------------------------------+
-// |                                                                           |
-// | This program is free software; you can redistribute it and/or             |
-// | modify it under the terms of the GNU General Public License               |
-// | as published by the Free Software Foundation; either version 2            |
-// | of the License, or (at your option) any later version.                    |
-// |                                                                           |
-// | This program is distributed in the hope that it will be useful,           |
-// | but WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             |
-// | GNU General Public License for more details.                              |
-// |                                                                           |
-// | You should have received a copy of the GNU General Public License         |
-// | along with this program; if not, write to the Free Software Foundation,   |
-// | Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.           |
-// |                                                                           |
-// +---------------------------------------------------------------------------+
 
-/**
- * Displays a form for the editing maps
- *
- * Allows for the altering and deletion of existing maps as well as the
- * creation of new maps
- *
- */
-//print_r($_REQUEST);exit;
 require_once '../../../lib-common.php';
 require_once '../../auth.inc.php';
 require_once 'edit_functions.php';
 
 MAPS_getheadercode();
 
-$display = '';
-
-// Ensure user even has the rights to access this page
-if (! SEC_hasRights('maps.admin')) {
-    $display .= COM_siteHeader('menu', $MESSAGE[30])
-             . COM_showMessageText($MESSAGE[29], $MESSAGE[30])
-             . COM_siteFooter();
-
-    // Log attempt to access.log
-    COM_accessLog("User {$_USER['username']} tried to illegally access the Maps plugin administration screen.");
-
-    echo $display;
+if (!SEC_hasRights('maps.admin')) {
+    COM_accessLog('Unauthorized access attempt to Maps map editor.');
+    COM_output(COM_createHTMLDocument(COM_showMessageText($MESSAGE[29], $MESSAGE[30]), array('pagetitle' => $MESSAGE[30])));
     exit;
 }
 
-// Incoming variable filter
-$vars = array('mode' => 'alpha',
-              'mid' => 'number',
-              'name' => 'text',
-              'description' => 'text',
-              'created' => 'number',
-              'modified' => 'number',
-              'free_marker' => 'number',
-              'paid_marker' => 'number',
-              'active' => 'number',
-              'hidden' => 'number',
-              'geo' => 'text',
-              'lat' => 'number',
-              'lng' => 'number',
-              'width' => 'alpha',
-              'height' => 'alpha',
-              'zoom' => 'number',
-              'type' => 'text',
-              'header' => 'html',
-              'footer' => 'html',
-			  'primary_color' => 'text',
-			  'stroke_color' => 'text',
-			  'label' => 'text',
-			  'label_color' => 'number',
-			  'map_header' => 'html',
-			  'map_footer' => 'html',
-			  'mk_default' => 'number',
-			  'mk_icon' => 'number',
-			  );
+function MAPS_mapEditorDefaults($map)
+{
+    global $_MAPS_CONF, $_USER, $_GROUPS;
+    $defaults = array(
+        'mid' => '', 'name' => '', 'description' => '', 'geo' => '', 'lat' => 0, 'lng' => 0,
+        'created' => time(), 'modified' => time(), 'free_marker' => MAPS_arrayGet($_MAPS_CONF, 'free_markers', 1),
+        'paid_marker' => MAPS_arrayGet($_MAPS_CONF, 'paid_markers', 1), 'active' => MAPS_arrayGet($_MAPS_CONF, 'map_active', 1),
+        'hidden' => MAPS_arrayGet($_MAPS_CONF, 'map_hidden', 0), 'width' => MAPS_arrayGet($_MAPS_CONF, 'map_width', '100%'),
+        'height' => MAPS_arrayGet($_MAPS_CONF, 'map_height', '600px'), 'zoom' => MAPS_arrayGet($_MAPS_CONF, 'map_zoom', 6),
+        'type' => MAPS_arrayGet($_MAPS_CONF, 'map_type', 'ROADMAP'), 'header' => '', 'footer' => '',
+        'primary_color' => MAPS_arrayGet($_MAPS_CONF, 'map_primary_color', '#666666'), 'stroke_color' => MAPS_arrayGet($_MAPS_CONF, 'map_stroke_color', '#333333'), 'label' => MAPS_arrayGet($_MAPS_CONF, 'map_label', ''), 'label_color' => MAPS_arrayGet($_MAPS_CONF, 'map_label_color', 0),
+        'mmk_default' => 1, 'mmk_icon' => 0, 'owner_id' => isset($_USER['uid']) ? $_USER['uid'] : 2,
+        'group_id' => isset($_GROUPS['Maps Admin']) ? $_GROUPS['Maps Admin'] : 2,
+        'perm_owner' => 3, 'perm_group' => 3, 'perm_members' => 2, 'perm_anon' => 2
+    );
+    return array_merge($defaults, is_array($map) ? $map : array());
+}
 
-MAPS_filterVars($vars, $_REQUEST);
+function getMapForm($map = array())
+{
+    global $_CONF, $_TABLES, $_MAPS_CONF, $LANG_MAPS_1, $LANG_configselects, $LANG_ACCESS, $_USER, $_SCRIPTS;
 
-/**
- * This function creates a map Form
- *
- * Creates a Form for a map using the supplied defaults (if specified).
- *
- * @param array $map array of values describing a map
- * @return string HTML string of map form
- */
-function getMapForm($map = array()) {
+    $map = MAPS_mapEditorDefaults($map);
 
-    global $_CONF, $_TABLES, $_MAPS_CONF, $LANG_MAPS_1, $LANG_configselects, $LANG_ACCESS, $_USER, $_GROUPS, $_SCRIPTS;
-	
-	$_SCRIPTS->setJavaScriptLibrary('jquery');
-	
-    $js = 'jQuery(function () {
-        var tabContainers = jQuery(\'div.tabs > div\');
-        
-        jQuery(\'div.tabs ul.tabNavigation a\').click(function () {
-            tabContainers.hide().filter(this.hash).show();
-            
-            jQuery(\'div.tabs ul.tabNavigation a\').removeClass(\'selected\');
-            jQuery(this).addClass(\'selected\');
-            
-            return false;
-        }).filter(\':first\').click();
-		
-		jQuery(".delete").click(function() {
-			jQuery("#load").show();
-			var id = jQuery(this).attr("id");
-			var mid = jQuery(this).attr("mid");
-			var oid = jQuery(this).attr("oid");
-			var action = jQuery(this).attr("class");
-			var string = \'id=\'+ id + \'&action=\' + action + \'&mid=\' + mid;
-				
-			jQuery.ajax({
-				type: "POST",
-				url: "ajax.php",
-				data: string,
-				cache: false,
-				async:false,
-				success: function(result){
-					jQuery("#overlays_actions").replaceWith(result);
-				}   
-			});
-			jQuery("#load").hide();
-			return false;
-		});
-		
-		jQuery(".add").click(function() {
-			jQuery("#load").show();
-			var id = jQuery(this).attr("id");
-			var mid = jQuery(this).attr("mid");
-			var oid = jQuery(this).attr("oid");
-			var action = jQuery(this).attr("class");
-			var string = \'id=\'+ id + \'&action=\' + action + \'&mid=\' + mid;
-				
-			jQuery.ajax({
-				type: "POST",
-				url: "ajax.php",
-				data: string,
-				cache: false,
-				async:false,
-				success: function(result){
-					jQuery("#overlays_actions").replaceWith(result);
-				}   
-			});
-			jQuery("#load").hide();
-			return false;
-		});
-		
-    });' . LB;
-
-	if ($_CONF['advanced_editor'] == true) {
-		$js_ad = '// Setup editor path for FCKeditor JS Functions
-		geeklogEditorBasePath = "' . $_CONF['site_url'] . '/fckeditor/" ;
-		window.onload = function() {
-			var map_header = new FCKeditor( \'mapheader\' ) ;
-			map_header.Config[\'CustomConfigurationsPath\'] = geeklogEditorBaseUrl + \'/fckeditor/myconfig.js\';
-			map_header.BasePath = geeklogEditorBasePath;
-			map_header.ToolbarSet = \'editor-toolbar2\';
-			map_header.Height = 300 ;
-			map_header.ReplaceTextarea() ;
-			
-			var map_footer = new FCKeditor( \'mapfooter\' ) ;
-			map_footer.Config[\'CustomConfigurationsPath\'] = geeklogEditorBaseUrl + \'/fckeditor/myconfig.js\';
-			map_footer.BasePath = geeklogEditorBasePath;
-			map_footer.ToolbarSet = \'editor-toolbar2\';
-			map_footer.Height = 300 ;
-			map_footer.ReplaceTextarea() ;
-		};';
-		$_SCRIPTS->setJavaScript($js_ad, true, true);
-	}
-	
-	$js .= '      jQuery(document).ready(
-        function()
-        {
-            jQuery("#primary_color").simpleColor({
-				cellWidth: 9,
-				cellHeight: 9,
-				border: \'1px solid #333333\',
-				displayColorCode: true
-		    });
-            jQuery("#stroke_color").simpleColor({
-				cellWidth: 9,
-				cellHeight: 9,
-				border: \'1px solid #333333\',
-				displayColorCode: true
-		    });
-			
-			jQuery("#load").hide();
-		});
-	';
-	
-	$_SCRIPTS->setJavaScript('<script type="text/javascript" src="' . $_CONF['site_url'] . '/fckeditor/fckeditor.js"></script>', false);
-	$_SCRIPTS->setJavaScript($js, true);
-		
-	$_SCRIPTS->setJavaScriptFile('maps_simplecolor', '/' . $_MAPS_CONF['maps_folder'] . '/js/simple-color.js');
-	
-    $display = COM_startBlock($LANG_MAPS_1['map_edit'] . ' ' . $map['name']);
+    if (isset($_SCRIPTS) && is_object($_SCRIPTS)
+        && method_exists($_SCRIPTS, 'setJavaScriptLibrary')
+    ) {
+        $_SCRIPTS->setJavaScriptLibrary('jquery');
+    }
 
     $template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
     $template->set_file(array('map' => 'map_form.thtml'));
-	$template->set_var('site_admin_url', $_CONF['site_admin_url']);
-	$template->set_var('arrow', '<img src="' . $_CONF['site_url'] . '/maps/images/arrow.png" alt=""align="absmiddle">&nbsp;');
-	$template->set_var('map_tab', $LANG_MAPS_1['map_tab']);
-	$template->set_var('overlays_tab', $LANG_MAPS_1['overlays_tab']);
-	//informations
-	$template->set_var('informations', $LANG_MAPS_1['informations']);
+
+    $template->set_var('site_admin_url', $_CONF['site_admin_url']);
+    $token = SEC_createToken();
+    $template->set_var(
+        'csrf_token',
+        '<input type="hidden" name="' . CSRF_TOKEN . '" value="'
+        . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
+    );
+    $template->set_var('map_tab', $LANG_MAPS_1['map_tab']);
+    $template->set_var('overlays_tab', $LANG_MAPS_1['overlays_tab']);
+    $template->set_var('informations', $LANG_MAPS_1['informations']);
     $template->set_var('name_label', $LANG_MAPS_1['name_label']);
-    $template->set_var('name', stripslashes($map['name']));
-	$template->set_var('address_label', $LANG_MAPS_1['address_label']);
-    $template->set_var('geo', $map['geo']);
-	$template->set_var('description_label', $LANG_MAPS_1['description_label']);
-    $template->set_var('description', stripslashes($map['description']));
-	$template->set_var('required_field', $LANG_MAPS_1['required_field']);
-	$template->set_var('created_label', $LANG_MAPS_1['map_created']);
-	$template->set_var('modified_label', $LANG_MAPS_1['modified']);
-	$datecreated = COM_getUserDateTimeFormat($map['created']);
-	$datemodified = COM_getUserDateTimeFormat($map['modified']);
-	$template->set_var('created', $datecreated[0]);
-	$template->set_var('modified', $datemodified[0]);
-	
-	//Genaral settings
-	$template->set_var('general_settings', $LANG_MAPS_1['general_settings']);
-	$template->set_var('map_width', $LANG_MAPS_1['map_width']);
-	if ($map['width'] == '') {
-        $map['width'] = $_MAPS_CONF['map_width'];
+    $template->set_var('name', htmlspecialchars(stripslashes($map['name']), ENT_QUOTES, 'UTF-8'));
+    $template->set_var('address_label', $LANG_MAPS_1['address_label']);
+    $template->set_var('geo', htmlspecialchars(stripslashes($map['geo']), ENT_QUOTES, 'UTF-8'));
+    $template->set_var('description_label', $LANG_MAPS_1['description_label']);
+    $template->set_var('description', htmlspecialchars(stripslashes($map['description']), ENT_QUOTES, 'UTF-8'));
+    $template->set_var('required_field', $LANG_MAPS_1['required_field']);
+    $template->set_var('created_label', $LANG_MAPS_1['map_created']);
+    $template->set_var('modified_label', $LANG_MAPS_1['modified']);
+    $created = COM_getUserDateTimeFormat($map['created']);
+    $modified = COM_getUserDateTimeFormat($map['modified']);
+    $template->set_var('created', $created[0]);
+    $template->set_var('modified', $modified[0]);
+    $template->set_var('general_settings', $LANG_MAPS_1['general_settings']);
+    $template->set_var('map_width', $LANG_MAPS_1['map_width']);
+    $template->set_var('width', htmlspecialchars($map['width'], ENT_QUOTES, 'UTF-8'));
+    $template->set_var('map_height', $LANG_MAPS_1['map_height']);
+    $template->set_var('height', htmlspecialchars($map['height'], ENT_QUOTES, 'UTF-8'));
+    $template->set_var('map_zoom', $LANG_MAPS_1['map_zoom']);
+    $template->set_var('zoom', (int) $map['zoom']);
+    $template->set_var('map_type', $LANG_MAPS_1['map_type']);
+    $safeLat = MAPS_latitude($map['lat'], 0);
+    $safeLng = MAPS_longitude($map['lng'], 0);
+    $safeZoom = MAPS_zoom($map['zoom'], 6);
+    $hasSavedCenter = ($map['mid'] !== '' && MAPS_isValidCoordinatePair($map['lat'], $map['lng']));
+    $template->set_var('lat', $hasSavedCenter ? htmlspecialchars(MAPS_canonicalNumberString($safeLat, 0), ENT_QUOTES, 'UTF-8') : '');
+    $template->set_var('lng', $hasSavedCenter ? htmlspecialchars(MAPS_canonicalNumberString($safeLng, 0), ENT_QUOTES, 'UTF-8') : '');
+    $template->set_var('section_display', isset($LANG_MAPS_1['map_section_display']) ? $LANG_MAPS_1['map_section_display'] : 'Display');
+    $template->set_var('section_center', isset($LANG_MAPS_1['map_section_center']) ? $LANG_MAPS_1['map_section_center'] : 'Center & zoom');
+    $template->set_var('section_markers', isset($LANG_MAPS_1['map_section_markers']) ? $LANG_MAPS_1['map_section_markers'] : 'Markers');
+    $template->set_var('section_advanced', isset($LANG_MAPS_1['map_section_advanced']) ? $LANG_MAPS_1['map_section_advanced'] : 'Advanced');
+    $template->set_var('center_search_label', isset($LANG_MAPS_1['map_center_search']) ? $LANG_MAPS_1['map_center_search'] : 'Search an address');
+    $template->set_var('center_search_button', isset($LANG_MAPS_1['map_center_search_button']) ? $LANG_MAPS_1['map_center_search_button'] : 'Locate');
+    $template->set_var('center_use_button', isset($LANG_MAPS_1['map_center_use_button']) ? $LANG_MAPS_1['map_center_use_button'] : 'Use displayed center');
+    $template->set_var('center_help', isset($LANG_MAPS_1['map_center_help']) ? $LANG_MAPS_1['map_center_help'] : 'Search, click the map or drag the marker to choose the map center.');
+    $template->set_var('technical_coordinates', isset($LANG_MAPS_1['technical_coordinates']) ? $LANG_MAPS_1['technical_coordinates'] : 'Technical coordinates');
+    $template->set_var('latitude_label', isset($LANG_MAPS_1['latitude_label']) ? $LANG_MAPS_1['latitude_label'] : 'Latitude');
+    $template->set_var('longitude_label', isset($LANG_MAPS_1['longitude_label']) ? $LANG_MAPS_1['longitude_label'] : 'Longitude');
+
+    $options = '';
+    foreach ($LANG_configselects['maps'][20] as $label => $value) {
+        $options .= '<option value="' . $value . '"' . ($value === $map['type'] ? ' selected="selected"' : '') . '>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
     }
-	$template->set_var('width', $map['width']);
-	
-	$template->set_var('map_height', $LANG_MAPS_1['map_height']);
-	if ($map['height'] == '') {
-        $map['height'] = $_MAPS_CONF['map_height'];
-    }
-	$template->set_var('height', $map['height']);
-	
-	$template->set_var('map_zoom', $LANG_MAPS_1['map_zoom']);
-	if ($map['zoom'] == '') {
-        $map['zoom'] = $_MAPS_CONF['map_zoom'];
-    }
-	$template->set_var('zoom', $map['zoom']);
-	
-	$template->set_var('map_type', $LANG_MAPS_1['map_type']);
-	$map_type = $LANG_configselects['maps']["20"]; 
-	$options = '';
-	foreach ($map_type as $i => $value) {
-		$options .= '<option value="' . $value . '"';
-		if ($value == $map['type']) {
-				$options .= ' selected="selected"';
-			}
-		$options .= '>' . $i . '</option>' . LB;
-	}
-	$template->set_var('options', $options);
-	
-	$template->set_var('yes', $LANG_MAPS_1['yes']);
-	$template->set_var('no', $LANG_MAPS_1['no']);
-	
-	$template->set_var('active', $LANG_MAPS_1['active']);
-	if ($map['active'] == '') {
-        $map['active'] = $_MAPS_CONF['map_active'];
-    }
-    if ($map['active'] == 1) {
-        $template->set_var('active_yes', ' selected');
-        $template->set_var('active_no', '');
-    } else {
-        $template->set_var('active_yes', '');
-        $template->set_var('active_no', ' selected');
-    }
-	
-	$template->set_var('hidden', $LANG_MAPS_1['hidden']);
-	if ($map['hidden'] == '') {
-        $map['hidden'] = $_MAPS_CONF['map_hidden'];
-    }
-	if ($map['hidden'] == 1) {
-        $template->set_var('hidden_yes', ' selected');
-        $template->set_var('hidden_no', '');
-    } else {
-        $template->set_var('hidden_yes', '');
-        $template->set_var('hidden_no', ' selected');
-    }
-	
-	$template->set_var('free_marker', $LANG_MAPS_1['free_marker']);
-	if ($map['free_marker'] == '') {
-        $map['free_marker'] = $_MAPS_CONF['free_markers'];
-    }
-	if ($map['free_marker'] == 1) {
-        $template->set_var('free_marker_yes', ' selected');
-        $template->set_var('free_marker_no', '');
-    } else {
-        $template->set_var('free_marker_yes', '');
-        $template->set_var('free_marker_no', ' selected');
+    $template->set_var('options', $options);
+    $template->set_var('yes', $LANG_MAPS_1['yes']);
+    $template->set_var('no', $LANG_MAPS_1['no']);
+
+    foreach (array('active','hidden','free_marker','paid_marker') as $field) {
+        $labelKey = $field;
+        if (isset($LANG_MAPS_1[$labelKey])) {
+            $template->set_var($field, $LANG_MAPS_1[$labelKey]);
+        }
+        $template->set_var($field . '_yes', (int) $map[$field] === 1 ? ' selected="selected"' : '');
+        $template->set_var($field . '_no', (int) $map[$field] === 0 ? ' selected="selected"' : '');
     }
 
-	$template->set_var('paid_marker', $LANG_MAPS_1['paid_marker']);
-	if ($map['paid_marker'] == '') {
-        $map['paid_marker'] = $_MAPS_CONF['paid_markers'];
+    $template->set_var('mk_default', $LANG_MAPS_1['mk_default']);
+    $template->set_var('mk_default_yes', (int) $map['mmk_default'] === 1 ? ' selected="selected"' : '');
+    $template->set_var('mk_default_no', (int) $map['mmk_default'] === 0 ? ' selected="selected"' : '');
+    $radio = '<p>' . $LANG_MAPS_1['choose_icon'] . '</p>';
+    $radio .= '<label><input type="radio" name="mk_icon" value="0"' . ((int) $map['mmk_icon'] === 0 ? ' checked="checked"' : '') . '> ' . $LANG_MAPS_1['no_icon'] . '</label> ';
+    $icons = DB_query("SELECT * FROM {$_TABLES['maps_map_icons']} ORDER BY icon_name");
+    while ($icon = DB_fetchArray($icons)) {
+        $iconFile = basename((string) $icon['icon_image']);
+        $iconPath = $_MAPS_CONF['path_icons_images'] . $iconFile;
+        $iconUrl = $_MAPS_CONF['images_icons_url'] . rawurlencode($iconFile);
+        if ($iconFile !== '' && is_file($iconPath)) {
+            $iconUrl .= '?v=' . (int) @filemtime($iconPath);
+        }
+        $radio .= '<label><input type="radio" name="mk_icon" value="' . (int) $icon['icon_id'] . '"' . ((int) $map['mmk_icon'] === (int) $icon['icon_id'] ? ' checked="checked"' : '') . '> <img src="' . htmlspecialchars($iconUrl, ENT_QUOTES, 'UTF-8') . '" alt="" style="max-width:32px;max-height:32px"></label> ';
     }
-	if ($map['paid_marker'] == 1) {
-        $template->set_var('paid_marker_yes', ' selected');
-        $template->set_var('paid_marker_no', '');
-    } else {
-        $template->set_var('paid_marker_yes', '');
-        $template->set_var('paid_marker_no', ' selected');
-    }
-	
-	//marker
-	
-	$template->set_var('mk_default', $LANG_MAPS_1['mk_default']);
-	if ($map['mmk_default'] == '1') {
-		$template->set_var('mk_default_yes', 'selected="selected"');
-		$template->set_var('mk_default_no', '');
-	} else {
-		$template->set_var('mk_default_yes', '');
-		$template->set_var('mk_default_no', 'selected="selected"');
-	}
-	//icon
-	$sql = "SELECT * FROM {$_TABLES['maps_map_icons']} WHERE 1=1";
-	$result = DB_query($sql, 0);
-	
-	$radio = '<p>' . $LANG_MAPS_1['choose_icon'] . '</p>';
-	($map['mk_icon'] == 0) ? $checked = ' checked="checked"' : $checked = '';
-	$radio .= '<input type="radio" name="mk_icon" value="0"' . $checked . '>' . $LANG_MAPS_1['no_icon'] . '&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;';
-	while ($icon = DB_fetchArray($result, false)) {
-		($map['mk_icon'] == $icon['icon_id']) ? $checked = ' checked="checked"' : $checked = '';  
-		$radio .= '<input type="radio" name="mk_icon" value="' . $icon['icon_id'] . '"' . $checked . '> <img src="' . $_MAPS_CONF['images_icons_url'] . $icon['icon_image'] . '" alt="' . $icon['icon_image'] . '">&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;';
-	}
-	$radio .= '<hr'. XHTML .'>';
-	$template->set_var('icon', $radio);
-	
-	$template->set_var('marker_label', $LANG_MAPS_1['marker_label']);
-	$template->set_var('primary_color_label', $LANG_MAPS_1['primary_color_label']);
-	$template->set_var('primary_color', $map['primary_color']);
-	$template->set_var('stroke_color_label', $LANG_MAPS_1['stroke_color_label']);
-	$template->set_var('stroke_color', $map['stroke_color']);
-	$template->set_var('label_label', $LANG_MAPS_1['label']);
-    $template->set_var('label', $map['label']);	
-	$template->set_var('label_color_label', $LANG_MAPS_1['label_color']);
-	if ($map['label_color'] == '') {
-	$map['label_color'] = $_MAPS_CONF['label_color'];
-    }
-	if ($map['label_color'] == 1) {
-        $template->set_var('label_color_white', ' selected');
-        $template->set_var('label_color_black', '');
-    } else {
-        $template->set_var('label_color_white', '');
-        $template->set_var('label_color_black', ' selected');
-    }
-	$template->set_var('black', $LANG_MAPS_1['black']);
-	$template->set_var('white', $LANG_MAPS_1['white']);
-	
-	//header and footer
-	$template->set_var('header_footer', $LANG_MAPS_1['header_footer']);
-	
-	if ($map['header'] == '') $map['header'] = '&nbsp;';
-	if ($map['footer'] == '') $map['footer'] = '<p>&nbsp;</p>';
-	
-	$template->set_var('map_header_label', $LANG_MAPS_1['map_header_label']);
-	$template->set_var('map_header', $map['header']);
-	$template->set_var('map_footer_label', $LANG_MAPS_1['map_footer_label']);
-	$template->set_var('map_footer', $map['footer']);
-	
-	// Permissions
-	if ($map['perm_owner'] == '') {
-	  SEC_setDefaultPermissions($map, $_MAPS_CONF['default_permissions']);
-	}
-	$template->set_var('lang_accessrights', $LANG_ACCESS['accessrights']);
+    $template->set_var('icon', $radio);
+
+    $template->set_var('marker_label', $LANG_MAPS_1['marker_label']);
+    $template->set_var('primary_color_label', $LANG_MAPS_1['primary_color_label']);
+    $template->set_var('primary_color', htmlspecialchars(MAPS_htmlColor($map['primary_color'], MAPS_arrayGet($_MAPS_CONF, 'map_primary_color', '#666666')), ENT_QUOTES, 'UTF-8'));
+    $template->set_var('stroke_color_label', $LANG_MAPS_1['stroke_color_label']);
+    $template->set_var('stroke_color', htmlspecialchars(MAPS_htmlColor($map['stroke_color'], MAPS_arrayGet($_MAPS_CONF, 'map_stroke_color', '#333333')), ENT_QUOTES, 'UTF-8'));
+    $template->set_var('label_label', $LANG_MAPS_1['label']);
+    $template->set_var('label', htmlspecialchars($map['label'], ENT_QUOTES, 'UTF-8'));
+    $template->set_var('label_color_label', $LANG_MAPS_1['label_color']);
+    $template->set_var('label_color_white', (int) $map['label_color'] === 1 ? ' selected="selected"' : '');
+    $template->set_var('label_color_black', (int) $map['label_color'] === 0 ? ' selected="selected"' : '');
+    $template->set_var('black', $LANG_MAPS_1['black']);
+    $template->set_var('white', $LANG_MAPS_1['white']);
+
+    $template->set_var('header_footer', $LANG_MAPS_1['header_footer']);
+    $template->set_var('map_header_label', $LANG_MAPS_1['map_header_label']);
+    $template->set_var('map_header', htmlspecialchars(stripslashes($map['header']), ENT_QUOTES, 'UTF-8'));
+    $template->set_var('map_footer_label', $LANG_MAPS_1['map_footer_label']);
+    $template->set_var('map_footer', htmlspecialchars(stripslashes($map['footer']), ENT_QUOTES, 'UTF-8'));
+
+    $template->set_var('lang_accessrights', $LANG_ACCESS['accessrights']);
     $template->set_var('lang_owner', $LANG_ACCESS['owner']);
-	if ($map['owner_id'] == '') {
-	$map['owner_id'] = $_USER['uid'];
-	}
-    $ownername = COM_getDisplayName($map['owner_id']);
-	
-	//Select owner
-	$result = DB_query("SELECT * FROM {$_TABLES['users']}");
-	$nRows  = DB_numRows($result);
-
-	$owner_select = '<select name="owner_id">';
-	for ($i=0; $i<$nRows;$i++) {
-		$row = DB_fetchArray($result);
-		if ( $row['uid'] == 1 ) {
-			continue;
-		}
-		$owner_select .= '<option value="' . $row['uid'] . '"' . ($map['owner_id'] == $row['uid'] ? 'selected="selected"' : '') . '>' . COM_getDisplayName($row['uid']) . ' | ' . $row['uid'] . '</option>';
-	}
-	$owner_select .= '</select>';
-
-	$template->set_var('owner_select', $owner_select);
-	
-    $template->set_var('owner_username', DB_getItem($_TABLES['users'],
-                          'username',"uid = {$map['owner_id']}"));
-    $template->set_var('owner_name', $ownername);
-    $template->set_var('owner', $ownername);
-    $template->set_var('owner_id', $map['owner_id']);
-	if ($map['group_id']  == '') {
-        $map['group_id'] = $_GROUPS['Maps Admin'];
-    }
+    $template->set_var('owner_select', COM_optionList($_TABLES['users'], 'uid,username', $map['owner_id'], 1, 'uid<>1'));
+    $template->set_var('owner_username', DB_getItem($_TABLES['users'], 'username', 'uid=' . (int) $map['owner_id']));
+    $template->set_var('owner_name', COM_getDisplayName($map['owner_id']));
+    $template->set_var('owner', COM_getDisplayName($map['owner_id']));
+    $template->set_var('owner_id', (int) $map['owner_id']);
     $template->set_var('lang_group', $LANG_ACCESS['group']);
-	$access = 3;
+    $access = 3;
     $template->set_var('group_dropdown', SEC_getGroupDropdown($map['group_id'], $access));
-    $template->set_var('permissions_editor', SEC_getPermissionsHTML($map['perm_owner'],$map['perm_group'],$map['perm_members'],$map['perm_anon']));
+    $template->set_var('permissions_editor', SEC_getPermissionsHTML($map['perm_owner'], $map['perm_group'], $map['perm_members'], $map['perm_anon']));
     $template->set_var('lang_permissions', $LANG_ACCESS['permissions']);
     $template->set_var('lang_perm_key', $LANG_ACCESS['permissionskey']);
     $template->set_var('permissions_msg', $LANG_ACCESS['permmsg']);
     $template->set_var('lang_permissions_msg', $LANG_ACCESS['permmsg']);
-	
-	//Form validation
-	$template->set_var('save_button', $LANG_MAPS_1['save_button']);
-	$template->set_var('delete_button', $LANG_MAPS_1['delete_button']);
-	$template->set_var('ok_button', $LANG_MAPS_1['ok_button']);
-    if (is_numeric($map['mid'])) {
-        $template->set_var('mid', '<input type="hidden" name="mid" value="' . $map['mid'] .'" />');
-    } else {
-        $template->set_var('mid', '');
-    }
-	
-	//overlays
-	if($map['mid'] != '') {
-	    $template->set_var('overlays', MAPS_displayOverlays($map['mid']));
-		$template->set_var('add_overlay', MAPS_displayOverlaysToAdd($map['mid']));
-	} else {
-	    $template->set_var('overlays', '');
-	    $template->set_var('add_overlay', '<p>' . $LANG_MAPS_1['add_overlay'] . '</p>');
-	}
-	
-    $display .= $template->parse('output', 'map');
+    $template->set_var('save_button', $LANG_MAPS_1['save_button']);
+    $template->set_var('delete_button', $LANG_MAPS_1['delete_button']);
+    $template->set_var(
+        'delete_action',
+        $map['mid'] !== ''
+            ? '<button type="submit" name="mode" value="delete" class="maps-danger-action maps-delete-map">'
+                . htmlspecialchars($LANG_MAPS_1['delete_button'], ENT_QUOTES, 'UTF-8') . '</button>'
+            : ''
+    );
+    $deleteConfirm = isset($LANG_MAPS_1['delete_map_confirm']) ? $LANG_MAPS_1['delete_map_confirm'] : 'Delete this map?';
+    $template->set_var('delete_confirm_js', MAPS_jsString($deleteConfirm));
+    $deleteConfirmJs = MAPS_jsString($deleteConfirm);
+    $template->set_var('ok_button', $LANG_MAPS_1['ok_button']);
+    $template->set_var('mid', $map['mid'] !== '' ? '<input type="hidden" name="mid" value="' . (int) $map['mid'] . '">' : '');
+    $template->set_var('overlays', $map['mid'] !== '' ? MAPS_displayOverlays($map['mid']) : '');
+    $template->set_var('add_overlay', $map['mid'] !== '' ? MAPS_displayOverlaysToAdd($map['mid']) : '');
 
-    $display .= COM_endBlock();
+    $editorScript = '<script type="text/javascript">'
+        . '(function(){'
+        . 'function ready(fn){if(document.readyState!=="loading"){fn();}else{document.addEventListener("DOMContentLoaded",fn);}}'
+        . 'ready(function(){'
+        . 'var root=document.querySelector(".maps-map-editor-tabs");if(root){var links=root.querySelectorAll(".tabNavigation a");var panels=root.querySelectorAll(".maps-map-editor-panel");function showTab(hash){for(var p=0;p<panels.length;p++){panels[p].style.display=("#"+panels[p].id===hash)?"block":"none";}for(var l=0;l<links.length;l++){if(links[l].getAttribute("href")===hash){links[l].className="maps-tab-active";}else{links[l].className="";}}}'
+        . 'for(var i=0;i<links.length;i++){links[i].addEventListener("click",function(e){e.preventDefault();showTab(this.getAttribute("href"));});}showTab("#map_infos");}'
+        . 'var deleteButtons=document.querySelectorAll(".maps-delete-map");for(var d=0;d<deleteButtons.length;d++){deleteButtons[d].addEventListener("click",function(e){if(!window.confirm(' . $deleteConfirmJs . ')){e.preventDefault();}});}'
+        . 'var canvas=document.getElementById("maps-map-center-editor");if(!canvas){return;}'
+        . 'function initMapEditor(attempt){if(typeof google==="undefined"||!google.maps||!google.maps.Map||!google.maps.Marker||!google.maps.MapTypeId){if(attempt<80){window.setTimeout(function(){initMapEditor(attempt+1);},100);}return;}'
+        . 'var latInput=document.getElementById("map_center_lat"),lngInput=document.getElementById("map_center_lng"),zoomInput=document.getElementById("zoom"),typeInput=document.getElementById("type"),geoInput=document.getElementById("geo");'
+        . 'var lat=Number(' . MAPS_jsString(MAPS_canonicalNumberString($safeLat, 0)) . '),lng=Number(' . MAPS_jsString(MAPS_canonicalNumberString($safeLng, 0)) . '),zoom=Number(' . MAPS_jsString((string) $safeZoom) . ');'
+        . 'if(!isFinite(lat)){lat=0;}if(!isFinite(lng)){lng=0;}if(!isFinite(zoom)){zoom=6;}'
+        . 'var type=(typeInput&&typeInput.value)?typeInput.value:"ROADMAP";'
+        . 'var editorMap=new google.maps.Map(canvas,{center:{lat:lat,lng:lng},zoom:zoom,mapTypeId:google.maps.MapTypeId[type]||google.maps.MapTypeId.ROADMAP});'
+        . 'var centerMarker=new google.maps.Marker({position:{lat:lat,lng:lng},map:editorMap,draggable:true,title:' . MAPS_jsString(isset($LANG_MAPS_1['map_center_marker']) ? $LANG_MAPS_1['map_center_marker'] : 'Map center') . '});'
+        . 'function numberString(v){return Number(v).toFixed(6).replace(/\\.?0+$/,"");}'
+        . 'function sync(position,moveMap){if(!position){return;}var la=position.lat(),ln=position.lng();if(latInput){latInput.value=numberString(la);}if(lngInput){lngInput.value=numberString(ln);}centerMarker.setPosition(position);if(moveMap){editorMap.panTo(position);}}'
+        . 'centerMarker.addListener("dragend",function(e){sync(e.latLng,true);});editorMap.addListener("click",function(e){sync(e.latLng,true);});editorMap.addListener("zoom_changed",function(){if(zoomInput){zoomInput.value=editorMap.getZoom();}});'
+        . 'if(typeInput){typeInput.addEventListener("change",function(){editorMap.setMapTypeId(google.maps.MapTypeId[this.value]||google.maps.MapTypeId.ROADMAP);});}'
+        . 'if(zoomInput){zoomInput.addEventListener("change",function(){var z=parseInt(this.value,10);if(isFinite(z)){editorMap.setZoom(z);}});}'
+        . 'var useButton=document.getElementById("maps-center-use");if(useButton){useButton.addEventListener("click",function(e){e.preventDefault();sync(editorMap.getCenter(),false);});}'
+        . 'var searchButton=document.getElementById("maps-center-search");if(searchButton){searchButton.addEventListener("click",function(e){e.preventDefault();var address=geoInput?geoInput.value.replace(/^\\s+|\\s+$/g,""):"";if(!address){return;}var geocoder=new google.maps.Geocoder();geocoder.geocode({address:address},function(results,status){if(status===google.maps.GeocoderStatus.OK&&results&&results[0]){sync(results[0].geometry.location,true);if(geoInput&&results[0].formatted_address){geoInput.value=results[0].formatted_address;}}});});}'
+        . '}'
+        . 'initMapEditor(0);'
+        . '});'
+        . "})();\n"
+        . '</script>';
 
-    return $display;
+    return '<div class="maps-admin-editor-card">'
+        . $template->parse('output', 'map') . $editorScript . '</div>';
 }
 
-
-
-
-// MAIN
-$display .= COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
-$display .= MAPS_admin_menu();
-
-switch ($_REQUEST['mode']) {
-    case 'delete':
-	    DB_delete($_TABLES['maps_maps'], 'mid', $_REQUEST['mid']);
-    if (DB_affectedRows('') == 1) {
-        $msg = $LANG_MAPS_1['deletion_succes'];
-    } else {
-        $msg = $LANG_MAPS_1['deletion_fail'];
+$requestMethod = isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
+$requestData = $requestMethod === 'POST' ? $_POST : $_GET;
+$mode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode']) : 'new';
+$mid = isset($requestData['mid']) ? (int) $requestData['mid'] : 0;
+$content = MAPS_admin_menu();
+$editorTitle = ($mode === 'edit' && $mid > 0) ? $LANG_MAPS_1['map_edit'] : $LANG_MAPS_1['create_map'];
+if ($mode === 'edit' && $mid > 0) {
+    $mapTitle = trim((string) DB_getItem($_TABLES['maps_maps'], 'name', 'mid=' . $mid));
+    if ($mapTitle !== '') {
+        $editorTitle .= ': ' . MAPS_decodeStoredText($mapTitle);
     }
-		// delete complete, return to map list
-        echo COM_refresh($_CONF['site_url'] . "/admin/plugins/maps/index.php?msg=$msg");
-        exit();
-        break;
+}
+$content .= '<h1 class="maps-admin-title">' . htmlspecialchars($editorTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
 
-    case 'save':
-        $coords = true;
-		// lat, lng, zoom and height can only contain numbers and a decimal
-		$coords = MAPS_getCoords(stripslashes($_REQUEST['geo']), $lat, $lng);
-		
-		if ( empty($_REQUEST['name']) || empty($_REQUEST['geo'])  || $coords != true ) {
-            $display .= COM_startBlock($LANG_MAPS_1['error'],'','blockheader-message.thtml');
-            $display .= $LANG_MAPS_1['missing_field'];
-			if ($coords != true) $display .= $LANG_MAPS_1['geo_fail'];
-            $display .= COM_endBlock('blockfooter-message.thtml');
-            $display .= getMapForm($_REQUEST);
-            break;
-        }
-		
-        // prepare strings for insertion
-		$_REQUEST['created'] = date("YmdHis");
-		$_REQUEST['modified'] = date("YmdHis");
-		
-        
-		if (! empty($_REQUEST['zoom']) ) {
-            $_REQUEST['zoom'] = preg_replace('/[^\d.]/', '', $_REQUEST['zoom']);
-		}
-	    // Convert array values to numeric permission values
-        if (is_array($_REQUEST['perm_owner']) OR is_array($_REQUEST['perm_group']) OR is_array($_REQUEST['perm_members']) OR is_array($_REQUEST['perm_anon'])) {
-            list($_REQUEST['perm_owner'],$_REQUEST['perm_group'],$_REQUEST['perm_members'],$_REQUEST['perm_anon']) = SEC_getPermissionValues($_REQUEST['perm_owner'],$_REQUEST['perm_group'],$_REQUEST['perm_members'],$_REQUEST['perm_anon']);
-        }
-			 
-		if (!empty($_REQUEST['mid'])) { //edit mode
-		        $sql = "name = '{$_REQUEST['name']}', "
-             . "description = '{$_REQUEST['description']}', "
-			 . "modified = '{$_REQUEST['modified']}', " 
-             . "free_marker = '{$_REQUEST['free_marker']}', "
-             . "paid_marker = '{$_REQUEST['paid_marker']}', "
-             . "active = '{$_REQUEST['active']}', "
-             . "hidden = '{$_REQUEST['hidden']}', "
-			 . "geo = '{$_REQUEST['geo']}', "
-			 . "lat = '{$lat}', "
-			 . "lng = '{$lng}', "
-			 . "width = '{$_REQUEST['width']}', "
-			 . "height = '{$_REQUEST['height']}', "
-			 . "zoom = '{$_REQUEST['zoom']}', "
-			 . "type = '{$_REQUEST['type']}', "
-			 . "header = '{$_REQUEST['map_header']}', "
-			 . "footer = '{$_REQUEST['map_footer']}', "
-			 . "mmk_default = '{$_REQUEST['mk_default']}', "
-			 . "mmk_icon = '{$_REQUEST['mk_icon']}', "
-			 . "primary_color = '{$_REQUEST['primary_color']}', "
-			 . "stroke_color = '{$_REQUEST['stroke_color']}', "
-			 . "label = '{$_REQUEST['label']}', "
-			 . "label_color = '{$_REQUEST['label_color']}', "
-			 . "owner_id = '{$_REQUEST['owner_id']}', "
-			 . "group_id = '{$_REQUEST['group_id']}', "
-			 . "perm_owner = '{$_REQUEST['perm_owner']}', "
-			 . "perm_group = '{$_REQUEST['perm_group']}', "
-			 . "perm_members = '{$_REQUEST['perm_members']}', "
-			 . "perm_anon = '{$_REQUEST['perm_anon']}'";
-            $sql = "UPDATE {$_TABLES['maps_maps']} SET $sql "
-                 . "WHERE mid = {$_REQUEST['mid']}";
-        } else { // create mode
-		      $sql = "name = '{$_REQUEST['name']}', "
-             . "description = '{$_REQUEST['description']}', "
-             . "created = '{$_REQUEST['created']}', "
-			 . "modified = '{$_REQUEST['modified']}', " 
-             . "free_marker = '{$_REQUEST['free_marker']}', "
-             . "paid_marker = '{$_REQUEST['paid_marker']}', "
-             . "active = '{$_REQUEST['active']}', "
-             . "hidden = '{$_REQUEST['hidden']}', "
-			 . "geo = '{$_REQUEST['geo']}', "
-			 . "lat = '{$lat}', "
-			 . "lng = '{$lng}', "
-			 . "width = '{$_REQUEST['width']}', "
-			 . "height = '{$_REQUEST['height']}', "
-			 . "zoom = '{$_REQUEST['zoom']}', "
-			 . "type = '{$_REQUEST['type']}', "
-			 . "header = '{$_REQUEST['map_header']}', "
-			 . "footer = '{$_REQUEST['map_footer']}', "
-			 . "mmk_default = '{$_REQUEST['mk_default']}', "
-			 . "mmk_icon = '{$_REQUEST['mk_icon']}', "
-			 . "primary_color = '{$_REQUEST['primary_color']}', "
-			 . "stroke_color = '{$_REQUEST['stroke_color']}', "
-			 . "label = '{$_REQUEST['label']}', "
-			 . "label_color = '{$_REQUEST['label_color']}', "
-			 . "owner_id = '{$_REQUEST['owner_id']}', "
-			 . "group_id = '{$_REQUEST['group_id']}', "
-			 . "perm_owner = '{$_REQUEST['perm_owner']}', "
-			 . "perm_group = '{$_REQUEST['perm_group']}', "
-			 . "perm_members = '{$_REQUEST['perm_members']}', "
-			 . "perm_anon = '{$_REQUEST['perm_anon']}'";
-            $sql = "INSERT INTO {$_TABLES['maps_maps']} SET $sql ";
-        }
-        DB_query($sql);
-        if (DB_error()) {
-            $msg = $LANG_MAPS_1['save_fail'];
-        } else {
-            $msg = $LANG_MAPS_1['save_success'];
-        }
-        // save complete, return to map list
-        echo COM_refresh($_CONF['site_admin_url'] . "/plugins/maps/index.php?msg=$msg");
-        exit();
-        break;
-
-    case 'edit':
-        // Get the map to edit and display the form
-        if (is_numeric($_REQUEST['mid'])) {
-            $sql = "SELECT * FROM {$_TABLES['maps_maps']} WHERE mid = {$_REQUEST['mid']}";
-            $res = DB_query($sql);
-            $A = DB_fetchArray($res);
-			if( is_array($A) ) {
-				foreach ($A as $i => $value) {
-				  $A[$i] = stripslashes($value);
-				}
-			}
-            $display .= getMapForm($A);
-        } else {
-            echo COM_refresh($_CONF['site_url']);
-        }
-        break;
-
-    case 'new':
-    default:
-        $display .= getMapForm();
-        break;
+if (in_array($mode, array('save', 'delete'), true)) {
+    if ($requestMethod !== 'POST' || !SEC_checkToken()) {
+        COM_accessLog('Rejected Maps map mutation because of missing or invalid CSRF token.');
+        $content .= MAPS_message('Invalid or expired security token.', $LANG_MAPS_1['error']);
+        $mode = $mid > 0 ? 'edit' : 'new';
+    }
 }
 
-$display .= COM_siteFooter(0);
+if ($mode === 'delete' && $mid > 0) {
+    $mapExisted = (int) DB_count($_TABLES['maps_maps'], 'mid', $mid) > 0;
+    DB_delete($_TABLES['maps_maps'], 'mid', $mid);
+    DB_delete($_TABLES['maps_markers'], 'mid', $mid);
+    DB_delete($_TABLES['maps_map_overlay'], 'mo_mid', $mid);
+    if ($mapExisted && (int) DB_count($_TABLES['maps_maps'], 'mid', $mid) === 0
+        && function_exists('PLG_itemDeleted')
+    ) {
+        PLG_itemDeleted($mid, 'maps');
+    }
+    echo COM_refresh($_CONF['site_admin_url'] . '/plugins/maps/index.php');
+    exit;
+}
 
+if ($mode === 'save') {
+    $post = is_array($_POST) ? $_POST : array();
+    $mid = isset($post['mid']) ? (int) $post['mid'] : $mid;
+    $name = trim(isset($post['name']) ? (string) $post['name'] : '');
+    $geo = trim(isset($post['geo']) ? (string) $post['geo'] : '');
+    $lat = isset($post['lat']) ? MAPS_normalizeNumber($post['lat'], null) : null;
+    $lng = isset($post['lng']) ? MAPS_normalizeNumber($post['lng'], null) : null;
 
-echo $display;
+    if ($name === '' || $geo === '') {
+        $content .= MAPS_message($LANG_MAPS_1['missing_field'], $LANG_MAPS_1['error']);
+        $content .= getMapForm($post);
+    } else {
+        if (!MAPS_isValidCoordinatePair($lat, $lng)) {
+            $lat = 0;
+            $lng = 0;
+            if (!MAPS_getCoords($geo, $lat, $lng)) {
+                $geocodeMessage = isset($LANG_MAPS_1['geocode_save_fail'])
+                    ? $LANG_MAPS_1['geocode_save_fail']
+                    : 'The address could not be geocoded. Check the Google Maps API configuration and the address.';
+                $content .= MAPS_message($geocodeMessage, $LANG_MAPS_1['error']);
+                $content .= getMapForm($post);
+                COM_output(COM_createHTMLDocument($content, array('pagetitle' => $LANG_MAPS_1['plugin_name'])));
+                exit;
+            }
+        }
+        $permOwner = isset($post['perm_owner']) ? $post['perm_owner'] : 3;
+        $permGroup = isset($post['perm_group']) ? $post['perm_group'] : 3;
+        $permMembers = isset($post['perm_members']) ? $post['perm_members'] : 2;
+        $permAnon = isset($post['perm_anon']) ? $post['perm_anon'] : 2;
+        if (is_array($permOwner) || is_array($permGroup) || is_array($permMembers) || is_array($permAnon)) {
+            list($permOwner, $permGroup, $permMembers, $permAnon) = SEC_getPermissionValues($permOwner, $permGroup, $permMembers, $permAnon);
+        }
 
-?>
+        $data = array(
+            'name' => $name,
+            'description' => isset($post['description']) ? (string) $post['description'] : '',
+            'geo' => $geo,
+            'lat' => (float) $lat,
+            'lng' => (float) $lng,
+            'free_marker' => (int) (isset($post['free_marker']) ? $post['free_marker'] : 1),
+            'paid_marker' => (int) (isset($post['paid_marker']) ? $post['paid_marker'] : 1),
+            'active' => (int) (isset($post['active']) ? $post['active'] : 1),
+            'hidden' => (int) (isset($post['hidden']) ? $post['hidden'] : 0),
+            'width' => isset($post['width']) ? (string) $post['width'] : MAPS_arrayGet($_MAPS_CONF, 'map_width', '100%'),
+            'height' => isset($post['height']) ? (string) $post['height'] : MAPS_arrayGet($_MAPS_CONF, 'map_height', '600px'),
+            'zoom' => (int) (isset($post['zoom']) ? $post['zoom'] : 6),
+            'type' => isset($post['type']) ? (string) $post['type'] : MAPS_arrayGet($_MAPS_CONF, 'map_type', 'ROADMAP'),
+            'header' => isset($post['map_header']) ? (string) $post['map_header'] : '',
+            'footer' => isset($post['map_footer']) ? (string) $post['map_footer'] : '',
+            'primary_color' => MAPS_htmlColor(isset($post['primary_color']) ? $post['primary_color'] : '', MAPS_arrayGet($_MAPS_CONF, 'map_primary_color', '#666666')),
+            'stroke_color' => MAPS_htmlColor(isset($post['stroke_color']) ? $post['stroke_color'] : '', MAPS_arrayGet($_MAPS_CONF, 'map_stroke_color', '#333333')),
+            'label' => isset($post['label']) ? (string) $post['label'] : '',
+            'label_color' => (int) (isset($post['label_color']) ? $post['label_color'] : 0),
+            'mmk_default' => (int) (isset($post['mk_default']) ? $post['mk_default'] : 1),
+            'mmk_icon' => (int) (isset($post['mk_icon']) ? $post['mk_icon'] : 0),
+            'owner_id' => (int) (isset($post['owner_id']) ? $post['owner_id'] : $_USER['uid']),
+            'group_id' => (int) (isset($post['group_id']) ? $post['group_id'] : 2),
+            'perm_owner' => (int) $permOwner,
+            'perm_group' => (int) $permGroup,
+            'perm_members' => (int) $permMembers,
+            'perm_anon' => (int) $permAnon
+        );
+
+        $modified = date('YmdHis');
+        $sets = array();
+        foreach ($data as $field => $value) {
+            $sets[] = $field . "='" . MAPS_dbEscape($value) . "'";
+        }
+        $sets[] = "modified='" . MAPS_dbEscape($modified) . "'";
+
+        if ($mid > 0) {
+            $exists = (int) DB_count($_TABLES['maps_maps'], 'mid', $mid);
+            if ($exists <= 0) {
+                COM_errorLog('MAPS map editor: update requested for missing mid ' . $mid);
+                $content .= MAPS_message($LANG_MAPS_1['save_fail'], $LANG_MAPS_1['error']);
+                $content .= getMapForm($post);
+                COM_output(COM_createHTMLDocument($content, array('pagetitle' => $LANG_MAPS_1['plugin_name'])));
+                exit;
+            }
+            DB_query("UPDATE {$_TABLES['maps_maps']} SET " . implode(',', $sets) . ' WHERE mid=' . $mid);
+        } else {
+            $created = $modified;
+            $fields = array_keys($data);
+            $values = array();
+            foreach ($data as $value) {
+                $values[] = "'" . MAPS_dbEscape($value) . "'";
+            }
+            $fields[] = 'created';
+            $values[] = "'" . MAPS_dbEscape($created) . "'";
+            $fields[] = 'modified';
+            $values[] = "'" . MAPS_dbEscape($modified) . "'";
+            $fields[] = 'hits';
+            $values[] = '0';
+            DB_query("INSERT INTO {$_TABLES['maps_maps']} (" . implode(',', $fields) . ') VALUES (' . implode(',', $values) . ')');
+            $mid = (int) DB_insertId();
+            if ($mid <= 0) {
+                $mid = (int) DB_getItem(
+                    $_TABLES['maps_maps'],
+                    'MAX(mid)',
+                    "name='" . MAPS_dbEscape($name) . "' AND owner_id=" . (int) $data['owner_id']
+                );
+            }
+        }
+
+        $verify = array();
+        if ($mid > 0) {
+            $verifyResult = DB_query("SELECT * FROM {$_TABLES['maps_maps']} WHERE mid=" . (int) $mid . ' LIMIT 1');
+            if (DB_numRows($verifyResult) > 0) {
+                $verify = DB_fetchArray($verifyResult);
+            }
+        }
+        if (empty($verify) || !isset($verify['name']) || (string) $verify['name'] !== $name) {
+            COM_errorLog('MAPS map editor: database write verification failed for mid ' . (int) $mid);
+            $content .= MAPS_message($LANG_MAPS_1['save_fail'], $LANG_MAPS_1['error']);
+            $content .= getMapForm(array_merge($post, array('mid' => $mid)));
+            COM_output(COM_createHTMLDocument($content, array('pagetitle' => $LANG_MAPS_1['plugin_name'])));
+            exit;
+        }
+
+        if (function_exists('PLG_itemSaved')) {
+            PLG_itemSaved($mid, 'maps');
+        }
+
+        echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php?mode=map&mid=' . (int) $mid);
+        exit;
+    }
+} else {
+    $map = array();
+    if ($mode === 'edit' && $mid > 0) {
+        $res = DB_query("SELECT * FROM {$_TABLES['maps_maps']} WHERE mid={$mid} LIMIT 1");
+        if (DB_numRows($res) > 0) {
+            $map = DB_fetchArray($res);
+        }
+    }
+    $content .= getMapForm($map);
+}
+
+COM_output(COM_createHTMLDocument($content, array('pagetitle' => $LANG_MAPS_1['plugin_name'])));

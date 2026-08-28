@@ -1,1 +1,1 @@
-<!--no-space-and-no-line-break-please--><div style="overflow:auto;width:250px;height:150px"><h2>{name}{edit}</h2>{description}{ressources}{read_more}{map}</div>
+<!--no-space-and-no-line-break-please--><article class="maps-popup-card" style="--maps-popup-width:{popup_width};--maps-popup-height:{popup_height}"><header class="maps-popup-header"><h2 class="maps-popup-title">{name}</h2>{edit}</header><div class="maps-popup-body">{description}{ressources}</div><div class="maps-popup-actions">{read_more}</div>{map}</article>

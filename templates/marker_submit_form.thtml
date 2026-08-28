@@ -10,7 +10,7 @@
 		<input type="submit" value="{go}" onfocus="copyText();" />
 	  </p>
 	  <div id="map_contener_submission">
-	  <div id="map_canvas" style="width: 100%; height: 400px"></div>
+	  <div id="map_canvas" style="width: {marker_editor_width}; height: {marker_editor_height}"></div>
 	  <div id="submission_presentation">
 	  </div>
 	  </div>
@@ -20,7 +20,7 @@
 <div id="marker_form">
 	<form name="marker_edit" action="{site_url}/submit.php?type=maps" method="POST">
 		<fieldset style="margin-top: 10px;padding:10px;">
-		<legend>{arrow}<b>{informations}</b></legend>
+		<legend><b>{informations}</b></legend>
 			<div id="informations">
 				<p><b>{name_label}</b><font color="red">*</font> <input type="text" name="name" value="{name}" size="80" maxlength="255"></p>
 				<p><b>{address_label}</b><font color="red">*</font> <input type="text" id="address" name="address" value="{address}" size="80" maxlength="255"></p>
@@ -33,7 +33,7 @@
 			</div>
 		</fieldset>	 
 		<fieldset style="margin-top: 10px;">
-		<legend>{arrow}<b>{presentation_tab}</b></legend>
+		<legend><b>{presentation_tab}</b></legend>
 			<div id="presentation_tab">
 				<p><b>{description_label}</b><br{xhtml}><textarea rows="4" id="description" name="description" cols="51" style="width:99%">{description}</textarea>
 				</p>
@@ -48,7 +48,7 @@
 			</div>
 		</fieldset>
 		<fieldset style="margin-top: 10px;">
-		<legend>{arrow}<b>{ressources_tab}</b></legend>
+		<legend><b>{ressources_tab}</b></legend>
 			<div id="ressources_tab">
 				{ressources}
 			</div>

@@ -2,302 +2,356 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.4                                                           |
+// | Maintainer: ::Ben                                                         |
+// | Maps Plugin 1.6.0                                                         |
 // +---------------------------------------------------------------------------+
-// | index.php                                                                 |
-// |                                                                           |
-// | Public plugin page                                                        |
-// +---------------------------------------------------------------------------+
-// | Copyright (C) 2010-2014 by the following authors:                         |
-// |                                                                           |
-// | Authors: ::Ben                                                            |
-// +---------------------------------------------------------------------------+
-// | Created with the Geeklog Plugin Toolkit.                                  |
-// +---------------------------------------------------------------------------+
-// |                                                                           |
-// | This program is free software; you can redistribute it and/or             |
-// | modify it under the terms of the GNU General Public License               |
-// | as published by the Free Software Foundation; either version 2            |
-// | of the License, or (at your option) any later version.                    |
-// |                                                                           |
-// | This program is distributed in the hope that it will be useful,           |
-// | but WITHOUT ANY WARRANTY; without even the implied warranty of            |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             |
-// | GNU General Public License for more details.                              |
-// |                                                                           |
-// | You should have received a copy of the GNU General Public License         |
-// | along with this program; if not, write to the Free Software Foundation,   |
-// | Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.           |
-// |                                                                           |
+// | Public entry point                                                        |
 // +---------------------------------------------------------------------------+
 
-/**
-* @package Maps
-*/
+if (!defined('VERSION')) {
+    require_once '../lib-common.php';
+} else {
+    global $_CONF, $_PLUGINS, $_MAPS_CONF, $_TABLES;
+}
 
-require_once '../lib-common.php';
-
-// take user back to the homepage if the plugin is not active
 if (!in_array('maps', $_PLUGINS)) {
-    echo COM_refresh($_CONF['site_url'] . '/index.php');
+    if (function_exists('COM_handle404')) {
+        COM_handle404();
+    } else {
+        echo COM_refresh($_CONF['site_url'] . '/index.php');
+    }
     exit;
 }
 
 MAPS_getheadercode();
 
-// Incoming variable filter
-$vars = array('mid' => 'int',
-              'mkid' => 'number',
-			  'mode' => 'alpha'
-            );
+$vars = array('mid' => 'int', 'mkid' => 'alpha', 'mode' => 'alpha');
 MAPS_filterVars($vars, $_REQUEST);
+$mode = isset($_REQUEST['mode']) ? $_REQUEST['mode'] : '';
+$mid = isset($_REQUEST['mid']) ? (int) $_REQUEST['mid'] : 0;
+$mkid = isset($_REQUEST['mkid']) ? $_REQUEST['mkid'] : '';
 
-$default = false;
+/**
+ * Render the Maps landing page.
+ *
+ * @return string
+ */
+function MAPS_displayFrontPage()
+{
+    global $_CONF, $_MAPS_CONF, $LANG_MAPS_1, $_TABLES;
 
-// Ensure user has the rights to access this page
+    $retval = '';
+    if (MAPS_arrayGet($_MAPS_CONF, 'map_main_header', '') !== '') {
+        $retval .= '<div>' . PLG_replaceTags($_MAPS_CONF['map_main_header']) . '</div>';
+    }
 
-if (COM_isAnonUser() && (($_CONF['loginrequired'] == 1) || ($_MAPS_CONF['maps_login_required'] == 1)) && isset($_REQUEST['mode'])) {
-	$display .= COM_siteHeader('');
-	$display .= MAPS_user_menu();
-    $display .= COM_startBlock ($LANG_LOGIN[1], '',
-                                COM_getBlockTemplate ('_msg_block', 'header'));
-    $login = new Template($_CONF['path'] . 'plugins/maps/templates');
-    $login->set_file (array ('login'=>'submitloginrequired.thtml'));
-    $login->set_var ( 'xhtml', XHTML );
-    $login->set_var ('login_message', $LANG_LOGIN[2]);
-    $login->set_var ('site_url', $_CONF['site_url']);
-    $login->set_var ('site_admin_url', $_CONF['site_admin_url']);
-    $login->set_var ('layout_url', $_CONF['layout_url']);
-    $login->set_var ('lang_login', $LANG_LOGIN[3]);
-    $login->set_var ('lang_newuser', $LANG_LOGIN[4]);
-    $login->parse ('output', 'login');
-    $display .= $login->finish ($login->get_var('output'));
-    $display .= COM_endBlock (COM_getBlockTemplate ('_msg_block', 'footer'));
-    $display .= COM_siteFooter();
-    COM_output($display);
+    if ((int) MAPS_arrayGet($_MAPS_CONF, 'global_map', 1) === 1
+        && !(COM_isAnonUser() && (int) MAPS_arrayGet($_MAPS_CONF, 'maps_login_required', 0) === 1)) {
+        $retval .= MAPS_getGlobalMap('', '', true);
+    }
+
+    $retval .= '<section class="maps-public-list">';
+    $retval .= '<h2 class="maps-public-list-title">'
+        . htmlspecialchars($LANG_MAPS_1['user_maps_list'], ENT_QUOTES, 'UTF-8') . '</h2>';
+    $result = DB_query("SELECT mid,name,description,active,hidden,modified,hits FROM {$_TABLES['maps_maps']} ORDER BY name ASC");
+    $count = 0;
+    while ($map = DB_fetchArray($result)) {
+        if ((int) $map['active'] !== 1 || (int) $map['hidden'] === 1) {
+            continue;
+        }
+        $count++;
+        $url = $_MAPS_CONF['site_url'] . '/index.php?mode=map&amp;mid=' . (int) $map['mid'];
+        $retval .= '<article class="maps-list-card">';
+        $retval .= '<div class="maps-list-card-main">';
+        $retval .= '<h3 class="maps-list-card-title"><a href="' . $url . '">'
+            . htmlspecialchars(stripslashes($map['name']), ENT_QUOTES, 'UTF-8') . '</a></h3>';
+        if ($map['description'] !== '') {
+            $retval .= '<div class="maps-list-card-description">'
+                . htmlspecialchars(stripslashes($map['description']), ENT_QUOTES, 'UTF-8') . '</div>';
+        }
+        $modified = COM_getUserDateTimeFormat($map['modified']);
+        $retval .= '<div class="maps-list-card-meta">';
+        $retval .= '<span>' . htmlspecialchars($LANG_MAPS_1['last_modification'], ENT_QUOTES, 'UTF-8') . ' '
+            . htmlspecialchars($modified[0], ENT_QUOTES, 'UTF-8') . '</span>';
+        if ((int) MAPS_arrayGet($_MAPS_CONF, 'stats_public_enabled', 1) === 1) {
+            $markers = (int) DB_count($_TABLES['maps_markers'], 'mid', $map['mid']);
+            $markerLabel = ($markers === 1) ? $LANG_MAPS_1['marker_singular'] : $LANG_MAPS_1['marker_plural'];
+            $retval .= '<span>' . $markers . ' ' . htmlspecialchars($markerLabel, ENT_QUOTES, 'UTF-8') . '</span>';
+            $retval .= '<span>' . (int) $map['hits'] . ' ' . htmlspecialchars($LANG_MAPS_1['views_label'], ENT_QUOTES, 'UTF-8') . '</span>';
+        }
+        $retval .= '</div></div>';
+        if (SEC_hasRights('maps.admin')) {
+            $retval .= '<div class="maps-list-card-actions"><a class="maps-list-edit" href="'
+                . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=edit&amp;mid=' . (int) $map['mid'] . '">'
+                . htmlspecialchars($LANG_MAPS_1['edit_button'], ENT_QUOTES, 'UTF-8') . '</a></div>';
+        }
+        $retval .= '</article>';
+    }
+
+    if ($count === 0) {
+        $retval .= '<p>' . $LANG_MAPS_1['no_map_user'] . '</p>';
+    }
+    if ((int) MAPS_arrayGet($_MAPS_CONF, 'users_map', 1) === 1) {
+        $retval .= '<article class="maps-list-card maps-list-card-users"><div class="maps-list-card-main">'
+            . '<h3 class="maps-list-card-title"><a href="' . $_MAPS_CONF['site_url'] . '/users_map.php">'
+            . htmlspecialchars($LANG_MAPS_1['users_map'], ENT_QUOTES, 'UTF-8') . '</a></h3>'
+            . '<div class="maps-list-card-description">' . htmlspecialchars($LANG_MAPS_1['info_users_map'], ENT_QUOTES, 'UTF-8') . '</div>'
+            . '</div></article>';
+    }
+    $retval .= '</section>';
+    $retval .= MAPS_renderStatistics(true);
+    if (SEC_hasRights('maps.admin')) {
+        $retval .= '<p>' . $LANG_MAPS_1['admin_can'] . ' <a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=new">' . $LANG_MAPS_1['create_map'] . '</a></p>';
+    }
+    if (MAPS_arrayGet($_MAPS_CONF, 'map_main_footer', '') !== '') {
+        $retval .= '<div>' . PLG_replaceTags($_MAPS_CONF['map_main_footer']) . '</div>';
+    }
+    return $retval;
+}
+
+if (COM_isAnonUser()
+    && ((int) MAPS_arrayGet($_CONF, 'loginrequired', 0) === 1 || (int) MAPS_arrayGet($_MAPS_CONF, 'maps_login_required', 0) === 1)
+    && $mode !== '') {
+    $content = MAPS_user_menu();
+    $content .= MAPS_message($LANG_LOGIN[2], $LANG_LOGIN[1]);
+    COM_output(COM_createHTMLDocument($content, array('pagetitle' => $LANG_MAPS_1['plugin_name'])));
     exit;
 }
 
-function MAPS_displayFrontPage ()
+if (trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_api_key', '')) === '') {
+    $content = MAPS_user_menu();
+    $content .= MAPS_message($LANG_MAPS_1['need_google_api'], $LANG_MAPS_1['plugin_name']);
+    COM_output(COM_createHTMLDocument($content, array('pagetitle' => $LANG_MAPS_1['plugin_name'])));
+    exit;
+}
+
+/**
+ * Build a concise plain-text search/social description.
+ *
+ * @param string $text
+ * @param string $fallback
+ * @return string
+ */
+function MAPS_publicDescription($text, $fallback = '')
 {
-	global $_CONF, $_MAPS_CONF, $LANG_MAPS_1, $_TABLES;
-	
-	$retval ='';
-	
-	if ($_MAPS_CONF['map_main_header'] != '') {
-		$header = '<div>'. PLG_replaceTags($_MAPS_CONF['map_main_header']) .'</div>';
-	} else {
-		$header1 = '<p style="margin-top:25px;">' . $LANG_MAPS_1['user_maps_list'] .'</p>';
-	}
-
-	// Get maps from database
-	$sql = "SELECT mid, name, description, active, hidden, modified, hits FROM {$_TABLES['maps_maps']} ORDER BY name ASC";
-
-	$res = DB_query($sql);
-
-	// Create maps list template
-	$map = new Template($_CONF['path'] . 'plugins/maps/templates');
-	$map->set_file(array('map' => 'list_map_item.thtml',
-						 'start'   => 'list_map_start.thtml',
-						 'end'     => 'list_map_end.thtml') );
-
-	// Display the begging of the map list
-	$retval .= $map->parse('output', 'start');
-		
-	$list = 0;
-	$lastmod = array();
-	$markerssum = 0;
-
-	while ($A = DB_fetchArray($res)) {
-	    if (($A['active'] == 1)  && ($A['hidden'] == 0)) {
-		    $map->set_var('mid', $A['mid']);
-		    $map->set_var('name', stripslashes($A['name']));
-		    $map->set_var('xhtml', XHTML);		    
-			$name = urlencode($A['name']);
-		    $map->set_var('map_detail',  $_MAPS_CONF['site_url']  .'/index.php?mode=map&amp;mid=' . $A['mid'] . '&name=' . $name . '&amp;query_limit=500');
-		   
- 		   if ($A['description'] != '') {
-		        $map->set_var('description', '<br' . XHTML . '>' . stripslashes($A['description']));
-		    } else {
-		        $map->set_var('description', '');
-		    }
-		    
-			//See map and markers
-			if (function_exists('MAPS_getFields')) {
-			    $map->set_var('view_map', '<a href="' . $_MAPS_CONF['site_url']  .'/index.php?mode=map&amp;mid=' . $A['mid'] . '&name=' . $name . '&amp;query_limit=500">' . $LANG_MAPS_1['view_map'] . '</a> | ');
-			    $map->set_var('view_markers', '<a href="' . $_MAPS_CONF['site_url']  .'/index.php?mode=markers&amp;mid=' . $A['mid'] . '&name=' . $name . '">' . $LANG_MAPS_1['view_markers'] . ' | </a>');
-			} else {
-			    $map->set_var('view_map', '');
-			    $map->set_var('view_markers', '');
-			}
-			
-			//update
-		    $currentmod = COM_getUserDateTimeFormat($A['modified']);
-		    if ($currentmod[1] > $lastmod[1]) {
-		        $lastmod = COM_getUserDateTimeFormat($A['modified']);
-		    }
-		    $update = COM_getUserDateTimeFormat($A['modified']);
-		    $map->set_var('update', $LANG_MAPS_1['last_modification'] . ' ' . $update[0]);
-		    
-			//markers
-		    $markers = DB_count($_TABLES['maps_markers'],'mid',$A['mid']);
-		    $markerssum = $markerssum + $markers;
-		    $map->set_var('markers',  ' | ' . $markers . ' ' . $LANG_MAPS_1['records']);
-		    
-			//hits
-		    $map->set_var('hits',  ' | ' . $A['hits'] . ' ' . $LANG_MAPS_1['hits']);
-				if (SEC_hasRights('maps.admin')){
-	        $map->set_var('edit_button', '<form id="edit_map" action="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php" method="POST">
-	        <div style="float:right">
-	          <input type="image" src="' . $_CONF['site_admin_url'] . '/plugins/maps/images/edit.png" align="absmiddle" />
-			  <input type="hidden" name="mode" value="edit" />
-			   <input type="hidden" name="mid" value="' . $A['mid'] . '" />
-	        </div>
-	        </form>');
-		} else {
-			$map->set_var('edit_button', '');
-		}
-		$retval .= $map->parse('output', 'map');
-		$list ++;
-	    }
-	}
-
-	if (($list == 0) && ($_MAPS_CONF['global_map'] == 0) && ($_MAPS_CONF['users_map'] == 1)) {
-		$retval .= '<p>' . $LANG_MAPS_1['no_map_user'] . '</p>';
-		if (SEC_hasRights('maps.admin')) {
-			$retval .= '<p>' . $LANG_MAPS_1['admin_can'] .'<a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=new"> ' . $LANG_MAPS_1['create_map'] . '</a>.</p>';
-		}
-	} else {
-		if (($_MAPS_CONF['global_map'] == 1) && ($list > 1)) {
-			//global map
-			$map->set_var('edit_button', '');
-			$map->set_var('xhtml', XHTML);
-			$map->set_var('name', $LANG_MAPS_1['global_map']);
-			$map->set_var('map_detail',  $_MAPS_CONF['site_url']  .'/index.php?mode=map&amp;mid=0&name=' . urlencode($LANG_MAPS_1['global_map']) . '&amp;query_limit=500');
-			$map->set_var('description', '<br' . XHTML . '>' . $LANG_MAPS_1['info_global_map']);
-			if (function_exists('MAPS_getFields')) {
-			    $map->set_var('view_map', '<a href="' . $_MAPS_CONF['site_url']  .'/index.php?mode=map&amp;mid=0&name=' . urlencode($LANG_MAPS_1['global_map']) . '&amp;query_limit=500">' . $LANG_MAPS_1['view_map'] . '</a> | ');
-			    $map->set_var('view_markers', '<a href="' . $_MAPS_CONF['site_url']  .'/index.php?mode=markers&amp;mid=0&name=' . urlencode($LANG_MAPS_1['global_map']) . '">' . $LANG_MAPS_1['view_markers'] . ' | </a>');
-			} else {
-			    $map->set_var('view_map', '');
-			    $map->set_var('view_markers', '');
-			}
-			//update
-			$updateglobal = COM_getUserDateTimeFormat(time());
-			$map->set_var('update', $LANG_MAPS_1['last_modification'] . ' ' . $updateglobal[0]);
-			
-			//markers
-			$markers = DB_count($_TABLES['maps_markers'],'mid',$A['mid']);
-			$map->set_var('markers',  ' | ' . $markerssum . ' ' . $LANG_MAPS_1['records']);
-			
-			//hits
-			$map->set_var('hits',  ' | ' . DB_getItem($_TABLES['vars'],'value',"name='globalMapHits'") . ' ' . $LANG_MAPS_1['hits']);
-			$retval .= $map->parse('output', 'map');
-
-		}
-		
-		if ($_MAPS_CONF['users_map'] == 1) {
-			$retval .= '<p class="maps_list_item"><strong><a href="' . $_MAPS_CONF['site_url'] . '/users_map.php">' .
-			$LANG_MAPS_1['users_map'] . '</a></strong><br'. XHTML . '>' . $LANG_MAPS_1['info_users_map'] . '</p>';
-		}
-		
-		if (SEC_hasRights('maps.admin')) {
-			$retval .= '&nbsp;<p>' . $LANG_MAPS_1['admin_can'] .' <a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=new">' . $LANG_MAPS_1['create_map'] . '</a></p>';
-		}	
-	}
-
-	// Display the end of the maps list
-	$retval .= $map->parse('output', 'end');
-	
-	//Display global map if active
-	if (COM_isAnonUser() && ($_MAPS_CONF['maps_login_required'] == 1)) {
-	    // do not display global map
-		$retval = $header1 . $retval;
-	} else if ( $_MAPS_CONF['global_map'] == 1 && ($list > 0) ) {
-	    $retval = MAPS_getGlobalMap( '', '', true ) . $header1  . $retval;
-	} else {
-	    $retval = $header1 . $retval;
-	}
-	
-	$footer = '<div>'. PLG_replaceTags($_MAPS_CONF['map_main_footer']) .'</div>';
-	
-	return $header . $retval . $footer;
+    $text = trim((string) $text);
+    if ($text !== '') {
+        $text = PLG_replaceTags($text);
+    }
+    $text = trim(preg_replace('/\s+/', ' ', strip_tags($text)));
+    if ($text === '') {
+        $text = trim((string) $fallback);
+    }
+    if (function_exists('COM_truncate')) {
+        return COM_truncate($text, 160, '...');
+    }
+    return (strlen($text) > 160) ? substr($text, 0, 157) . '...' : $text;
 }
 
-// MAIN
-
-$display = '';
-
-if ($_MAPS_CONF['google_api_key'] == '') {
-	$display = COM_siteHeader('menu', $LANG_MAPS_1['plugin_name']);
-	$display .= '<p><img src="' . $_CONF['site_admin_url'] . '/plugins/maps/images/maps.png" alt="" align="left" hspace="5">';
-	$display .= $LANG_MAPS_1['need_google_api'];
-	$display .= COM_siteFooter(0);
-	COM_output($display);
-	exit ();
+/**
+ * Build canonical, description, robots, Open Graph, Twitter and JSON-LD tags.
+ *
+ * @param string $title
+ * @param string $description
+ * @param string $canonical
+ * @param string $robots
+ * @param array  $jsonLd
+ * @return string
+ */
+function MAPS_publicSeoHeader($title, $description, $canonical, $robots = '', $jsonLd = array())
+{
+    $safeTitle = htmlspecialchars((string) $title, ENT_QUOTES, 'UTF-8');
+    $safeDescription = htmlspecialchars((string) $description, ENT_QUOTES, 'UTF-8');
+    $safeCanonical = htmlspecialchars((string) $canonical, ENT_QUOTES, 'UTF-8');
+    $header = '<link rel="canonical" href="' . $safeCanonical . '">' . LB;
+    if ($description !== '') {
+        $header .= '<meta name="description" content="' . $safeDescription . '">' . LB;
+    }
+    if ($robots !== '') {
+        $header .= '<meta name="robots" content="' . htmlspecialchars($robots, ENT_QUOTES, 'UTF-8') . '">' . LB;
+    }
+    $header .= '<meta property="og:title" content="' . $safeTitle . '">' . LB
+        . '<meta property="og:url" content="' . $safeCanonical . '">' . LB
+        . '<meta property="og:type" content="website">' . LB;
+    if ($description !== '') {
+        $header .= '<meta property="og:description" content="' . $safeDescription . '">' . LB;
+    }
+    $header .= '<meta name="twitter:card" content="summary">' . LB
+        . '<meta name="twitter:title" content="' . $safeTitle . '">' . LB;
+    if ($description !== '') {
+        $header .= '<meta name="twitter:description" content="' . $safeDescription . '">' . LB;
+    }
+    if (!empty($jsonLd)) {
+        $json = json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($json !== false) {
+            $header .= '<script type="application/ld+json">' . $json . '</script>' . LB;
+        }
+    }
+    return $header;
 }
 
-//page title
-$page_title = $LANG_MAPS_1['maps_label'];
-
-if ( $_REQUEST['mode'] == 'map' AND ($_REQUEST['mid'] !=0 && $_REQUEST['mid']>0 && is_numeric($_REQUEST['mid'])) ) $page_title = DB_getItem($_TABLES['maps_maps'], 'name', "mid={$_REQUEST['mid']}");
-
-if ($_REQUEST['mode'] == 'markers' && $_REQUEST['mid'] != 0 && is_numeric($_REQUEST['mid'])) $page_title .= ' | ' . DB_getItem($_TABLES['maps_maps'], 'name', "mid={$_REQUEST['mid']}");
-
-if ($_REQUEST['mode'] == 'marker' && isset($_REQUEST['mkid']) && $_REQUEST['mkid'] != '' && is_numeric($_REQUEST['mkid'])) $page_title = DB_getItem($_TABLES['maps_markers'], 'name', "mkid={$_REQUEST['mkid']}");
-
-$display .= COM_siteHeader('menu', stripslashes($page_title) );
-$display .= MAPS_user_menu();
-
-$msg = 0;
-if (isset ($_REQUEST['msg'])) {
-    $msg = COM_applyFilter ($_REQUEST['msg'], true);
+$pageTitle = trim((string) MAPS_arrayGet($_MAPS_CONF, 'maps_page_title', ''));
+if ($pageTitle === '') {
+    $pageTitle = $LANG_MAPS_1['maps_label'];
 }
-if ($msg > 0) {
-    $display .= COM_showMessage ($msg, 'maps');
+$pageH1 = trim((string) MAPS_arrayGet($_MAPS_CONF, 'maps_page_h1', ''));
+if ($pageH1 === '') {
+    $pageH1 = $pageTitle;
+}
+$configuredMetaDescription = trim((string) MAPS_arrayGet($_MAPS_CONF, 'maps_meta_description', ''));
+$pageDescription = MAPS_publicDescription(
+    $configuredMetaDescription !== '' ? $configuredMetaDescription : MAPS_arrayGet($_MAPS_CONF, 'map_main_header', ''),
+    $pageTitle
+);
+$canonical = rtrim($_MAPS_CONF['site_url'], '/') . '/';
+$robots = '';
+$jsonLd = array();
+$mapRow = array();
+$markerRow = array();
+$markerMapRow = array();
+
+if ($mode === 'map' && $mid > 0) {
+    $result = DB_query("SELECT * FROM {$_TABLES['maps_maps']} WHERE mid=" . $mid . " LIMIT 1");
+    $mapRow = DB_fetchArray($result);
+    if (!is_array($mapRow) || (int) MAPS_arrayGet($mapRow, 'active', 0) !== 1
+        || (int) MAPS_arrayGet($mapRow, 'hidden', 0) === 1 || !SEC_hasAccess2($mapRow)) {
+        COM_handle404();
+        exit;
+    }
+    $pageTitle = MAPS_decodeStoredText(MAPS_arrayGet($mapRow, 'name', ''));
+    $pageDescription = MAPS_publicDescription(
+        MAPS_arrayGet($mapRow, 'description', ''),
+        $pageTitle
+    );
+    $canonical = MAPS_contentUrl($mid);
+} elseif ($mode === 'marker' && $mkid !== '') {
+    $safeMkid = MAPS_dbEscape($mkid);
+    $result = DB_query("SELECT * FROM {$_TABLES['maps_markers']} WHERE mkid='" . $safeMkid . "' LIMIT 1");
+    $markerRow = DB_fetchArray($result);
+    if (!is_array($markerRow) || (int) MAPS_arrayGet($markerRow, 'active', 0) !== 1
+        || (int) MAPS_arrayGet($markerRow, 'hidden', 0) === 1 || !SEC_hasAccess2($markerRow)) {
+        COM_handle404();
+        exit;
+    }
+    $markerMid = (int) MAPS_arrayGet($markerRow, 'mid', 0);
+    $mapResult = DB_query("SELECT * FROM {$_TABLES['maps_maps']} WHERE mid=" . $markerMid . " LIMIT 1");
+    $markerMapRow = DB_fetchArray($mapResult);
+    if (!is_array($markerMapRow) || (int) MAPS_arrayGet($markerMapRow, 'active', 0) !== 1
+        || (int) MAPS_arrayGet($markerMapRow, 'hidden', 0) === 1 || !SEC_hasAccess2($markerMapRow)) {
+        COM_handle404();
+        exit;
+    }
+
+    $pageTitle = MAPS_decodeStoredText(MAPS_arrayGet($markerRow, 'name', ''));
+    $addressFallback = trim(implode(', ', array_filter(array(
+        MAPS_decodeStoredText(MAPS_arrayGet($markerRow, 'address', '')),
+        MAPS_decodeStoredText(MAPS_arrayGet($markerRow, 'city', '')),
+        MAPS_decodeStoredText(MAPS_arrayGet($markerRow, 'country', ''))
+    ))));
+    $pageDescription = MAPS_publicDescription(
+        MAPS_arrayGet($markerRow, 'description', ''),
+        $addressFallback !== '' ? $pageTitle . ' - ' . $addressFallback : $pageTitle
+    );
+    $canonical = MAPS_markerContentUrl($mkid);
+
+    $place = array(
+        '@context' => 'https://schema.org',
+        '@type' => 'Place',
+        'name' => $pageTitle,
+        'url' => $canonical
+    );
+    if ($pageDescription !== '') {
+        $place['description'] = $pageDescription;
+    }
+    $postal = array('@type' => 'PostalAddress');
+    $postalFields = array(
+        'streetAddress' => 'street',
+        'postalCode' => 'code',
+        'addressLocality' => 'city',
+        'addressRegion' => 'state',
+        'addressCountry' => 'country'
+    );
+    foreach ($postalFields as $schemaField => $dbField) {
+        $value = trim(MAPS_decodeStoredText(MAPS_arrayGet($markerRow, $dbField, '')));
+        if ($value !== '') {
+            $postal[$schemaField] = $value;
+        }
+    }
+    if (count($postal) > 1) {
+        $place['address'] = $postal;
+    } elseif ($addressFallback !== '') {
+        $place['address'] = $addressFallback;
+    }
+    $markerLat = MAPS_arrayGet($markerRow, 'lat', '');
+    $markerLng = MAPS_arrayGet($markerRow, 'lng', '');
+    if (is_numeric($markerLat) && is_numeric($markerLng)
+        && (float) $markerLat >= -90.0 && (float) $markerLat <= 90.0
+        && (float) $markerLng >= -180.0 && (float) $markerLng <= 180.0) {
+        $place['geo'] = array(
+            '@type' => 'GeoCoordinates',
+            'latitude' => (float) $markerLat,
+            'longitude' => (float) $markerLng
+        );
+    }
+    $telephone = trim(MAPS_decodeStoredText(MAPS_arrayGet($markerRow, 'tel', '')));
+    if ($telephone !== '') {
+        $place['telephone'] = $telephone;
+    }
+    $jsonLd = $place;
+} elseif ($mode === 'markers') {
+    // Marker list views are navigation helpers rather than canonical landing pages.
+    $robots = 'noindex,follow';
+    $canonical = ($mid > 0) ? MAPS_contentUrl($mid) : rtrim($_MAPS_CONF['site_url'], '/') . '/';
 }
 
-switch ($_REQUEST['mode']) {
+$content = MAPS_user_menu();
+if (isset($_REQUEST['msg']) && (int) $_REQUEST['msg'] > 0) {
+    $content .= COM_showMessage((int) $_REQUEST['msg'], 'maps');
+}
+
+switch ($mode) {
     case 'map':
-	    // query database for map
-		if ($_REQUEST['mid']>0 && is_numeric($_REQUEST['mid'])) {
-			
-			$display .= MAPS_getMap($_REQUEST['mid']);
-			
-			if ( $_REQUEST['mid'] >= 0 && is_numeric($_REQUEST['mid']) ) {
-				$display .= MAPS_ListMarkers($_REQUEST['mid']);
-			} 
-		} elseif ($_REQUEST['mid'] == 0) {
-			//Display the Global Map 
-			$display .= MAPS_getGlobalMap();
- 
-		} else {
-			echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php');
-		}
+        if ($mid > 0) {
+            $content .= MAPS_getMap($mid);
+            $markersHeading = isset($LANG_MAPS_1['map_markers_heading'])
+                ? $LANG_MAPS_1['map_markers_heading']
+                : $LANG_MAPS_1['markers_list'];
+            $content .= '<h2 class="maps-markers-heading">'
+                . htmlspecialchars($markersHeading, ENT_QUOTES, 'UTF-8') . '</h2>';
+            $content .= MAPS_ListMarkers($mid);
+            $content .= MAPS_renderMapStatistics($mid, true);
+        } else {
+            $content .= MAPS_getGlobalMap();
+        }
         break;
-	case 'markers':
-	    if ( ($_REQUEST['mid'] >= 0) ) {
-		    $display .= MAPS_ListMarkers($_REQUEST['mid']);
-		} else {
-			echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php');
-		}
-	    break;
-	case 'marker':
-	    if ( isset($_REQUEST['mkid']) && $_REQUEST['mkid'] != '' && function_exists('MAPS_proViewMarker') ) {
-		    $display .= MAPS_proViewMarker($_REQUEST['mkid']);
-		} else {
-			echo COM_refresh($_MAPS_CONF['site_url'] . '/index.php');
-		}
-	    break;
 
-    default:	
-	    $default = true;
-	    $display .= MAPS_displayFrontPage();
-	
+    case 'markers':
+        $content .= MAPS_ListMarkers($mid);
+        break;
+
+    case 'marker':
+        if ($mkid !== '') {
+            $content .= '<article class="maps-marker-detail">';
+            $content .= '<h1 class="maps-page-title">' . htmlspecialchars(MAPS_markerDisplayName($pageTitle), ENT_QUOTES, 'UTF-8') . '</h1>';
+            if (!empty($markerMapRow['mid'])) {
+                $content .= MAPS_getMarkerDetail((int) $markerMapRow['mid'], $mkid);
+            }
+            $content .= MAPS_ViewMarkerInfos($mkid);
+            $content .= '</article>';
+        }
+        break;
+
+    default:
+        $content .= '<h1>' . htmlspecialchars($pageH1, ENT_QUOTES, 'UTF-8') . '</h1>';
+        $content .= MAPS_displayFrontPage();
+        break;
 }
 
-$display .= COM_siteFooter(0);
-
-COM_output($display);
-
-?>
+$headercode = MAPS_publicSeoHeader($pageTitle, $pageDescription, $canonical, $robots, $jsonLd);
+COM_output(COM_createHTMLDocument(
+    $content,
+    array(
+        'pagetitle' => stripslashes($pageTitle),
+        'headercode' => $headercode
+    )
+));
