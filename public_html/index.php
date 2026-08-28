@@ -50,7 +50,9 @@ function MAPS_displayFrontPage()
         $retval .= MAPS_getGlobalMap('', '', true);
     }
 
-    $retval .= '<p>' . $LANG_MAPS_1['user_maps_list'] . '</p>';
+    $retval .= '<section class="maps-public-list">';
+    $retval .= '<h2 class="maps-public-list-title">'
+        . htmlspecialchars($LANG_MAPS_1['user_maps_list'], ENT_QUOTES, 'UTF-8') . '</h2>';
     $result = DB_query("SELECT mid,name,description,active,hidden,modified,hits FROM {$_TABLES['maps_maps']} ORDER BY name ASC");
     $count = 0;
     while ($map = DB_fetchArray($result)) {
@@ -59,32 +61,44 @@ function MAPS_displayFrontPage()
         }
         $count++;
         $url = $_MAPS_CONF['site_url'] . '/index.php?mode=map&amp;mid=' . (int) $map['mid'];
-        $retval .= '<div class="maps_list_item">';
-        $retval .= '<strong><a href="' . $url . '">' . htmlspecialchars(stripslashes($map['name']), ENT_QUOTES, 'UTF-8') . '</a></strong>';
+        $retval .= '<article class="maps-list-card">';
+        $retval .= '<div class="maps-list-card-main">';
+        $retval .= '<h3 class="maps-list-card-title"><a href="' . $url . '">'
+            . htmlspecialchars(stripslashes($map['name']), ENT_QUOTES, 'UTF-8') . '</a></h3>';
         if ($map['description'] !== '') {
-            $retval .= '<br>' . htmlspecialchars(stripslashes($map['description']), ENT_QUOTES, 'UTF-8');
+            $retval .= '<div class="maps-list-card-description">'
+                . htmlspecialchars(stripslashes($map['description']), ENT_QUOTES, 'UTF-8') . '</div>';
         }
         $modified = COM_getUserDateTimeFormat($map['modified']);
-        $retval .= '<br><small>' . $LANG_MAPS_1['last_modification'] . ' ' . $modified[0];
+        $retval .= '<div class="maps-list-card-meta">';
+        $retval .= '<span>' . htmlspecialchars($LANG_MAPS_1['last_modification'], ENT_QUOTES, 'UTF-8') . ' '
+            . htmlspecialchars($modified[0], ENT_QUOTES, 'UTF-8') . '</span>';
         if ((int) MAPS_arrayGet($_MAPS_CONF, 'stats_public_enabled', 1) === 1) {
-            $markers = DB_count($_TABLES['maps_markers'], 'mid', $map['mid']);
-            $retval .= ' | ' . (int) $markers . ' ' . $LANG_MAPS_1['records']
-                . ' | ' . (int) $map['hits'] . ' ' . $LANG_MAPS_1['hits'];
+            $markers = (int) DB_count($_TABLES['maps_markers'], 'mid', $map['mid']);
+            $markerLabel = ($markers === 1) ? $LANG_MAPS_1['marker_singular'] : $LANG_MAPS_1['marker_plural'];
+            $retval .= '<span>' . $markers . ' ' . htmlspecialchars($markerLabel, ENT_QUOTES, 'UTF-8') . '</span>';
+            $retval .= '<span>' . (int) $map['hits'] . ' ' . htmlspecialchars($LANG_MAPS_1['views_label'], ENT_QUOTES, 'UTF-8') . '</span>';
         }
-        $retval .= '</small>';
+        $retval .= '</div></div>';
         if (SEC_hasRights('maps.admin')) {
-            $retval .= ' | <a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=edit&amp;mid=' . (int) $map['mid'] . '">' . $LANG_MAPS_1['edit_button'] . '</a>';
+            $retval .= '<div class="maps-list-card-actions"><a class="maps-list-edit" href="'
+                . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=edit&amp;mid=' . (int) $map['mid'] . '">'
+                . htmlspecialchars($LANG_MAPS_1['edit_button'], ENT_QUOTES, 'UTF-8') . '</a></div>';
         }
-        $retval .= '</div>';
+        $retval .= '</article>';
     }
 
     if ($count === 0) {
         $retval .= '<p>' . $LANG_MAPS_1['no_map_user'] . '</p>';
     }
     if ((int) MAPS_arrayGet($_MAPS_CONF, 'users_map', 1) === 1) {
-        $retval .= '<div class="maps_list_item"><strong><a href="' . $_MAPS_CONF['site_url'] . '/users_map.php">'
-            . $LANG_MAPS_1['users_map'] . '</a></strong><br>' . $LANG_MAPS_1['info_users_map'] . '</div>';
+        $retval .= '<article class="maps-list-card maps-list-card-users"><div class="maps-list-card-main">'
+            . '<h3 class="maps-list-card-title"><a href="' . $_MAPS_CONF['site_url'] . '/users_map.php">'
+            . htmlspecialchars($LANG_MAPS_1['users_map'], ENT_QUOTES, 'UTF-8') . '</a></h3>'
+            . '<div class="maps-list-card-description">' . htmlspecialchars($LANG_MAPS_1['info_users_map'], ENT_QUOTES, 'UTF-8') . '</div>'
+            . '</div></article>';
     }
+    $retval .= '</section>';
     $retval .= MAPS_renderStatistics(true);
     if (SEC_hasRights('maps.admin')) {
         $retval .= '<p>' . $LANG_MAPS_1['admin_can'] . ' <a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=new">' . $LANG_MAPS_1['create_map'] . '</a></p>';

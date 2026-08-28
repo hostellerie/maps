@@ -56,3 +56,11 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - User-entered website and custom-field values are rendered as non-clickable escaped text.
 - Marker info windows always link to the canonical Maps marker page instead of a user-provided URL.
 - User-entered websites are no longer emitted as schema.org `sameAs`.
+
+## Public map directory polish
+
+- Replaced the database-style public map list with compact responsive editorial cards.
+- Added a clearer Explore our maps / Découvrez nos cartes section heading.
+- Separated map title, description, metadata and administrator edit action.
+- Replaced frontend records terminology with marker / markers and views.
+- Kept the users map in the same visual card system without inventing unavailable statistics.
