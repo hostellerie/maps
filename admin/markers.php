@@ -152,8 +152,9 @@ function plugin_getListField_markers($fieldname, $fieldvalue, $A, $icon_arr)
             break;
 
         case 'modified':
-            $modified = (int) $fieldvalue;
-            if ($modified > 0) {
+            $modifiedValue = trim((string) $fieldvalue);
+            $modified = $modifiedValue === '' ? false : strtotime($modifiedValue);
+            if ($modified !== false && $modified > 0) {
                 $date = COM_getUserDateTimeFormat($modified);
                 $retval = htmlspecialchars($date[0], ENT_QUOTES, 'UTF-8');
             } else {
