@@ -20,6 +20,12 @@ jobs:
           git clone --depth 1 --branch modernize/maps-1.5 \
             https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
+      - name: Apply admin editor modernization
+        shell: bash
+        run: |
+          cd source
+          python3 tools/modernize-admin-editors-160.py
+
       - name: Lint release files
         shell: bash
         run: |
@@ -34,16 +40,23 @@ jobs:
           grep -q "'pi_version' => '1.6.0'" source/autoinstall.php
           grep -q 'Maps Plugin 1.6.0' source/functions.inc
           grep -q 'Maps 1.6.0' source/README.md
-          grep -q 'mapsClusterRenderer' source/functions.inc
-          grep -q 'fill-opacity=\\\".86\\\"' source/functions.inc
-          grep -q 'maps-popup-primary-action' source/functions.inc
-          grep -q 'maps-popup-card' source/templates/presentation_tab.thtml
-          grep -q 'Maps 1.6.0 marker info windows' source/public_html/maps.css
-          grep -q 'Marker info-window polish' source/RELEASE-NOTES-1.6.0.md
           grep -q 'MAPS_displayOverlaysToAdd($map' source/admin/map_edit.php
           ! grep -q 'MAPS_displayAddOverlay($map' source/admin/map_edit.php
-          ! grep -q '<h2>{name}{edit}</h2>' source/templates/presentation_tab.thtml
-          ! grep -q '<h1' source/templates/marker.thtml
+          grep -q 'maps-admin-editor' source/templates/marker_form.thtml
+          grep -q 'maps-admin-editor' source/templates/icon_form.thtml
+          grep -q 'maps-admin-editor' source/templates/overlay_form.thtml
+          grep -q 'maps-admin-editor' source/templates/group_overlay_form.thtml
+          grep -q 'maps-admin-title' source/admin/marker_edit.php
+          grep -q 'maps-admin-title' source/admin/icons.php
+          grep -q 'maps-admin-title' source/admin/overlay_edit.php
+          grep -q 'maps-admin-title' source/admin/overlay_group_edit.php
+          grep -q 'MAPS_admin_menu();' source/admin/overlay_group_edit.php
+          grep -q 'Maps 1.6.0 shared admin editors' source/public_html/maps.css
+          grep -q 'Administration editor consistency' source/RELEASE-NOTES-1.6.0.md
+          ! grep -q '<font color="red">' source/templates/marker_form.thtml
+          ! grep -q '<font color="red">' source/templates/icon_form.thtml
+          ! grep -q '<font color="red">' source/templates/overlay_form.thtml
+          ! grep -q '<font color="red">' source/templates/group_overlay_form.thtml
 
       - name: Build final installable archive
         shell: bash
@@ -58,7 +71,7 @@ jobs:
           unzip -t maps_1.6.0_2.1.1.zip >/dev/null
           test "$(zipinfo -1 maps_1.6.0_2.1.1.zip | head -n 1)" = 'maps/'
 
-      - name: Commit final archive
+      - name: Commit editor refinements and final archive
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -69,9 +82,12 @@ jobs:
           cp build/maps_1.6.0_2.1.1.zip dist/maps_1.6.0_2.1.1.zip
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add admin/marker_edit.php admin/icons.php admin/overlay_edit.php admin/overlay_group_edit.php
+          git add templates/marker_form.thtml templates/icon_form.thtml templates/overlay_form.thtml templates/group_overlay_form.thtml
+          git add public_html/maps.css RELEASE-NOTES-1.6.0.md
           git add -f dist/maps_1.6.0_2.1.1.zip
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Build Maps 1.6.0 final archive [skip ci]'
+          git commit -m 'Modernize Maps 1.6.0 admin editors [skip ci]'
           git push origin HEAD:modernize/maps-1.5
