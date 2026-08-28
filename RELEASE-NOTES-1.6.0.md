@@ -69,4 +69,9 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - Added a compact custom MarkerClusterer renderer with three density levels and a restrained blue palette.
 - Reduced cluster visual dominance while preserving click-to-zoom behavior.
 - Refined generated SVG pins with a thinner outline, lighter highlight and subtle shadow while keeping configured colors and labels.
+## Marker info-window polish
+
+- Refined cluster opacity for a calmer map while retaining the custom density renderer.
+- Replaced the legacy marker popup layout with a responsive information card.
+- Separated marker title, edit action, description, primary details link and parent-map link for clearer hierarchy.
 

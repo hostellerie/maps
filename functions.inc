@@ -552,8 +552,8 @@ function MAPS_clusterInitJs($mapVariable)
         . "            var ring = count >= 50 ? '#24486d' : (count >= 10 ? '#315d86' : '#426f97');\n"
         . "            var svg = '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"' + size + '\" height=\"' + size + '\" viewBox=\"0 0 ' + size + ' ' + size + '\">' +\n"
         . "                '<defs><filter id=\"s\" x=\"-30%\" y=\"-30%\" width=\"160%\" height=\"160%\"><feDropShadow dx=\"0\" dy=\"1\" stdDeviation=\"1.2\" flood-color=\"#000\" flood-opacity=\".18\"/></filter></defs>' +\n"
-        . "                '<circle filter=\"url(#s)\" cx=\"' + (size / 2) + '\" cy=\"' + (size / 2) + '\" r=\"' + ((size / 2) - 2) + '\" fill=\"' + fill + '\" fill-opacity=\".92\" stroke=\"' + ring + '\" stroke-width=\"2\"/>' +\n"
-        . "                '<circle cx=\"' + (size / 2) + '\" cy=\"' + (size / 2) + '\" r=\"' + ((size / 2) - 6) + '\" fill=\"none\" stroke=\"#fff\" stroke-opacity=\".20\" stroke-width=\"1\"/>' +\n"
+        . "                '<circle filter=\"url(#s)\" cx=\"' + (size / 2) + '\" cy=\"' + (size / 2) + '\" r=\"' + ((size / 2) - 2) + '\" fill=\"' + fill + '\" fill-opacity=\".86\" stroke=\"' + ring + '\" stroke-width=\"2\"/>' +\n"
+        . "                '<circle cx=\"' + (size / 2) + '\" cy=\"' + (size / 2) + '\" r=\"' + ((size / 2) - 6) + '\" fill=\"none\" stroke=\"#fff\" stroke-opacity=\".16\" stroke-width=\"1\"/>' +\n"
         . "                '<text x=\"50%\" y=\"50%\" dy=\".35em\" text-anchor=\"middle\" font-family=\"Arial,sans-serif\" font-size=\"' + (count >= 100 ? 11 : 12) + '\" font-weight=\"700\" fill=\"#fff\">' + count + '</text></svg>';\n"
         . "            return new google.maps.Marker({\n"
         . "                position: cluster.position,\n"
@@ -2264,7 +2264,7 @@ function MAPS_renderMarker($marker, $primaryColor, $strokecolor, $label, $label_
         $template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
         if ((string) $mapid === 'events') {
             $template->set_file(array('presentation' => 'presentation_tab_event.thtml'));
-            $template->set_var('name', '<strong>' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</strong>');
+            $template->set_var('name', htmlspecialchars($name, ENT_QUOTES, 'UTF-8'));
             $template->set_var('popup_width', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'popup_width', '250px'), '250px'));
             $template->set_var('popup_height', MAPS_cssSize(MAPS_arrayGet($_MAPS_CONF, 'popup_height', '150px'), '150px'));
             $description = (string) MAPS_arrayGet($marker, 'description', '');
@@ -2290,11 +2290,11 @@ function MAPS_renderMarker($marker, $primaryColor, $strokecolor, $label, $label_
             $template->set_var('description', $short !== '' ? '<p>' . nl2br(htmlspecialchars($short, ENT_QUOTES, 'UTF-8')) . (strlen($description) > strlen($short) ? '…' : '') . '</p>' : '');
             $template->set_var('ressources', MAPS_renderPublicCustomFields($marker, 'compact'));
             $readMore = MAPS_markerContentUrl($marker['mkid']);
-            $template->set_var('read_more', '<a href="' . htmlspecialchars($readMore, ENT_QUOTES, 'UTF-8') . '">' . $LANG_MAPS_1['read_more'] . '</a>');
-            $template->set_var('map', '<p>' . $LANG_MAPS_1['on_map'] . ' <a href="' . $_MAPS_CONF['site_url'] . '/index.php?mode=map&mid=' . (int) $marker['mid'] . '">' . htmlspecialchars(stripslashes($mapname), ENT_QUOTES, 'UTF-8') . '</a></p>');
+            $template->set_var('read_more', '<a class="maps-popup-primary-action" href="' . htmlspecialchars($readMore, ENT_QUOTES, 'UTF-8') . '">' . $LANG_MAPS_1['read_more'] . '</a>');
+            $template->set_var('map', '<div class="maps-popup-map-link"><span>' . htmlspecialchars($LANG_MAPS_1['on_map'], ENT_QUOTES, 'UTF-8') . '</span> <a href="' . $_MAPS_CONF['site_url'] . '/index.php?mode=map&mid=' . (int) $marker['mid'] . '">' . htmlspecialchars(stripslashes($mapname), ENT_QUOTES, 'UTF-8') . '</a></div>');
             $currentUid = isset($_USER['uid']) ? (int) $_USER['uid'] : 1;
             $referentUid = MAPS_resolveMarkerOwnerUid($marker);
-            $template->set_var('edit', SEC_hasRights('maps.admin') || $currentUid === $referentUid ? '<a href="' . $_MAPS_CONF['site_url'] . '/markers.php?mode=edit&amp;mkid=' . rawurlencode($marker['mkid']) . '">' . $LANG_MAPS_1['edit_button'] . '</a>' : '');
+            $template->set_var('edit', SEC_hasRights('maps.admin') || $currentUid === $referentUid ? '<a class="maps-popup-edit-action" href="' . $_MAPS_CONF['site_url'] . '/markers.php?mode=edit&amp;mkid=' . rawurlencode($marker['mkid']) . '">' . $LANG_MAPS_1['edit_button'] . '</a>' : '');
         }
         $presentation = $template->parse('output', 'presentation');
         $infoVar = 'infowindow' . $mkid;
