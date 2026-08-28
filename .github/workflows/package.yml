@@ -1,4 +1,4 @@
-name: Build installable archive
+name: Apply Maps geo autotag modernization
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  package:
+  apply:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
@@ -20,88 +20,31 @@ jobs:
           git clone --depth 1 --branch modernize/maps-1.5 \
             https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git source
 
-      - name: Lint release files
+      - name: Apply geo autotag changes
         shell: bash
         run: |
-          find source -type f \( -name '*.php' -o -name '*.inc' \) \
-            -not -path 'source/build/*' -not -path 'source/tools/*' -print0 \
-            | xargs -0 -n1 php -l
-
-      - name: Verify release metadata and layouts
-        shell: bash
-        run: |
-          set -e
-          grep -q "'pi_version' => '1.6.0'" source/autoinstall.php
-          grep -q 'Maps Plugin 1.6.0' source/functions.inc
-          grep -q 'Maps 1.6.0' source/README.md
-          grep -q 'MAPS_displayOverlaysToAdd($map' source/admin/map_edit.php
-          ! grep -q 'MAPS_displayAddOverlay($map' source/admin/map_edit.php
-          grep -q 'maps-admin-editor' source/templates/marker_form.thtml
-          grep -q 'MAPS_normalizeMarkerText' source/functions.inc
-          grep -q 'MAPS_normalizeMarkerPlace' source/functions.inc
-          grep -q 'MAPS_markerDisplayName' source/functions.inc
-          grep -q 'MAPS_markerEmptyValue' source/functions.inc
-          grep -q "'Custom field ' . \$i" source/functions.inc
-          grep -q "in_array(\$label, \$placeholderLabels, true)" source/functions.inc
-          grep -q 'Public marker resources are rendered only when a real resource label is configured' source/RELEASE-NOTES-1.6.0.md
-          grep -q "fieldname === 'city'" source/functions.inc
-          grep -q 'maps-marker-empty' source/public_html/maps.css
-          grep -q 'MAPS_markerDisplayName($pageTitle)' source/public_html/index.php
-          grep -q 'Consistent marker presentation' source/RELEASE-NOTES-1.6.0.md
-          grep -q 'Maps 1.6.0 admin form control sizing' source/public_html/maps.css
-          grep -q 'Legacy marker display normalization' source/RELEASE-NOTES-1.6.0.md
-          grep -q 'LOWER(TRIM(a.name)) AS sort_name' source/admin/markers.php
-          grep -q 'LOWER(TRIM(mk.name)) AS sort_name' source/public_html/markers.php
-          grep -q 'hasSuppliedPermissions' source/admin/marker_edit.php
-          grep -q "SEC_setDefaultPermissions(\$marker, MAPS_arrayGet(\$_MAPS_CONF, 'default_permissions'" source/admin/marker_edit.php
-          grep -q 'New markers created in administration now inherit the configured default_permissions' source/RELEASE-NOTES-1.6.0.md
-          grep -q 'MAPS_getRecommendedImportFields' source/admin/import_export.php
-          grep -q 'MAPS_importPermissionValues' source/admin/import_export.php
-          grep -q 'maps-import-preview-table' source/admin/import_export.php
-          grep -q 'maps-import-minimum' source/templates/import_export_form.thtml
-          grep -q 'Maps 1.6.0 guided CSV import assistant' source/public_html/maps.css
-          grep -q "'import_preview_title'" source/language/english.php
-          grep -q "'import_preview_title'" source/language/french_france_utf-8.php
-          grep -q 'Guided CSV import assistant' source/RELEASE-NOTES-1.6.0.md
-          ! grep -q "\$display = '<h1 class=\"maps-admin-title\">' .*marker_edit" source/admin/marker_edit.php
-          grep -q 'Maps 1.6.0 shared admin editors' source/public_html/maps.css
-          grep -q 'Maps 1.6.0 consistent admin action bars' source/public_html/maps.css
-          grep -q 'Final administration consistency pass' source/RELEASE-NOTES-1.6.0.md
-          grep -q "'create_map'.*'Create a new map'" source/language/english.php
-          grep -q "'marker_edit'.*'Edit marker'" source/language/english.php
-          grep -q 'maps-admin-actions' source/admin/overlays.php
-          ! grep -q "LANG_MAPS_1\['you_can'\]" source/admin/index.php
-          ! grep -q "LANG_MAPS_1\['you_can'\]" source/admin/icons.php
-          ! grep -q "COM_startBlock(\$LANG_MAPS_1\['import_export'\])" source/admin/import_export.php
-          ! grep -q "COM_startBlock('<h1>' . \$LANG_MAPS_1\['marker_edit'\]" source/admin/marker_edit.php
-
-      - name: Build final installable archive
-        shell: bash
-        run: |
-          set -e
           cd source
-          rm -rf build
-          mkdir -p build/maps
-          cp -a admin autoinstall.php functions.inc install_defaults.php integrations.php interoperability.php distribution.php services.inc.php language maps.php public_html sql templates README.md RELEASE-NOTES-1.6.0.md build/maps/
-          cd build
-          zip -r maps_1.6.0_2.1.1.zip maps >/dev/null
-          unzip -t maps_1.6.0_2.1.1.zip >/dev/null
-          test "$(zipinfo -1 maps_1.6.0_2.1.1.zip | head -n 1)" = 'maps/'
+          python3 tools/apply-geo-autotag-160.py
+          php -l functions.inc
+          php -l language/english.php
+          php -l language/french_france_utf-8.php
+          grep -q 'function MAPS_parseGeoAutotagOptions' functions.inc
+          grep -q "if (\$tag === 'geo')" functions.inc
+          grep -q '\[geo: Paris, France zoom:12\]' language/english.php
+          grep -q 'Geo autotag modernization' RELEASE-NOTES-1.6.0.md
 
-      - name: Commit final archive
+      - name: Commit source changes
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -e
           cd source
-          mkdir -p dist
-          cp build/maps_1.6.0_2.1.1.zip dist/maps_1.6.0_2.1.1.zip
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f dist/maps_1.6.0_2.1.1.zip
+          git add functions.inc language/english.php language/french_france_utf-8.php RELEASE-NOTES-1.6.0.md
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Build Maps 1.6.0 final archive [skip ci]'
+          git commit -m 'Modernize Maps geo autotag [skip ci]'
           git push origin HEAD:modernize/maps-1.5
