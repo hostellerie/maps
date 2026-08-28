@@ -32,7 +32,7 @@ function MAPS_getGroupOverlayForm($group = array())
     $group = array_merge($groupDefaults, is_array($group) ? $group : array());
 
     $safeName = htmlspecialchars((string) $group['o_group_name'], ENT_QUOTES, 'UTF-8');
-    $display = COM_startBlock('<h1>' . $LANG_MAPS_1['group_edit'] . ' ' . $safeName . '</h1>');
+    $display = '<h1 class="maps-admin-title">' . htmlspecialchars($LANG_MAPS_1['group_edit'], ENT_QUOTES, 'UTF-8') . ($safeName !== '' ? ': ' . $safeName : '') . '</h1>';
 
     $template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
     $template->set_file(array('map' => 'group_overlay_form.thtml'));
@@ -52,6 +52,7 @@ function MAPS_getGroupOverlayForm($group = array())
     $template->set_var('name', $safeName);
     $template->set_var('required_field', $LANG_MAPS_1['required_field']);
     $template->set_var('save_button', $LANG_MAPS_1['save_button']);
+    $template->set_var('delete_action', (int) $group['o_group_id'] > 0 ? '<button type="submit" name="mode" value="delete" class="maps-danger-action">' . htmlspecialchars($LANG_MAPS_1['delete_button'], ENT_QUOTES, 'UTF-8') . '</button>' : '');
 
     if ((int) $group['o_group_id'] > 0) {
         $template->set_var(
@@ -72,8 +73,6 @@ function MAPS_getGroupOverlayForm($group = array())
 
     $template->set_var('ok_button', $LANG_MAPS_1['ok_button']);
     $display .= $template->parse('output', 'map');
-    $display .= COM_endBlock();
-
     return $display;
 }
 
@@ -83,7 +82,7 @@ $mode = isset($requestData['mode']) ? COM_applyFilter($requestData['mode']) : 'n
 $groupId = isset($requestData['o_group_id']) ? (int) $requestData['o_group_id'] : 0;
 
 $display .= MAPS_compatSiteHeader('menu', $LANG_MAPS_1['plugin_name']);
-$display .= maps_admin_menu();
+$display .= MAPS_admin_menu();
 
 if (in_array($mode, array('save', 'delete'), true)) {
     if ($requestMethod !== 'POST' || !SEC_checkToken()) {

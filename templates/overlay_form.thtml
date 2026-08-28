@@ -1,41 +1,30 @@
-<div id="overlay_form">
-	<form name="overlay_edit" action="{site_admin_url}/plugins/maps/overlay_edit.php" method="POST" enctype="multipart/form-data">
-        {csrf_token}
-		<fieldset style="margin-top: 10px;padding:10px;">
-		<legend><b>{informations}</b></legend>
-			<div id="informations">
-			    <p>{overlay_presentation}</p>
-				<p><b>{name_label}</b> <font color="red">*</font> <input type="text" name="name" value="{name}" size="80" maxlength="255"></p>
-				<p>{group}</p>
-				<p><b>{sw_lat}</b> <input type="text" id="sw_lat" name="sw_lat" value="{sw_lat_value}" size="14" maxlength="12">&nbsp;&nbsp; 
-				<b>{sw_lng}</b> <input type="text" id="sw_lng" name="sw_lng" value="{sw_lng_value}" size="14" maxlength="12"><br{xhtml}>
-				</p>
-				<p><b>{ne_lat}</b> <input type="text" id="ne_lat" name="ne_lat" value="{ne_lat_value}" size="14" maxlength="12">&nbsp;&nbsp; 
-				<b>{ne_lng}</b> <input type="text" id="ne_lng" name="ne_lng" value="{ne_lng_value}" size="14" maxlength="12"><br{xhtml}>
-				</p>
-				<p><b>{zoom_min_label}</b> <input type="text" id="zoom_min" name="zoom_min" value="{zoom_min}" size="2" maxlength="2">&nbsp;&nbsp;
-				<b>{zoom_max_label}</b> <input type="text" id="zoom_max" name="zoom_max" value="{zoom_max}" size="2" maxlength="2"></p>
-				<p><b>{active}</b> <select name="active">
-				<option value="0"{active_no}>{no}</option>
-				<option value="1"{active_yes}>{yes}</option>
-				</select></p>
-			</div>
-		</fieldset>	
-		<fieldset style="margin-top: 10px;padding:10px;">
-		<legend><b>{image}</b></legend>
-				<p>{image_message}</p>	
-				<input type="file" dir="ltr" name="file"{xhtml}>
-				{overlay_image}
-		</fieldset>	
-
-		<p><font color="red"><strong><small>*</font> {required_field}</small></strong></p>
-		<div>
-			<select name="mode" >
-			<option value="save" selected="selected">{save_button}</option>
-			{delete_button}
-			</select>
-			<input type="submit" name="submit" value="{ok_button}">
-			{oid}
-		</div>
-	</form>
+<div id="overlay_form" class="maps-admin-editor">
+<form name="overlay_edit" action="{site_admin_url}/plugins/maps/overlay_edit.php" method="POST" enctype="multipart/form-data">
+{csrf_token}
+<fieldset class="maps-editor-section"><legend>{informations}</legend>
+<p class="maps-help-text">{overlay_presentation}</p>
+<div class="maps-form-grid">
+<label class="maps-field maps-field-wide"><span>{name_label}<span class="maps-required">*</span></span><input type="text" name="name" value="{name}" maxlength="255" required></label>
+<div class="maps-field maps-field-wide"><span>{group_label}</span>{group}</div>
+<label class="maps-field"><span>{sw_lat}</span><input type="text" id="sw_lat" name="sw_lat" value="{sw_lat_value}" inputmode="decimal"></label>
+<label class="maps-field"><span>{sw_lng}</span><input type="text" id="sw_lng" name="sw_lng" value="{sw_lng_value}" inputmode="decimal"></label>
+<label class="maps-field"><span>{ne_lat}</span><input type="text" id="ne_lat" name="ne_lat" value="{ne_lat_value}" inputmode="decimal"></label>
+<label class="maps-field"><span>{ne_lng}</span><input type="text" id="ne_lng" name="ne_lng" value="{ne_lng_value}" inputmode="decimal"></label>
+<label class="maps-field"><span>{zoom_min_label}</span><input type="number" id="zoom_min" name="zoom_min" value="{zoom_min}" min="0" max="22"></label>
+<label class="maps-field"><span>{zoom_max_label}</span><input type="number" id="zoom_max" name="zoom_max" value="{zoom_max}" min="0" max="22"></label>
+<label class="maps-field"><span>{active}</span><select name="active"><option value="0"{active_no}>{no}</option><option value="1"{active_yes}>{yes}</option></select></label>
+</div>
+</fieldset>
+<fieldset class="maps-editor-section"><legend>{image}</legend>
+<p class="maps-help-text">{image_message}</p>
+<label class="maps-field maps-field-wide"><span>{image}</span><input type="file" dir="ltr" name="file" accept=".gif,.jpg,.jpeg,.png,image/gif,image/jpeg,image/png"{xhtml}></label>
+<div class="maps-current-media">{overlay_image}</div>
+</fieldset>
+<p class="maps-help-text"><span class="maps-required">*</span> {required_field}</p>
+<div class="maps-form-actions">
+<button type="submit" name="mode" value="save">{save_button}</button>
+{delete_action}
+{oid}
+</div>
+</form>
 </div>

@@ -74,4 +74,9 @@ Back up the database and shared `images/maps/` resources, copy the Maps 1.6.0 fi
 - Refined cluster opacity for a calmer map while retaining the custom density renderer.
 - Replaced the legacy marker popup layout with a responsive information card.
 - Separated marker title, edit action, description, primary details link and parent-map link for clearer hierarchy.
+## Administration editor consistency
+
+- Modernized marker, icon, overlay and overlay-group editors with the same responsive form system as the map editor.
+- Standardized each editor on menu → one H1 → content, removing nested legacy block titles.
+- Replaced legacy Save/Delete selectors with explicit actions and improved responsive field grouping.
 

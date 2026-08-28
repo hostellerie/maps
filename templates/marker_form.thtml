@@ -1,128 +1,30 @@
-<div class="maps-location-editor">
-	<form action="#" onsubmit="codeAddress(); return false">
-	  <label for="geoaddress"><strong>{location_search_label}</strong></label>
-	  <div class="maps-location-search">
-		<input type="search" id="geoaddress" name="geoaddress" value="{default_address}" oninput="copyText()" />
-		<button type="submit" onfocus="copyText();">{go}</button>
-	  </div>
-	  <p class="maps-help-text">{location_search_help}</p>
-	  <div id="map_contener_submission">
-	    <div id="map_canvas" style="width: {marker_editor_width}; height: {marker_editor_height}"></div>
-	    <p class="maps-help-text">{use_map_click_help}</p>
-	    <div id="submission_presentation"></div>
-	  </div>
-	</form>
+<div class="maps-location-editor maps-editor-section">
+<form action="#" onsubmit="codeAddress(); return false">
+<label class="maps-field maps-field-wide" for="geoaddress"><span>{location_search_label}</span></label>
+<div class="maps-location-search"><input type="search" id="geoaddress" name="geoaddress" value="{default_address}" oninput="copyText()"><button type="submit" onfocus="copyText();">{go}</button></div>
+<p class="maps-help-text">{location_search_help}</p>
+<div id="map_contener_submission"><div id="map_canvas" class="maps-marker-location-map" style="width:{marker_editor_width};height:{marker_editor_height}"></div><p class="maps-help-text">{use_map_click_help}</p><div id="submission_presentation"></div></div>
+</form>
 </div>
-&nbsp;
-<div id="marker_form">
-	<form name="marker_edit" action="{site_url}/admin/plugins/maps/marker_edit.php" method="POST">
-        {csrf_token}
-		<fieldset style="margin-top: 10px;padding:10px;">
-		<legend><a class="maps-section-toggle" onClick="elementToggle('informations'); return false;" href="#"><b>{section_location}</b></a></legend>
-			<div id="informations">
-				<p><b>{name_label}</b><font color="red">*</font> <input type="text" name="name" value="{name}" size="80" maxlength="255"></p>
-				<p><b>{address_label}</b><font color="red">*</font> <input type="text" id="address" name="address" value="{address}" size="80" maxlength="255"></p>
-				<details class="maps-technical-coordinates">
-					<summary>{technical_coordinates}</summary>
-					<p><b>{lat}</b> <input type="text" id="lat" name="lat" value="{lat_value}" size="14" maxlength="20">&nbsp;&nbsp;
-					<b>{lng}</b> <input type="text" id="lng" name="lng" value="{lng_value}" size="14" maxlength="20"><br{xhtml}>
-					{empty_for_geo}</p>
-				</details>
-				<p><b>{mid_label}</b> &nbsp;<select id="mid" name="mid">{map_options}</select><br{xhtml}>
-				{select_marker_map}</p>
-				<p><small>{created_label} {created}<br{xhtml}>{modified_label} {modified}</small></p>
-			</div>
-		</fieldset>	
-        <fieldset style="margin-top: 10px;"><legend><a class="maps-section-toggle" onClick="elementToggle('marker_label'); return false;" href="#"><b>{section_appearance}</b></a></legend>
-			<div id="marker_label"  style="display:none;">
-				<p>{mk_default} <select name="mk_default">
-				<option value="0"{mk_default_no}>{no}</option>
-				<option value="1"{mk_default_yes}>{yes}</option>
-				</select></p>
-				<div>{icon}</div>
-				<p>{primary_color_label}
-				
-				<input type="color" id="primary_color" name="primary_color" value="{primary_color}"></p>
-				<p>{stroke_color_label}
-				
-				<input type="color" id="stroke_color" name="stroke_color" value="{stroke_color}"></p>
-				<p>{label_label} <input type="text" id="label" name="label" value="{label}" size="1" maxlength="1">&nbsp;&nbsp;&nbsp;{label_color_label}  <select name="label_color">
-				<option value="0"{label_color_black}>{black}</option>
-				<option value="1"{label_color_white}>{white}</option>
-				</select>
-				
-			</div>
-		</fieldset>		
-		<fieldset style="margin-top: 10px;">
-		<legend><b><a class="maps-section-toggle" onClick="elementToggle('general_settings'); return false;" href="#">{section_publication}</a></b></legend>
-			<div id="general_settings" style="display:none;">
-				<p>{payed} <select name="payed">
-				<option value="0"{payed_no}>{no}</option>
-				<option value="1"{payed_yes}>{yes}</option>
-				</select>&nbsp;&nbsp;&nbsp;
-				{active} <select name="active">
-				<option value="0"{active_no}>{no}</option>
-				<option value="1"{active_yes}>{yes}</option>
-				</select>&nbsp;&nbsp;&nbsp;
-				{hidden} <select name="hidden">
-				<option value="0"{hidden_no}>{no}</option>
-				<option value="1"{hidden_yes}>{yes}</option>
-				</select></p>
-				<p>{marker_validity} <select id="validity" name="validity" OnChange="changeValidity();">
-				<option value="0"{validity_no}>{no}</option>
-				<option value="1"{validity_yes}>{yes}</option>
-				</select>
-				&nbsp;&nbsp;&nbsp;{from_label} <input type="date" id="from" name="from" value="{from}" size="14" maxlength="12"{disabled}>
-				&nbsp;&nbsp;&nbsp;{to_label}  <input type="date" id="to" name="to" value="{to}" size="14" maxlength="12"{disabled}></p>
-				<p><a class="maps-section-toggle" onClick="elementToggle('remark_panel'); return false;" href="#">{remark_label}</a></p>
-				<div id="remark_panel" style="display:none">
-				    <textarea rows="5" id="remark" name="remark" cols="51" style="width:99%">{remark}</textarea>
-				</div>
-			</div>
-		</fieldset>
-		<fieldset style="margin-top: 10px;">
-		<legend><b><a class="maps-section-toggle" onClick="elementToggle('presentation_tab'); return false;" href="#">{section_content_contact}</a></b></legend>
-			<div id="presentation_tab" style="display:block;">
-				<p><b>{description_label}</b><br{xhtml}><textarea rows="4" id="description" name="description" cols="51" style="width:99%">{description}</textarea>
-				</p>
-				<p><b>{street_label}</b> {street}</p>
-				<p><b>{code_label}</b> {code}</p>
-				<p><b>{city_label}</b> {city}</p>
-				<p><b>{state_label}</b> {state}</p>
-				<p><b>{country_label}</b> {country}</p>
-				<p><b>{tel_label}</b> {tel}</p>
-				<p><b>{fax_label}</b> {fax}</p>
-				<p><b>{web_label}</b> {web}</p>
-			</div>
-		</fieldset>
-		<fieldset style="margin-top: 10px;">
-		<legend><b><a class="maps-section-toggle" onClick="elementToggle('ressources_tab'); return false;" href="#">{section_resources}</a></b></legend>
-			<div id="ressources_tab" style="display:block;">
-				{ressources}
-			</div>
-		</fieldset>
-		<fieldset style="margin-top: 10px;">
-		<legend><b><a class="maps-section-toggle" onClick="elementToggle('lang_accessrights'); return false;" href="#">{section_ownership}</a></b></legend>
-			<div id="lang_accessrights" style="display:none;">
-				<!--<div><p>{lang_owner}: {owner_name}<input type="hidden" name="owner_id" value="{owner_id}"{xhtml}></p></div>-->
-				<div>{lang_owner}: {owner_select}</div>
-				<div><p>{lang_group}: {group_dropdown}</p></div>
-			</div>
-		</fieldset>
-		<fieldset style="margin-top: 10px;">
-		<legend><b><a class="maps-section-toggle" onClick="elementToggle('lang_permissions'); return false;" href="#">{section_permissions}</a></b></legend>
-			<div id="lang_permissions" style="display:none;">
-				<p>{lang_perm_key}</p>
-				<p>{permissions_editor}</p>
-				<p>{lang_permissions_msg}</p>
-			</div>
-		</fieldset>
-		<p><font color="red"><strong><small>*</font> {required_field}</small></strong></p>
-		<div class="maps-form-actions">
-			<input type="hidden" name="submission" value="{submission}">
-			<button type="submit" name="mode" value="save">{save_button}</button>
-			<button type="submit" name="mode" value="delete" class="maps-danger-action maps-delete-marker">{delete_button}</button>
-			{mkid}
-		</div>
-	</form>
+<div id="marker_form" class="maps-admin-editor">
+<form name="marker_edit" action="{site_url}/admin/plugins/maps/marker_edit.php" method="POST">
+{csrf_token}
+<fieldset class="maps-editor-section"><legend>{section_location}</legend>
+<div class="maps-form-grid">
+<label class="maps-field maps-field-wide"><span>{name_label}<span class="maps-required">*</span></span><input type="text" name="name" value="{name}" maxlength="255" required></label>
+<label class="maps-field maps-field-wide"><span>{address_label}<span class="maps-required">*</span></span><input type="text" id="address" name="address" value="{address}" maxlength="255" required></label>
+<label class="maps-field maps-field-wide"><span>{mid_label}</span><select id="mid" name="mid">{map_options}</select><small>{select_marker_map}</small></label>
+</div>
+<details class="maps-technical-coordinates"><summary>{technical_coordinates}</summary><div class="maps-form-grid maps-form-grid-compact"><label class="maps-field"><span>{lat}</span><input type="text" id="lat" name="lat" value="{lat_value}" inputmode="decimal"></label><label class="maps-field"><span>{lng}</span><input type="text" id="lng" name="lng" value="{lng_value}" inputmode="decimal"></label></div><p class="maps-help-text">{empty_for_geo}</p></details>
+<p class="maps-help-text">{created_label} {created} · {modified_label} {modified}</p>
+</fieldset>
+<details class="maps-advanced-panel" open><summary>{section_appearance}</summary><fieldset class="maps-editor-section"><div class="maps-form-grid"><label class="maps-field"><span>{mk_default}</span><select name="mk_default"><option value="0"{mk_default_no}>{no}</option><option value="1"{mk_default_yes}>{yes}</option></select></label><label class="maps-field"><span>{primary_color_label}</span><input type="color" id="primary_color" name="primary_color" value="{primary_color}"></label><label class="maps-field"><span>{stroke_color_label}</span><input type="color" id="stroke_color" name="stroke_color" value="{stroke_color}"></label><label class="maps-field"><span>{label_label}</span><input type="text" id="label" name="label" value="{label}" maxlength="1"></label><label class="maps-field"><span>{label_color_label}</span><select name="label_color"><option value="0"{label_color_black}>{black}</option><option value="1"{label_color_white}>{white}</option></select></label></div><div>{icon}</div></fieldset></details>
+<details class="maps-advanced-panel"><summary>{section_publication}</summary><fieldset class="maps-editor-section"><div class="maps-form-grid"><label class="maps-field"><span>{payed}</span><select name="payed"><option value="0"{payed_no}>{no}</option><option value="1"{payed_yes}>{yes}</option></select></label><label class="maps-field"><span>{active}</span><select name="active"><option value="0"{active_no}>{no}</option><option value="1"{active_yes}>{yes}</option></select></label><label class="maps-field"><span>{hidden}</span><select name="hidden"><option value="0"{hidden_no}>{no}</option><option value="1"{hidden_yes}>{yes}</option></select></label><label class="maps-field"><span>{marker_validity}</span><select id="validity" name="validity" onchange="changeValidity();"><option value="0"{validity_no}>{no}</option><option value="1"{validity_yes}>{yes}</option></select></label><label class="maps-field"><span>{from_label}</span><input type="date" id="from" name="from" value="{from}"{disabled}></label><label class="maps-field"><span>{to_label}</span><input type="date" id="to" name="to" value="{to}"{disabled}></label><label class="maps-field maps-field-wide"><span>{remark_label}</span><textarea rows="4" id="remark" name="remark">{remark}</textarea></label></div></fieldset></details>
+<fieldset class="maps-editor-section"><legend>{section_content_contact}</legend><div class="maps-form-grid"><label class="maps-field maps-field-wide"><span>{description_label}</span><textarea rows="5" id="description" name="description">{description}</textarea></label><div class="maps-field"><span>{street_label}</span>{street}</div><div class="maps-field"><span>{code_label}</span>{code}</div><div class="maps-field"><span>{city_label}</span>{city}</div><div class="maps-field"><span>{state_label}</span>{state}</div><div class="maps-field"><span>{country_label}</span>{country}</div><div class="maps-field"><span>{tel_label}</span>{tel}</div><div class="maps-field"><span>{fax_label}</span>{fax}</div><div class="maps-field maps-field-wide"><span>{web_label}</span>{web}</div></div></fieldset>
+<details class="maps-advanced-panel"><summary>{section_resources}</summary><fieldset class="maps-editor-section">{ressources}</fieldset></details>
+<details class="maps-advanced-panel"><summary>{section_ownership}</summary><fieldset class="maps-editor-section"><div class="maps-form-grid"><div class="maps-field"><span>{lang_owner}</span>{owner_select}</div><div class="maps-field"><span>{lang_group}</span>{group_dropdown}</div></div></fieldset></details>
+<details class="maps-advanced-panel"><summary>{section_permissions}</summary><fieldset class="maps-editor-section"><p>{lang_perm_key}</p><p>{permissions_editor}</p><p class="maps-help-text">{lang_permissions_msg}</p></fieldset></details>
+<p class="maps-help-text"><span class="maps-required">*</span> {required_field}</p>
+<div class="maps-form-actions"><input type="hidden" name="submission" value="{submission}"><button type="submit" name="mode" value="save">{save_button}</button><button type="submit" name="mode" value="delete" class="maps-danger-action maps-delete-marker">{delete_button}</button>{mkid}</div>
+</form>
 </div>

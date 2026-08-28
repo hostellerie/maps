@@ -93,7 +93,7 @@ function MAPS_getOverlayForm($overlay = array()) {
     $overlay = array_merge($overlayDefaults, is_array($overlay) ? $overlay : array());
 
     
-	$display = COM_startBlock('<h1>' . $LANG_MAPS_1['overlay_edit'] . ' ' . htmlspecialchars((string) $overlay['name'], ENT_QUOTES, 'UTF-8') . '</h1>');
+	$display = '<h1 class="maps-admin-title">' . htmlspecialchars($LANG_MAPS_1['overlay_edit'], ENT_QUOTES, 'UTF-8') . ($overlay['o_name'] !== '' ? ': ' . htmlspecialchars((string) $overlay['o_name'], ENT_QUOTES, 'UTF-8') : '') . '</h1>';
 	
 	$map_options = MAPS_recurseMaps($overlay['mid']);
 
@@ -123,7 +123,8 @@ function MAPS_getOverlayForm($overlay = array()) {
 		$template->set_var('informations', $LANG_MAPS_1['informations']);
 		$template->set_var('name_label', $LANG_MAPS_1['overlay_name_label']);
 		$template->set_var('name', htmlspecialchars(stripslashes((string) $overlay['o_name']), ENT_QUOTES, 'UTF-8'));
-		$template->set_var('group', MAPS_selectGroupOverlays($overlay['o_group']) );
+		$template->set_var('group_label', $LANG_MAPS_1['group_label']);
+        $template->set_var('group', MAPS_selectGroupOverlays($overlay['o_group'], false));
 		$template->set_var('sw_lat', $LANG_MAPS_1['sw_lat']);
 		$template->set_var('sw_lat_value', htmlspecialchars((string) $overlay['o_sw_lat'], ENT_QUOTES, 'UTF-8'));
 		$template->set_var('sw_lng', $LANG_MAPS_1['sw_lng']);
@@ -166,6 +167,7 @@ function MAPS_getOverlayForm($overlay = array()) {
 		
 		//Form validation
 		$template->set_var('save_button', $LANG_MAPS_1['save_button']);
+        $template->set_var('delete_action', (int) $overlay['oid'] > 0 ? '<button type="submit" name="mode" value="delete" class="maps-danger-action">' . htmlspecialchars($LANG_MAPS_1['delete_button'], ENT_QUOTES, 'UTF-8') . '</button>' : '');
 		
 		if ($overlay['oid'] > 0) {
     		$template->set_var('delete_button', '<option value="delete">' . $LANG_MAPS_1['delete_button'] . '</option>');
@@ -181,8 +183,6 @@ function MAPS_getOverlayForm($overlay = array()) {
 		
 		$display .= $template->parse('output', 'map');
 	}
-
-    $display .= COM_endBlock();
 
     return $display;
 }
@@ -307,11 +307,11 @@ function MAPS_deleteOverlayImage($image)
     }
 }
 
-function MAPS_selectGroupOverlays ($selected)
+function MAPS_selectGroupOverlays ($selected, $withLabel = true)
 {
     global $_TABLES, $LANG_MAPS_1;
     
-    $retval = '<b>' . $LANG_MAPS_1['group_label'] . '</b> <select name="o_group">' .
+    $retval = ($withLabel ? '<b>' . $LANG_MAPS_1['group_label'] . '</b> ' : '') . '<select name="o_group">' .
             '<option value="0">' . $LANG_MAPS_1['choose_group'] . '</option>' .
             COM_optionList( $_TABLES['maps_overlays_groups'], 'o_group_id,o_group_name', $selected) .
             '</select>'; 

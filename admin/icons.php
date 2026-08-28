@@ -86,7 +86,7 @@ function MAPS_getIconForm($icon = array())
     $defaults = array('icon_id' => 0, 'icon_name' => '', 'icon_image' => '');
     $icon = array_merge($defaults, is_array($icon) ? $icon : array());
 
-    $display = COM_startBlock('<h1>' . htmlspecialchars($LANG_MAPS_1['icon_edit'], ENT_QUOTES, 'UTF-8') . '</h1>');
+    $display = '<h1 class="maps-admin-title">' . htmlspecialchars($LANG_MAPS_1['icon_edit'], ENT_QUOTES, 'UTF-8') . ($icon['icon_name'] !== '' ? ': ' . htmlspecialchars($icon['icon_name'], ENT_QUOTES, 'UTF-8') : '') . '</h1>';
     $template = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
     $template->set_file(array('icon' => 'icon_form.thtml'));
     $template->set_var('site_admin_url', $_CONF['site_admin_url']);
@@ -132,6 +132,7 @@ function MAPS_getIconForm($icon = array())
     }
 
     $template->set_var('save_button', $LANG_MAPS_1['save_button']);
+    $template->set_var('delete_action', (int) $icon['icon_id'] > 0 ? '<button type="submit" name="mode" value="delete" class="maps-danger-action">' . htmlspecialchars($LANG_MAPS_1['delete_button'], ENT_QUOTES, 'UTF-8') . '</button>' : '');
     $template->set_var('ok_button', $LANG_MAPS_1['ok_button']);
     if ((int) $icon['icon_id'] > 0) {
         $template->set_var(
@@ -149,7 +150,6 @@ function MAPS_getIconForm($icon = array())
     $template->set_var('xhtml', XHTML);
 
     $display .= $template->parse('output', 'icon');
-    $display .= COM_endBlock();
     return $display;
 }
 

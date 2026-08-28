@@ -1,22 +1,17 @@
-<div id="group_overlay_form">
-	<form name="group_overlay_edit" action="{site_admin_url}/plugins/maps/overlay_group_edit.php" method="POST">
-        {csrf_token}
-		<fieldset style="margin-top: 10px;padding:10px;">
-		<legend><b>{informations}</b></legend>
-			<div id="informations">
-			    <p>{group_overlay_presentation}</p>
-				<p><b>{name_label}</b> <font color="red">*</font> <input type="text" name="o_group_name" value="{name}" size="80" maxlength="255"></p>
-			</div>
-		</fieldset>	
-		
-		<p><font color="red"><strong><small>*</font> {required_field}</small></strong></p>
-		<div>
-			<select name="mode">
-			<option value="save" selected="selected">{save_button}</option>
-			{delete_button}
-			</select>
-			<input type="submit" name="submit" value="{ok_button}">
-			{o_group_id}
-		</div>
-	</form>
+<div id="group_overlay_form" class="maps-admin-editor maps-admin-editor-compact">
+<form name="group_overlay_edit" action="{site_admin_url}/plugins/maps/overlay_group_edit.php" method="POST">
+{csrf_token}
+<fieldset class="maps-editor-section"><legend>{informations}</legend>
+<p class="maps-help-text">{group_overlay_presentation}</p>
+<div class="maps-form-grid">
+<label class="maps-field maps-field-wide"><span>{name_label}<span class="maps-required">*</span></span><input type="text" name="o_group_name" value="{name}" maxlength="255" required></label>
+</div>
+</fieldset>
+<p class="maps-help-text"><span class="maps-required">*</span> {required_field}</p>
+<div class="maps-form-actions">
+<button type="submit" name="mode" value="save">{save_button}</button>
+{delete_action}
+{o_group_id}
+</div>
+</form>
 </div>

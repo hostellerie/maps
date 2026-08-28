@@ -143,7 +143,7 @@ function getMarkerForm($marker = array()) {
 
 
     
-	$display = COM_startBlock('<h1>' . $LANG_MAPS_1['marker_edit'] . ' ' . htmlspecialchars($marker['name'], ENT_QUOTES, 'UTF-8') . '</h1>');
+	$display = '<h1 class="maps-admin-title">' . htmlspecialchars($LANG_MAPS_1['marker_edit'], ENT_QUOTES, 'UTF-8') . ($marker['name'] !== '' ? ': ' . htmlspecialchars($marker['name'], ENT_QUOTES, 'UTF-8') : '') . '</h1>';
 	
 	$map_options = MAPS_recurseMaps($marker['mid']);
 

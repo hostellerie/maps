@@ -443,3 +443,35 @@
     .maps-form-actions { justify-content: stretch; }
     .maps-form-actions button { flex: 1 1 auto; }
 }
+
+/* Maps 1.6.0 shared admin editors */
+.maps-admin-editor { margin: 0 0 1.25rem; }
+.maps-admin-editor-compact { max-width: 760px; }
+.maps-admin-editor .maps-editor-section,
+.maps-location-editor.maps-editor-section {
+    margin: 0 0 1rem;
+    padding: 1rem;
+    border: 1px solid rgba(127,127,127,.24);
+    border-radius: 9px;
+    background: rgba(127,127,127,.025);
+}
+.maps-admin-editor .maps-editor-section legend { padding: 0 .35rem; font-weight: 700; }
+.maps-admin-editor .maps-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.85rem 1rem; }
+.maps-admin-editor .maps-field { display:flex; flex-direction:column; gap:.3rem; min-width:0; }
+.maps-admin-editor .maps-field-wide { grid-column:1 / -1; }
+.maps-admin-editor input[type=text],
+.maps-admin-editor input[type=search],
+.maps-admin-editor input[type=date],
+.maps-admin-editor input[type=number],
+.maps-admin-editor input[type=file],
+.maps-admin-editor select,
+.maps-admin-editor textarea { width:100%; max-width:100%; box-sizing:border-box; }
+.maps-admin-editor textarea { resize:vertical; min-height:5.5rem; }
+.maps-admin-editor .maps-current-media img { max-width:min(100%,350px); height:auto; margin-top:.55rem; border-radius:7px; }
+.maps-marker-location-map { border-radius:9px; overflow:hidden; }
+.maps-admin-editor .maps-advanced-panel { margin:0 0 1rem; border:1px solid rgba(127,127,127,.24); border-radius:9px; overflow:hidden; }
+.maps-admin-editor .maps-advanced-panel > summary { cursor:pointer; padding:.8rem 1rem; font-weight:700; background:rgba(127,127,127,.04); }
+.maps-admin-editor .maps-advanced-panel > .maps-editor-section { margin:0; border:0; border-radius:0; background:transparent; }
+.maps-required { color:#b42318; margin-left:.15rem; }
+@media (max-width:720px) { .maps-admin-editor .maps-form-grid { grid-template-columns:1fr; } .maps-admin-editor .maps-field-wide { grid-column:auto; } }
+
