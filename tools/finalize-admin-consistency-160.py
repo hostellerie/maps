@@ -71,8 +71,7 @@ replace(
     "$editorTitle = ($mode === 'edit' && $mid > 0) ? $LANG_MAPS_1['map_edit'] : $LANG_MAPS_1['create_map'];"
 )
 
-# Icon editor already owns the only H1; use consistent wording from language.
-# Overlay and overlay-group editor helpers were modernized previously; ensure no nested COM_startBlock remains.
+# Ensure no editor still owns a nested block-level H1.
 for path, marker in [
     ('admin/icons.php', "COM_startBlock('<h1>"),
     ('admin/overlay_edit.php', "COM_startBlock('<h1>"),
@@ -81,58 +80,41 @@ for path, marker in [
     if marker in Path(path).read_text():
         raise SystemExit('nested editor H1 still present in %s' % path)
 
-# Normalize English/French action and editor labels.
-for path, replacements in {
-    'language/english.php': {
-        "'create_map'            => 'create a new map'": "'create_map'            => 'Create a new map'",
-        "'create_marker'         => 'create a new marker'": "'create_marker'         => 'Create a new marker'",
-        "'map_edit'              => 'Map edition:'": "'map_edit'              => 'Edit map'",
-        "'marker_edit'           => 'Marker edition:'": "'marker_edit'           => 'Edit marker'",
-        "'icon_edit'": None,
-        "'create_icon'": None,
-        "'overlay_edit'": None,
-        "'create_overlay'": None,
-        "'group_edit'": None,
-        "'create_group'": None,
-    },
-    'language/french_france_utf-8.php': {
-        "'create_map'": None,
-        "'create_marker'": None,
-        "'map_edit'": None,
-        "'marker_edit'": None,
-        "'icon_edit'": None,
-        "'create_icon'": None,
-        "'overlay_edit'": None,
-        "'create_overlay'": None,
-        "'group_edit'": None,
-        "'create_group'": None,
-    }
-}.items():
-    p = Path(path)
-    text = p.read_text()
-    if path.endswith('english.php'):
-        text = text.replace("'create_map'            => 'create a new map'", "'create_map'            => 'Create a new map'")
-        text = text.replace("'create_marker'         => 'create a new marker'", "'create_marker'         => 'Create a new marker'")
-        text = text.replace("'map_edit'              => 'Map edition:'", "'map_edit'              => 'Edit map'")
-        text = text.replace("'marker_edit'           => 'Marker edition:'", "'marker_edit'           => 'Edit marker'")
-        text = re.sub(r"('icon_edit'\s*=>\s*)'[^']*'", r"\1'Edit icon'", text, count=1)
-        text = re.sub(r"('create_icon'\s*=>\s*)'[^']*'", r"\1'Create a new icon'", text, count=1)
-        text = re.sub(r"('overlay_edit'\s*=>\s*)'[^']*'", r"\1'Edit overlay'", text, count=1)
-        text = re.sub(r"('create_overlay'\s*=>\s*)'[^']*'", r"\1'Create a new overlay'", text, count=1)
-        text = re.sub(r"('group_edit'\s*=>\s*)'[^']*'", r"\1'Edit overlay group'", text, count=1)
-        text = re.sub(r"('create_group'\s*=>\s*)'[^']*'", r"\1'Create a new overlay group'", text, count=1)
-    else:
-        text = re.sub(r"('create_map'\s*=>\s*)'[^']*'", r"\1'Créer une nouvelle carte'", text, count=1)
-        text = re.sub(r"('create_marker'\s*=>\s*)'[^']*'", r"\1'Créer un nouveau marqueur'", text, count=1)
-        text = re.sub(r"('map_edit'\s*=>\s*)'[^']*'", r"\1'Modifier la carte'", text, count=1)
-        text = re.sub(r"('marker_edit'\s*=>\s*)'[^']*'", r"\1'Modifier le marqueur'", text, count=1)
-        text = re.sub(r"('icon_edit'\s*=>\s*)'[^']*'", r"\1'Modifier l’icône'", text, count=1)
-        text = re.sub(r"('create_icon'\s*=>\s*)'[^']*'", r"\1'Créer une nouvelle icône'", text, count=1)
-        text = re.sub(r"('overlay_edit'\s*=>\s*)'[^']*'", r"\1'Modifier la superposition'", text, count=1)
-        text = re.sub(r"('create_overlay'\s*=>\s*)'[^']*'", r"\1'Créer une nouvelle superposition'", text, count=1)
-        text = re.sub(r"('group_edit'\s*=>\s*)'[^']*'", r"\1'Modifier le groupe de superpositions'", text, count=1)
-        text = re.sub(r"('create_group'\s*=>\s*)'[^']*'", r"\1'Créer un nouveau groupe de superpositions'", text, count=1)
-    p.write_text(text)
+# Normalize English labels.
+p = Path('language/english.php')
+text = p.read_text()
+text = text.replace("'create_map'            => 'create a new map'", "'create_map'            => 'Create a new map'")
+text = text.replace("'create_marker'         => 'create a new marker'", "'create_marker'         => 'Create a new marker'")
+text = text.replace("'map_edit'              => 'Map edition:'", "'map_edit'              => 'Edit map'")
+text = text.replace("'marker_edit'           => 'Marker edition:'", "'marker_edit'           => 'Edit marker'")
+text = re.sub(r"('icon_edit'\s*=>\s*)'[^']*'", r"\1'Edit icon'", text, count=1)
+text = re.sub(r"('create_icon'\s*=>\s*)'[^']*'", r"\1'Create a new icon'", text, count=1)
+text = re.sub(r"('overlay_edit'\s*=>\s*)'[^']*'", r"\1'Edit overlay'", text, count=1)
+text = re.sub(r"('create_overlay'\s*=>\s*)'[^']*'", r"\1'Create a new overlay'", text, count=1)
+text = re.sub(r"('group_edit'\s*=>\s*)'[^']*'", r"\1'Edit overlay group'", text, count=1)
+text = re.sub(r"('create_group'\s*=>\s*)'[^']*'", r"\1'Create a new overlay group'", text, count=1)
+p.write_text(text)
+
+# Normalize French labels using exact historical values so escaped apostrophes remain valid PHP.
+p = Path('language/french_france_utf-8.php')
+text = p.read_text()
+repls = {
+    "'create_map'            => 'créer une nouvelle carte'": "'create_map'            => 'Créer une nouvelle carte'",
+    "'create_marker'         => 'créer un nouveau marqueur'": "'create_marker'         => 'Créer un nouveau marqueur'",
+    "'map_edit'              => 'Edition de la carte :'": "'map_edit'              => 'Modifier la carte'",
+    "'marker_edit'           => 'Edition du marqueur :'": "'marker_edit'           => 'Modifier le marqueur'",
+    "'create_icon'           => 'créer une nouvelle icône'": "'create_icon'           => 'Créer une nouvelle icône'",
+    "'icon_edit'             => 'Edition d\\'icon'": "'icon_edit'             => 'Modifier l’icône'",
+    "'create_overlay'        => 'Créer un nouveau calque'": "'create_overlay'        => 'Créer un nouveau calque'",
+    "'overlay_edit'          => 'Édition de l\\'overlay :'": "'overlay_edit'          => 'Modifier le calque'",
+    "'create_group'          => 'Créer un nouveau groupe de claques'": "'create_group'          => 'Créer un nouveau groupe de calques'",
+    "'group_edit'            => 'Edition du groupe :'": "'group_edit'            => 'Modifier le groupe de calques'",
+}
+for old, new in repls.items():
+    if old not in text:
+        raise SystemExit('French label pattern not found: %s' % old)
+    text = text.replace(old, new, 1)
+p.write_text(text)
 
 # Shared action bar styling.
 p = Path('public_html/maps.css')
