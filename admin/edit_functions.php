@@ -125,6 +125,17 @@ function MAPS_displayOverlaysToAdd($mid)
         . MAPS_overlayAjaxScript();
 }
 
+/**
+ * Backward-compatible alias used by older map editor code.
+ *
+ * @param int $mid
+ * @return string
+ */
+function MAPS_displayAddOverlay($mid)
+{
+    return MAPS_displayOverlaysToAdd($mid);
+}
+
 function MAPS_getListField_maps_displayOverlaysToAdd($fieldname, $fieldvalue, $a, $icon_arr)
 {
     global $LANG_MAPS_1, $_MAPS_CONF;
