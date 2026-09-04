@@ -67,13 +67,20 @@ if (!isset($_MAPS_CONF['max_image_size'])) {
 }
 
 /**
- * Return a Google Maps JavaScript API URL suitable for modern browsers.
+ * Return a Google Maps JavaScript API URL suitable for the synchronous
+ * initializers still used by Maps 1.x.
  *
- * Maps keeps deterministic script element ordering for Geeklog 2.1.1
- * compatibility, while using Google's loading=async URL hint. This removes
- * the current Google Maps performance warning without making legacy inline
- * initializers race an asynchronously inserted script element. A future major
- * version can move all rendering to importLibrary().
+ * Do not request Google's loading=async bootstrap here. Geeklog 2.2.x can
+ * register the external API through Resource::setJavaScriptFile(), and with
+ * loading=async the inline Maps initializers may run after window.google and
+ * google.maps exist but before constants such as google.maps.MapTypeId are
+ * ready. That race is visible on profile pages as an exception while reading
+ * MapTypeId.ROADMAP.
+ *
+ * Keeping the API bootstrap synchronous preserves the behavior that already
+ * works on Geeklog 2.1.1 and keeps the existing Maps 1.x rendering model
+ * deterministic. A future major version can migrate all initializers to
+ * importLibrary() and then safely restore asynchronous loading.
  *
  * On Geeklog 2.2.x, Resource requires external scripts to be registered with
  * setJavaScriptFile(). The historical MAPS_loadGoogleMapsApi() call remains
@@ -93,8 +100,7 @@ function MAPS_googleMapsApiUrl($libraries = array())
 
     $params = array(
         'key' => isset($_MAPS_CONF['google_api_key']) ? trim($_MAPS_CONF['google_api_key']) : '',
-        'v' => 'weekly',
-        'loading' => 'async'
+        'v' => 'weekly'
     );
 
     if (!empty($libraries)) {
