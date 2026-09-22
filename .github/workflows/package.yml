@@ -40,6 +40,20 @@ jobs:
             done
           fi
 
+      - name: Verify 1.7 release contracts
+        shell: bash
+        run: |
+          set -e
+          grep -q "'pi_version' => '1.7.0'" autoinstall.php
+          grep -q 'function plugin_getcapabilities_maps' interoperability.php
+          grep -q "'dashboard.summary'" interoperability.php
+          grep -q "'maps.geo.nearby'" interoperability.php
+          grep -q 'function service_dashboard_summary_maps' services.inc.php
+          grep -q 'function service_geo_nearby_maps' services.inc.php
+          test -f plugin.json
+          php -r '$d=json_decode(file_get_contents("plugin.json"), true); if (!is_array($d) || $d["id"] !== "maps" || $d["schema"] !== 1) exit(1);'
+          test -f RELEASE-NOTES-1.7.0.md
+
       - name: Build installable archive
         shell: bash
         run: |
@@ -62,6 +76,8 @@ jobs:
             sql \
             templates \
             README.md \
+            ROADMAP.md \
+            plugin.json \
             build/maps/
 
           if [ -f RELEASE-NOTES-1.7.0.md ]; then
@@ -71,15 +87,15 @@ jobs:
           fi
 
           cd build
-          zip -r maps_1.7.0-dev_2.1.1.zip maps >/dev/null
-          unzip -t maps_1.7.0-dev_2.1.1.zip >/dev/null
-          test "$(zipinfo -1 maps_1.7.0-dev_2.1.1.zip | head -n 1)" = 'maps/'
+          zip -r maps_1.7.0_2.1.1.zip maps >/dev/null
+          unzip -t maps_1.7.0_2.1.1.zip >/dev/null
+          test "$(zipinfo -1 maps_1.7.0_2.1.1.zip | head -n 1)" = 'maps/'
 
       - name: Publish archive artifact
         uses: actions/upload-artifact@v4
         with:
-          name: maps-1.7-installable
-          path: build/maps_1.7.0-dev_2.1.1.zip
+          name: maps-1.7.0-installable
+          path: build/maps_1.7.0_2.1.1.zip
           if-no-files-found: error
 
       - name: Commit archive to dist
@@ -87,12 +103,12 @@ jobs:
         run: |
           set -e
           mkdir -p dist
-          cp build/maps_1.7.0-dev_2.1.1.zip dist/maps_1.7.0-dev_2.1.1.zip
+          cp build/maps_1.7.0_2.1.1.zip dist/maps_1.7.0_2.1.1.zip
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f dist/maps_1.7.0-dev_2.1.1.zip
+          git add -f dist/maps_1.7.0_2.1.1.zip
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m 'Build Maps 1.7 development archive [skip ci]'
+          git commit -m 'Build Maps 1.7.0 release archive [skip ci]'
           git push origin HEAD:update/maps-1.7
