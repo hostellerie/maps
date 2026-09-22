@@ -1,6 +1,6 @@
 <?php
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.6.0                                                         |
+// | Maps Plugin 1.7.0                                                         |
 // +---------------------------------------------------------------------------+
 // | services.inc.php                                                          |
 // | Copyright (C) 2010-2026                                                   |
@@ -273,4 +273,214 @@ function service_marker_set_validity_maps($args, &$output, &$svc_msg)
 function service_marker_extend_validity_maps($args, &$output, &$svc_msg)
 {
     return MAPS_serviceApplyValidity($args, true, $output, $svc_msg);
+}
+
+
+/**
+ * Return a bounded administration summary for generic dashboards.
+ *
+ * @param array $args
+ * @param array $output
+ * @param array $svc_msg
+ * @return int
+ */
+function service_dashboard_summary_maps($args, &$output, &$svc_msg)
+{
+    global $_CONF, $_TABLES;
+
+    $output = array();
+    $svc_msg = array();
+
+    if (!SEC_hasRights('maps.admin')) {
+        $svc_msg['error_desc'] = 'Maps administration permission is required.';
+        return PLG_RET_AUTH_FAILED;
+    }
+
+    $maps = (int) DB_count($_TABLES['maps_maps']);
+    $markers = (int) DB_count($_TABLES['maps_markers']);
+    $submissions = (int) DB_count($_TABLES['maps_submission']);
+
+    $expiring = 0;
+    $now = date('Y-m-d H:i:s');
+    $until = date('Y-m-d H:i:s', time() + (30 * 86400));
+    $result = DB_query(
+        "SELECT COUNT(*) AS total FROM {$_TABLES['maps_markers']} "
+        . "WHERE validity=1 AND active=1 AND hidden=0 "
+        . "AND validity_end>='" . MAPS_dbEscape($now) . "' "
+        . "AND validity_end<='" . MAPS_dbEscape($until) . "'"
+    );
+    if ($result) {
+        $row = DB_fetchArray($result);
+        if (is_array($row) && isset($row['total'])) {
+            $expiring = (int) $row['total'];
+        }
+    }
+
+    $status = ($submissions > 0 || $expiring > 0) ? 'info' : 'ok';
+    $alerts = array();
+    if ($submissions > 0) {
+        $alerts[] = array(
+            'id' => 'pending',
+            'status' => 'warning',
+            'message' => $submissions . ' marker submission(s) require review.',
+            'count' => $submissions
+        );
+    }
+    if ($expiring > 0) {
+        $alerts[] = array(
+            'id' => 'expiring',
+            'status' => 'info',
+            'message' => $expiring . ' marker(s) expire within 30 days.',
+            'count' => $expiring
+        );
+    }
+
+    $output = array(
+        'schema' => 1,
+        'status' => $status,
+        'metrics' => array(
+            array('id' => 'maps', 'label' => 'Maps', 'value' => $maps),
+            array('id' => 'markers', 'label' => 'Markers', 'value' => $markers),
+            array('id' => 'pending', 'label' => 'Pending submissions', 'value' => $submissions),
+            array('id' => 'expiring', 'label' => 'Expiring markers', 'value' => $expiring)
+        ),
+        'alerts' => $alerts,
+        'links' => array(
+            array(
+                'label' => 'Manage Maps',
+                'url' => rtrim($_CONF['site_admin_url'], '/') . '/plugins/maps/index.php'
+            )
+        ),
+        'updated' => time()
+    );
+
+    return PLG_RET_OK;
+}
+
+/**
+ * Find accessible markers near a coordinate.
+ *
+ * This is a read-only provider service intended for Agent, Hub and other
+ * trusted in-process consumers. Permissions stay owned by Maps.
+ *
+ * @param array $args
+ * @param array $output
+ * @param array $svc_msg
+ * @return int
+ */
+function service_geo_nearby_maps($args, &$output, &$svc_msg)
+{
+    global $_TABLES;
+
+    $output = array();
+    $svc_msg = array();
+
+    if (MAPS_serviceRejectWeb($args, $svc_msg)) {
+        return PLG_RET_AUTH_FAILED;
+    }
+
+    $lat = MAPS_arrayGet($args, 'lat', null);
+    $lng = MAPS_arrayGet($args, 'lng', null);
+    if (!MAPS_isValidCoordinatePair($lat, $lng)) {
+        $svc_msg['error_desc'] = 'A valid lat/lng coordinate pair is required.';
+        return PLG_RET_ERROR;
+    }
+
+    $originLat = (float) $lat;
+    $originLng = (float) $lng;
+    $radius = isset($args['radius_km']) ? (float) $args['radius_km'] : 25.0;
+    $radius = max(0.1, min(500.0, $radius));
+    $limit = isset($args['limit']) ? (int) $args['limit'] : 20;
+    $limit = max(1, min(100, $limit));
+
+    $sql = "SELECT mk.*,mp.name AS map_name,"
+        . "mp.owner_id AS map_owner_id,mp.group_id AS map_group_id,"
+        . "mp.perm_owner AS map_perm_owner,mp.perm_group AS map_perm_group,"
+        . "mp.perm_members AS map_perm_members,mp.perm_anon AS map_perm_anon "
+        . "FROM {$_TABLES['maps_markers']} mk "
+        . "INNER JOIN {$_TABLES['maps_maps']} mp ON mp.mid=mk.mid "
+        . "WHERE mk.active=1 AND mk.hidden=0 AND mp.active=1 AND mp.hidden=0 "
+        . "LIMIT 1000";
+
+    $result = DB_query($sql);
+    $matches = array();
+
+    while ($result && ($row = DB_fetchArray($result))) {
+        if (SEC_hasAccess(
+            (int) $row['owner_id'],
+            (int) $row['group_id'],
+            (int) $row['perm_owner'],
+            (int) $row['perm_group'],
+            (int) $row['perm_members'],
+            (int) $row['perm_anon']
+        ) < 2) {
+            continue;
+        }
+        if (SEC_hasAccess(
+            (int) $row['map_owner_id'],
+            (int) $row['map_group_id'],
+            (int) $row['map_perm_owner'],
+            (int) $row['map_perm_group'],
+            (int) $row['map_perm_members'],
+            (int) $row['map_perm_anon']
+        ) < 2) {
+            continue;
+        }
+        if (!MAPS_checkMarkervalidity($row)
+            || !MAPS_isValidCoordinatePair($row['lat'], $row['lng'])
+        ) {
+            continue;
+        }
+
+        $markerLat = deg2rad((float) $row['lat']);
+        $markerLng = deg2rad((float) $row['lng']);
+        $lat1 = deg2rad($originLat);
+        $lng1 = deg2rad($originLng);
+        $dLat = $markerLat - $lat1;
+        $dLng = $markerLng - $lng1;
+        $a = sin($dLat / 2) * sin($dLat / 2)
+            + cos($lat1) * cos($markerLat)
+            * sin($dLng / 2) * sin($dLng / 2);
+        $distance = 6371.0088 * (2 * atan2(sqrt($a), sqrt(max(0, 1 - $a))));
+
+        if ($distance > $radius) {
+            continue;
+        }
+
+        $item = MAPS_serviceMarkerData($row);
+        $item['distance_km'] = round($distance, 3);
+        $matches[] = $item;
+    }
+
+    usort($matches, 'MAPS_serviceNearbySort');
+    if (count($matches) > $limit) {
+        $matches = array_slice($matches, 0, $limit);
+    }
+
+    $output = array(
+        'schema' => 1,
+        'origin' => array('lat' => $originLat, 'lng' => $originLng),
+        'radius_km' => $radius,
+        'count' => count($matches),
+        'markers' => $matches
+    );
+
+    return PLG_RET_OK;
+}
+
+/**
+ * Stable PHP 5.6-compatible nearby sort callback.
+ *
+ * @param array $a
+ * @param array $b
+ * @return int
+ */
+function MAPS_serviceNearbySort($a, $b)
+{
+    $ad = isset($a['distance_km']) ? (float) $a['distance_km'] : PHP_FLOAT_MAX;
+    $bd = isset($b['distance_km']) ? (float) $b['distance_km'] : PHP_FLOAT_MAX;
+    if ($ad == $bd) {
+        return 0;
+    }
+    return ($ad < $bd) ? -1 : 1;
 }
