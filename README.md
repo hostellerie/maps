@@ -1,76 +1,86 @@
 # Maps for Geeklog
 
-![Maps 1.6.0 now available](docs/images/maps-1.6.0.webp)
+Maps is a Geeklog plugin for creating Google Maps, markers, overlays, profile maps, Calendar event maps and reusable map autotags.
 
-Maps is a Geeklog plugin for creating Google Maps, markers, overlays, profile maps, Calendar event maps and map autotags.
-
-## Maps 1.6.0 compatibility target
+## Maps 1.7.0 compatibility
 
 - Geeklog 2.1.1 through 2.2.2
 - PHP 5.6 through 8.3
 - MySQL/MariaDB versions supported by the corresponding Geeklog release
 - Google Maps Platform as available in 2026
 
-PHP syntax is checked on PHP 5.6, 7.4, 8.1 and 8.3 with GitHub Actions. The install compatibility gate accepts PHP 5.6 through 8.3 and Geeklog 2.1.1 through 2.2.2.
+PHP syntax is checked on PHP 5.6, 7.4, 8.1 and 8.3.
 
-## Modernization roadmap
+## What's new in 1.7.0
 
-The current stabilization, UI/UX, security, testing and release plan is maintained in [ROADMAP.md](ROADMAP.md).
+Maps 1.7.0 consolidates the modernized 1.6 codebase and turns Maps into a first-class interoperability provider for the Geeklog ecosystem.
 
-The roadmap is the reference for deciding what belongs in the 1.5.x stabilization line and what should be deferred to a future 2.0 architecture.
+Highlights:
+
+- provider-neutral capability declaration through `plugin_getcapabilities_maps()`;
+- normalized map and marker resources through Geeklog Item Info;
+- `dashboard.summary` service for Eclipse and other administration dashboards;
+- `maps.geo.nearby` read service for Agent, Hub and trusted in-process consumers;
+- marker list/get/render services;
+- marker create/update and validity services with idempotent operation support;
+- lifecycle notifications for maps and markers;
+- static `plugin.json` metadata for Monitor, Hub and repository tooling;
+- reproducible release packaging with PHP compatibility checks and contract tests.
+
+Maps remains the owner of permissions, canonical URLs, lifecycle and marker business rules. Agent, Eclipse and Hub consume the same shared contracts; Maps does not implement consumer-specific APIs.
+
+## Interoperability
+
+Maps exposes these shared capabilities:
+
+- `content.read`
+- `content.collection`
+- `content.search`
+- `content.url.resolve`
+- `content.lifecycle`
+- `content.syndication`
+- `dashboard.summary`
+- `maps.map.read`
+- `maps.marker.read`
+- `maps.marker.list`
+- `maps.marker.render`
+- `maps.geo.nearby`
+- `maps.marker.create`
+- `maps.marker.update`
+- `maps.marker.validity.set`
+- `maps.marker.validity.extend`
+
+### Eclipse
+
+Eclipse 1.2 and later can discover `dashboard.summary` and display Maps counts, pending submissions, expiring markers and the administration link without querying Maps tables directly.
+
+### Agent and Hub
+
+Agent and Hub can consume normalized map/marker resources and specialized read services through the shared Geeklog contracts. Hub remains responsible for cross-content relationships; Agent remains responsible for machine-facing adaptation.
 
 ## Google Maps Platform setup
 
-Create a Google Cloud project and enable billing for Google Maps Platform. Enable at least:
+Create a Google Cloud project, enable billing and enable at least:
 
 - Maps JavaScript API
 - Geocoding API when address-to-coordinate conversion is used
 
-In Geeklog's Maps configuration set:
-
-- **Google Maps browser API key**: used by maps displayed in the browser. Restrict this key with HTTP referrers for your site domains.
-- **Google Geocoding server API key**: optional but recommended for server-side geocoding. Apply server-appropriate restrictions. If empty, Maps falls back to the browser API key for compatibility with older installations.
-- **Google Map ID**: optional in Maps 1.5 and reserved for migration toward Advanced Markers.
-- **Google Maps language** and **region**: optional Google Maps localization hints.
-
-Maps 1.6 no longer uses the retired `sensor` parameter or the removed Google Maps AdSense library.
-
-## Markers and clustering
-
-Maps 1.6 keeps `google.maps.Marker` for compatibility with existing maps and custom icons. Google has deprecated that class, so the `google_map_id` setting prepares a future migration to Advanced Markers without forcing it into this compatibility release.
-
-The obsolete bundled MarkerClusterer 1.0.1 has been removed. Maps 1.6 uses the pinned UMD build of `@googlemaps/markerclusterer` 2.6.2.
-
-Colored markers no longer depend on the retired Google Image Charts service. They are generated as SVG data URIs. Uploaded marker icons continue to use the plugin's shared image directory.
+Configure the browser API key, optional server-side Geocoding key, language/region and optional Map ID in Geeklog's Maps configuration.
 
 ## Shared image resources and multisite
 
-Map image resources intentionally remain shared across Geeklog sites:
+Map image resources intentionally remain under the shared Geeklog images path:
 
 - `images/maps/icons/`
 - `images/maps/overlays/`
 
-This behavior is suitable for both mono-site and multisite installations when the Geeklog images directory is shared.
-
-## Removed legacy dependencies
-
-Maps 1.6 removes:
-
-- TimThumb
-- FCKeditor-specific integration
-- Google Maps AdSense integration
-- Google Maps v2 direction error constants
-- Google Image Charts marker URLs
-- installation/upgrade telemetry email
-- PHP `preg_replace(... /e ...)` usage
+This remains compatible with shared-files/multisite installations when the Geeklog images directory is shared.
 
 ## Upgrade
 
-The supported modernization path is to reach Maps 1.4.0 first, then run Geeklog's normal plugin upgrade to Maps 1.6.0. The 1.6.0 upgrader applies the complete 1.5.x/1.6.0 configuration and public-folder migrations in sequence, including repairs introduced in 1.5.1 through 1.5.8.
+Upgrade through Geeklog's normal Plugin Administration screen. Back up the database and `images/maps/` before upgrading production installations.
 
-Older Maps installations should therefore be upgraded to 1.4.0 before installing the 1.5.8 files. Back up the database and the shared `images/maps/` directory before upgrading a production site.
-
-After copying or uploading the 1.5.8 package, run the normal Geeklog plugin upgrade from the Plugin Administration screen before opening the Maps administration page.
+The maintained transition target is Geeklog 2.1.1 through 2.2.2 and PHP 5.6 through 8.3. Maps 1.7.0 does not require a new database table beyond the service-operation table already introduced by the 1.6 line.
 
 ## Autotags
 
@@ -80,6 +90,9 @@ The historical autotags remain available:
 - `[geo: ...]`
 - `[marker: ...]`
 
-## Development
+## Documentation
 
-Bug reports and feature requests belong in the Geeklog Maps repository issue tracker. Changes should be tested against the supported Geeklog/PHP matrix before release.
+- [Roadmap](ROADMAP.md)
+- [Maps 1.7.0 release notes](RELEASE-NOTES-1.7.0.md)
+
+Bug reports and feature requests belong in the Geeklog Maps repository issue tracker.
