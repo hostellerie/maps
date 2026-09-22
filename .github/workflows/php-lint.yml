@@ -3,7 +3,7 @@ name: PHP compatibility lint
 on:
   push:
     branches:
-      - modernize/maps-1.5
+      - update/maps-1.7
   pull_request:
 
 permissions:
