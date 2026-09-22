@@ -111,4 +111,6 @@ jobs:
             exit 0
           fi
           git commit -m 'Build Maps 1.7.0 release archive [skip ci]'
+          git fetch origin update/maps-1.7
+          git rebase origin/update/maps-1.7
           git push origin HEAD:update/maps-1.7
