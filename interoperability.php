@@ -1,6 +1,6 @@
 <?php
 // +--------------------------------------------------------------------------+
-// | Maps Plugin 1.6.0                                                        |
+// | Maps Plugin 1.7.0                                                        |
 // +--------------------------------------------------------------------------+
 // | Maintainer: ::Ben                                                         |
 // | interoperability.php                                                     |
@@ -430,3 +430,39 @@ function plugin_idtourl_maps($sub_type = '', $item_id = null)
     return MAPS_contentUrl((int) $itemText);
 }
 
+
+
+/**
+ * Advertise provider-neutral Maps capabilities.
+ *
+ * This declaration follows the Geeklog memorandum capability contract and is
+ * intentionally consumer-neutral: Agent, Hub, Eclipse and future tools can
+ * discover the same provider surfaces without querying Maps tables directly.
+ *
+ * @return array
+ */
+function plugin_getcapabilities_maps()
+{
+    return array(
+        'schema' => 1,
+        'roles' => array('content', 'service'),
+        'capabilities' => array(
+            'content.read',
+            'content.collection',
+            'content.search',
+            'content.url.resolve',
+            'content.lifecycle',
+            'content.syndication',
+            'dashboard.summary',
+            'maps.map.read',
+            'maps.marker.read',
+            'maps.marker.list',
+            'maps.marker.render',
+            'maps.geo.nearby',
+            'maps.marker.create',
+            'maps.marker.update',
+            'maps.marker.validity.set',
+            'maps.marker.validity.extend'
+        )
+    );
+}
