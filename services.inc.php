@@ -172,7 +172,6 @@ function service_marker_save_maps($args, &$output, &$svc_msg)
         DB_query("INSERT INTO {$_TABLES['maps_markers']} SET mkid='{$safeId}',name='{$safeName}',created='{$now}',modified='{$now}',address='{$safeAddress}',lat='{$lat}',lng='{$lng}',mid={$mapId},url='{$safeUrl}',type='{$safeSource}',active={$active},hidden={$hidden},owner_id={$ownerId},group_id={$groupId},perm_owner={$permOwner},perm_group={$permGroup},perm_members={$permMembers},perm_anon={$permAnon},submission=0");
     }
     if (DB_error()) { MAPS_serviceOperationRollback($args); $svc_msg['error_desc'] = 'Unable to save marker.'; return PLG_RET_ERROR; }
-    if (function_exists('updateMap')) updateMap($mapId);
     MAPS_notifyMarkerSaved($markerId, $mapId);
     $row = MAPS_serviceMarkerRow($markerId, false, false);
     $output = ($row !== false) ? MAPS_serviceMarkerData($row) : array('id' => $markerId, 'map_id' => $mapId);
