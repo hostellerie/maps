@@ -2,6 +2,7 @@
 
 $root = dirname(__DIR__);
 $services = file_get_contents($root . '/services.inc.php');
+$interop = file_get_contents($root . '/interoperability.php');
 $failures = array();
 
 function maps_contract_require($content, $needle, $message, &$failures)
@@ -18,7 +19,8 @@ maps_contract_require($services, 'INSERT INTO {$_TABLES[\'maps_markers\']}', 'Ma
 maps_contract_require($services, 'UPDATE {$_TABLES[\'maps_markers\']}', 'Maps no longer owns marker editing.', $failures);
 maps_contract_require($services, 'COM_makeSid()', 'Maps no longer allocates marker IDs.', $failures);
 maps_contract_require($services, 'MAPS_notifyMarkerSaved($markerId, $mapId)', 'Maps marker lifecycle notification is missing.', $failures);
-maps_contract_require($services, 'MAPS_notifyMarkerSaved($markerId, $mapId)', 'Maps parent-map refresh must use the centralized marker lifecycle helper.', $failures);
+maps_contract_require($interop, 'function MAPS_notifyMarkerSaved(', 'Centralized marker lifecycle helper is missing.', $failures);
+maps_contract_require($interop, 'updateMap($mid)', 'Centralized marker lifecycle helper no longer refreshes the parent map.', $failures);
 
 if (!empty($failures)) {
     fwrite(STDERR, "Maps marker service contract checks failed:\n");
