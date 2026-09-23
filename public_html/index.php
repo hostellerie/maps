@@ -105,7 +105,7 @@ function MAPS_displayFrontPage()
         $retval .= '<p>' . $LANG_MAPS_1['admin_can'] . ' <a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=new">' . $LANG_MAPS_1['create_map'] . '</a></p>';
     }
     if (MAPS_arrayGet($_MAPS_CONF, 'map_main_footer', '') !== '') {
-        $retval .= '<div>' . PLG_replaceTags($_MAPS_CONF['map_main_footer']) . '</div>';
+        $retval .= '<div class="maps-public-footer-content">' . PLG_replaceTags($_MAPS_CONF['map_main_footer']) . '</div>';
     }
     return $retval;
 }
