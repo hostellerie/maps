@@ -20,11 +20,11 @@ maps_asset_require($source, 'return $headerCode;', 'Maps plugin header hook does
 maps_asset_require($source, "'?v='", 'Maps asset URLs do not expose a version query parameter.', $failures);
 
 if (!empty($failures)) {
-    fwrite(STDERR, "Maps asset version contract checks failed:\n");
+    fwrite(STDERR, "Maps 2.1.1/2.2.2 asset version contract checks failed:\n");
     foreach ($failures as $failure) {
         fwrite(STDERR, '- ' . $failure . "\n");
     }
     exit(1);
 }
 
-echo "Maps asset version contract checks: PASS\n";
+echo "Maps 2.1.1/2.2.2 asset version contract checks: PASS\n";
