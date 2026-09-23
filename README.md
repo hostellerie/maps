@@ -58,12 +58,24 @@ Eclipse 1.2 and later can discover `dashboard.summary` and display Maps counts, 
 
 Agent and Hub can consume normalized map/marker resources and specialized read services through the shared Geeklog contracts. Hub remains responsible for cross-content relationships; Agent remains responsible for machine-facing adaptation.
 
+## Issues addressed in 1.7.0
+
+Maps 1.7.0 also addresses the following modernization issues:
+
+- #4 — independent Users Map center and display settings, with compatibility fallbacks;
+- #5 — administration discovery/status for XML Sitemap, Documents, IndexNow and native RSS/Atom feeds;
+- #14 — dedicated server-only Geocoding key, with no browser-key fallback;
+- #15 — Google Maps Platform diagnostics, documented API footprint and browser geolocation for marker route planning.
+
+See [Google Maps Platform usage](docs/google-maps-platform.md) for API/key guidance.
+
 ## Google Maps Platform setup
 
 Create a Google Cloud project, enable billing and enable at least:
 
 - Maps JavaScript API
 - Geocoding API when address-to-coordinate conversion is used
+- Directions API when marker route planning is used
 
 Configure the browser API key, optional server-side Geocoding key, language/region and optional Map ID in Geeklog's Maps configuration.
 
