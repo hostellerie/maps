@@ -78,6 +78,7 @@ jobs:
             README.md \
             ROADMAP.md \
             plugin.json \
+            docs/google-maps-platform.md \
             build/maps/
 
           if [ -f RELEASE-NOTES-1.7.0.md ]; then
