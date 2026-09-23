@@ -90,7 +90,7 @@ Server-side geocoding now requires `google_server_api_key`. Maps no longer falls
 
 ### #15 — Google Maps API audit and route geolocation
 
-Administration now reports the configuration state of Maps JavaScript, Geocoding and Directions usage, browser/server keys and optional Map ID without exposing secret values.
+Administration now reports the configuration state of Maps JavaScript, Geocoding and Directions usage, browser/server keys and optional Map ID without exposing secret values. The configuration table distinguishes a key being present from an API being verified; Maps JavaScript is validated separately in the browser with `gm_authFailure()` so referrer, API enablement and billing problems are not reported as healthy configuration.
 
 Marker route planning now offers **Use my location**, implemented with the browser's standard `navigator.geolocation` API. Manual departure remains available when permission is refused or geolocation is unavailable.
 
