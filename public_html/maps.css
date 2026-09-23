@@ -572,8 +572,16 @@
 
 
 
+.maps-public-header-content,
 .maps-public-footer-content {
     max-width: 76ch;
-    margin-top: 2rem;
     line-height: 1.65;
+}
+
+.maps-public-header-content {
+    margin-bottom: 2rem;
+}
+
+.maps-public-footer-content {
+    margin-top: 2rem;
 }
