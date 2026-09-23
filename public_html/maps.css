@@ -589,8 +589,10 @@
 }
 
 
-/* Public marker list search */
-.maps-map-page .eclipse-admin-list-search,
+/* Public marker list search
+ * Eclipse provides the shared .eclipse-admin-list-search component.
+ * Maps only styles the classic Geeklog fallback used by themes such as Denim.
+ */
 .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) {
     display: flex;
     flex-wrap: nowrap;
@@ -598,119 +600,69 @@
     justify-content: flex-start;
     gap: .35rem .5rem;
     width: 100%;
-    max-width: none;
     margin: .35rem 0 .65rem;
     padding: 0;
     border: 0;
     background: transparent;
-    box-shadow: none;
     font-size: .72rem;
     line-height: 1.2;
 }
 
-.maps-map-page .eclipse-admin-list-search-main,
-.maps-map-page .eclipse-admin-list-search-field,
-.maps-map-page .eclipse-admin-list-search-filters,
-.maps-map-page .eclipse-admin-list-filter-limit,
-.maps-map-page .eclipse-admin-list-search-meta,
-.maps-map-page .eclipse-admin-list-search-status,
 .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part {
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
     gap: .25rem;
     margin: 0;
-}
-
-.maps-map-page .eclipse-admin-list-search-label {
-    display: inline-block;
-    position: static;
-    width: auto;
-    height: auto;
-    margin: 0;
-    padding: 0;
-    overflow: visible;
-    clip: auto;
-    white-space: nowrap;
+    color: inherit;
     font-size: .7rem;
     font-weight: 400;
     opacity: .65;
+    white-space: nowrap;
 }
 
-.maps-map-page .eclipse-admin-list-filter-primary:empty,
-.maps-map-page .eclipse-admin-list-search-tools:empty,
 .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part:empty {
     display: none;
 }
 
-.maps-map-page .eclipse-admin-list-search-field input[type="search"],
-.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"],
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) button,
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) select {
     box-sizing: border-box;
-    width: 11rem;
-    min-width: 0;
     height: 1.8rem;
     min-height: 1.8rem;
     margin: 0;
-    padding: .2rem .4rem;
-    font-size: .72rem;
+    font-size: .7rem;
 }
 
-.maps-map-page .eclipse-admin-list-search-field button,
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
+    width: 11rem;
+    padding: .2rem .4rem;
+}
+
 .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) button {
-    box-sizing: border-box;
-    min-width: 0;
-    height: 1.8rem;
-    min-height: 1.8rem;
-    margin: 0;
     padding: .2rem .5rem;
-    font-size: .7rem;
     font-weight: 500;
     line-height: 1;
 }
 
-.maps-map-page .eclipse-admin-list-filter-limit,
-.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part {
-    color: inherit;
-    font-size: .7rem;
-    font-weight: 400;
-    opacity: .65;
-    white-space: nowrap;
-}
-
-.maps-map-page .eclipse-admin-list-filter-limit select,
 .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) select {
-    box-sizing: border-box;
-    width: 6rem;
-    min-width: 6rem;
-    max-width: 6rem;
-    margin: 0;
-    font-size: .7rem;
+    width: 4.8rem;
+    min-width: 4.8rem;
+    padding: .15rem .3rem;
     font-weight: 400;
 }
 
-.maps-map-page .eclipse-admin-list-search-status,
 .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part:last-child {
-    flex-basis: auto;
-    justify-content: flex-start;
-    color: inherit;
     font-size: .68rem;
-    font-weight: 400;
     opacity: .52;
-    white-space: nowrap;
-}
-
-.maps-map-page .eclipse-admin-list-search-status strong {
-    font-size: inherit;
-    font-weight: 600;
 }
 
 @media (max-width: 640px) {
-    .maps-map-page .eclipse-admin-list-search,
     .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) {
         flex-wrap: wrap;
     }
 
-    .maps-map-page .eclipse-admin-list-search-field input[type="search"],
     .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
         width: min(11rem, 48vw);
     }
