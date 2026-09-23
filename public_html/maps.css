@@ -156,8 +156,10 @@
 .maps-list-card-title {
     margin: 0;
     font-size: 1.1rem;
-    font-weight: 600;
     line-height: 1.28;
+}
+.maps-list-card-title a {
+    font-weight: 700;
 }
 .maps-list-card-description {
     margin-top: .28rem;
