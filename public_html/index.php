@@ -313,6 +313,7 @@ if (isset($_REQUEST['msg']) && (int) $_REQUEST['msg'] > 0) {
 switch ($mode) {
     case 'map':
         if ($mid > 0) {
+            $content .= '<div class="maps-map-page">';
             $content .= MAPS_getMap($mid);
             $content .= MAPS_renderMapStatistics($mid, true);
             $markersHeading = isset($LANG_MAPS_1['map_markers_heading'])
@@ -321,6 +322,7 @@ switch ($mode) {
             $content .= '<h2 class="maps-markers-heading">'
                 . htmlspecialchars($markersHeading, ENT_QUOTES, 'UTF-8') . '</h2>';
             $content .= MAPS_ListMarkers($mid);
+            $content .= '</div>';
         } else {
             $content .= MAPS_getGlobalMap();
         }
