@@ -74,6 +74,28 @@ The package now includes `plugin.json` with schema 1 metadata:
 - minimum Geeklog version 2.1.1;
 - minimum PHP version 5.6.0.
 
+## Issues resolved
+
+### #4 — Configurable Users Map
+
+The Users Map now has independent optional values for latitude, longitude, zoom, type, width and height. Blank values intentionally fall back to the historical first-active-map/global-map behavior so upgrades do not unexpectedly move or resize existing installations.
+
+### #5 — Integration discovery
+
+Maps administration now shows integration status and discovery links for XML Sitemap, Documents, IndexNow and Geeklog's native RSS/Atom syndication. Maps continues to prefer shared Geeklog APIs and services over direct plugin database coupling.
+
+### #14 — Dedicated server Geocoding key
+
+Server-side geocoding now requires `google_server_api_key`. Maps no longer falls back to the browser `google_api_key`. Administration warns when coordinate autofill is enabled without a dedicated server key, and `url_geocode` is now consumed consistently by the geocoding URL builder.
+
+### #15 — Google Maps API audit and route geolocation
+
+Administration now reports the configuration state of Maps JavaScript, Geocoding and Directions usage, browser/server keys and optional Map ID without exposing secret values.
+
+Marker route planning now offers **Use my location**, implemented with the browser's standard `navigator.geolocation` API. Manual departure remains available when permission is refused or geolocation is unavailable.
+
+The maintained Google API footprint and future Routes API / optional Places evaluation are documented in `docs/google-maps-platform.md`.
+
 ## Compatibility
 
 Maps 1.7.0 targets:
