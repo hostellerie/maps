@@ -776,8 +776,9 @@ function MAPS_assetUrl($relativePath)
 /**
  * Return local Maps CSS/JS tags.
  *
- * Returning the tags from the plugin header hook is compatible with Geeklog
- * 2.1.1 and avoids Resource API differences around query-string asset URLs.
+ * Returning the tags from the plugin header hook follows the Geeklog Plugin API
+ * used by both 2.1.1 and 2.2.2 and avoids Resource API differences around
+ * query-string asset URLs.
  *
  * @return string
  */
