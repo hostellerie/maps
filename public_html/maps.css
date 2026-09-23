@@ -712,8 +712,13 @@
     align-items: center;
     justify-content: center;
     gap: .3rem .5rem;
+    max-width: 620px;
     margin: .35rem auto .65rem;
-    font-size: .75rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: .7rem;
+    line-height: 1.2;
 }
 
 .maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) .search-part {
@@ -721,6 +726,59 @@
     align-items: center;
     gap: .25rem;
     margin: 0;
+    color: inherit;
+    font-size: .7rem;
+    font-weight: 400;
+    opacity: .68;
+}
+
+.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) .search-part:empty {
+    display: none;
+}
+
+.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) input[type="text"],
+.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) select,
+.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) button {
+    box-sizing: border-box;
+    height: 1.8rem;
+    min-height: 1.8rem;
+    margin: 0;
+    font-size: .72rem;
+    line-height: 1;
+}
+
+.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
+    width: 11rem;
+    padding: .2rem .4rem;
+}
+
+.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) select {
+    width: 4rem;
+    min-width: 4rem;
+    padding: .15rem .3rem;
+}
+
+.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) button {
+    padding: .2rem .5rem;
+    font-weight: 500;
+    text-transform: none;
+}
+
+.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) .search-part:last-child {
+    flex-basis: 100%;
+    justify-content: center;
+    font-size: .68rem;
+    opacity: .52;
+}
+
+@media (max-width: 640px) {
+    .maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) {
+        max-width: 100%;
+    }
+
+    .maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
+        width: min(11rem, 48vw);
+    }
 }
 
 @media (max-width: 640px) {
