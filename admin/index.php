@@ -291,20 +291,21 @@ function MAPS_adminGoogleApiStatus()
  */
 function MAPS_adminPlatformConfiguration()
 {
-    global $_MAPS_CONF, $LANG_MAPS_1;
+    global $_CONF, $_MAPS_CONF, $LANG_MAPS_1;
 
     $browserKey = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_api_key', ''));
     $serverKey = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_server_api_key', ''));
     $mapId = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_map_id', ''));
     $title = MAPS_arrayGet($LANG_MAPS_1, 'api_diag_title', 'Google Maps Platform configuration');
-    $configured = MAPS_arrayGet($LANG_MAPS_1, 'api_diag_configured', 'Configured');
+    $configured = MAPS_arrayGet($LANG_MAPS_1, 'api_diag_configured', 'Key configured — API not verified');
+    $browserVerify = MAPS_arrayGet($LANG_MAPS_1, 'api_diag_browser_verify', 'Key configured — verify with the browser test below');
     $missing = MAPS_arrayGet($LANG_MAPS_1, 'api_diag_missing', 'Missing');
     $optional = MAPS_arrayGet($LANG_MAPS_1, 'api_diag_optional', 'Optional / not configured');
 
     $rows = array(
-        array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_maps_js', 'Maps JavaScript API'), $browserKey !== '' ? $configured : $missing),
+        array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_maps_js', 'Maps JavaScript API'), $browserKey !== '' ? $browserVerify : $missing),
         array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_geocoding', 'Geocoding API'), $serverKey !== '' ? $configured : $missing),
-        array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_directions', 'Directions API'), $browserKey !== '' ? $configured : $missing),
+        array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_directions', 'Directions API'), $browserKey !== '' ? $browserVerify : $missing),
         array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_browser_key', 'Browser API key'), $browserKey !== '' ? $configured : $missing),
         array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_server_key', 'Server API key'), $serverKey !== '' ? $configured : $missing),
         array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_map_id', 'Map ID'), $mapId !== '' ? $configured : $optional)
@@ -317,6 +318,18 @@ function MAPS_adminPlatformConfiguration()
             . htmlspecialchars($row[1], ENT_QUOTES, 'UTF-8') . '</strong></td></tr>';
     }
     $html .= '</tbody></table>';
+    $siteUrl = rtrim((string) MAPS_arrayGet($_CONF, 'site_url', ''), '/');
+    if ($siteUrl !== '') {
+        $referrerHint = MAPS_arrayGet(
+            $LANG_MAPS_1,
+            'api_diag_referrer_hint',
+            'For browser-key HTTP referrer restrictions, authorize this site (for example: %s/*).'
+        );
+        $html .= '<p><small>' . sprintf(
+            htmlspecialchars($referrerHint, ENT_QUOTES, 'UTF-8'),
+            '<code>' . htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') . '</code>'
+        ) . '</small></p>';
+    }
     $html .= COM_endBlock();
 
     return $html;
