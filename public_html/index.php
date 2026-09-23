@@ -70,6 +70,7 @@ function MAPS_displayFrontPage()
                 . htmlspecialchars(stripslashes($map['description']), ENT_QUOTES, 'UTF-8') . '</div>';
         }
         $modified = COM_getUserDateTimeFormat($map['modified']);
+        $retval .= '<div class="maps-list-card-footer">';
         $retval .= '<div class="maps-list-card-meta">';
         $retval .= '<span>' . htmlspecialchars($LANG_MAPS_1['last_modification'], ENT_QUOTES, 'UTF-8') . ' '
             . htmlspecialchars($modified[0], ENT_QUOTES, 'UTF-8') . '</span>';
@@ -79,13 +80,13 @@ function MAPS_displayFrontPage()
             $retval .= '<span>' . $markers . ' ' . htmlspecialchars($markerLabel, ENT_QUOTES, 'UTF-8') . '</span>';
             $retval .= '<span>' . (int) $map['hits'] . ' ' . htmlspecialchars($LANG_MAPS_1['views_label'], ENT_QUOTES, 'UTF-8') . '</span>';
         }
-        $retval .= '</div></div>';
+        $retval .= '</div>';
         if (SEC_hasRights('maps.admin')) {
             $retval .= '<div class="maps-list-card-actions"><a class="maps-list-edit" href="'
                 . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=edit&amp;mid=' . (int) $map['mid'] . '">'
                 . htmlspecialchars($LANG_MAPS_1['edit_button'], ENT_QUOTES, 'UTF-8') . '</a></div>';
         }
-        $retval .= '</article>';
+        $retval .= '</div></div></article>';
     }
 
     if ($count === 0) {
