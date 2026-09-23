@@ -184,7 +184,7 @@ function MAPS_configDefinition155()
         'users_map_lat' => array($_MAPS_DEFAULT['users_map_lat'], 'text', 0, 1, 0, 12, 2),
         'users_map_lng' => array($_MAPS_DEFAULT['users_map_lng'], 'text', 0, 1, 0, 14, 2),
         'users_map_zoom' => array($_MAPS_DEFAULT['users_map_zoom'], 'text', 0, 1, 0, 16, 2),
-        'users_map_type' => array($_MAPS_DEFAULT['users_map_type'], 'select', 0, 1, 20, 18, 2),
+        'users_map_type' => array($_MAPS_DEFAULT['users_map_type'], 'text', 0, 1, 0, 18, 2),
         'users_map_width' => array($_MAPS_DEFAULT['users_map_width'], 'text', 0, 1, 0, 19, 2),
         'users_map_height' => array($_MAPS_DEFAULT['users_map_height'], 'text', 0, 1, 0, 20, 2),
         'global_map' => array($_MAPS_DEFAULT['global_map'], 'select', 0, 1, 3, 20, 2),
