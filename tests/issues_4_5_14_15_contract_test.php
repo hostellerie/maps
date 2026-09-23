@@ -34,6 +34,8 @@ maps_issue_require($admin, "'indexnow'", 'Issue #5 IndexNow discovery is missing
 maps_issue_require($admin, '/syndication.php', 'Issue #5 feed discovery is missing.', $failures);
 
 maps_issue_require($admin, 'function MAPS_adminPlatformConfiguration()', 'Issue #15 API configuration diagnostic is missing.', $failures);
+maps_issue_require($admin, 'api_diag_browser_verify', 'Issue #15 diagnostic must distinguish configured keys from verified APIs.', $failures);
+maps_issue_require($admin, 'api_diag_referrer_hint', 'Issue #15 diagnostic must expose the current-site referrer hint.', $failures);
 maps_issue_require($template, 'navigator.geolocation', 'Issue #15 browser geolocation is missing.', $failures);
 maps_issue_require($template, 'use_current_location{gid}', 'Issue #15 route geolocation hook is missing.', $failures);
 
