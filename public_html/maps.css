@@ -139,10 +139,6 @@
     margin: 0 0 .95rem;
 }
 .maps-list-card {
-    display: flex;
-    justify-content: space-between;
-    gap: .85rem 1.35rem;
-    align-items: flex-start;
     margin: 0 0 .7rem;
     padding: .85rem .95rem;
     border: 1px solid rgba(127,127,127,.22);
@@ -164,12 +160,20 @@
 .maps-list-card-description {
     margin-top: .28rem;
     line-height: 1.42;
+    max-width: 85ch;
+}
+.maps-list-card-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: .75rem 1rem;
+    margin-top: .5rem;
 }
 .maps-list-card-meta {
     display: flex;
     flex-wrap: wrap;
     gap: .3rem .85rem;
-    margin-top: .5rem;
+    margin-top: 0;
     font-size: .8em;
     line-height: 1.35;
     opacity: .62;
@@ -181,6 +185,7 @@
 }
 .maps-list-card-actions {
     flex: 0 0 auto;
+    margin-left: auto;
 }
 .maps-list-edit {
     display: inline-block;
@@ -203,11 +208,13 @@
         margin-top: 1.75rem;
     }
     .maps-list-card {
-        display: block;
         padding: .8rem .85rem;
     }
+    .maps-list-card-footer {
+        align-items: center;
+    }
     .maps-list-card-actions {
-        margin-top: .65rem;
+        margin-left: auto;
     }
     .maps-list-card-meta {
         display: grid;
