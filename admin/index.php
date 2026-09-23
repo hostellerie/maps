@@ -372,8 +372,11 @@ function MAPS_adminDocumentation($collapsible = false)
     $html .= '<h3>' . $LANG_MAPS_1['admin_help_trouble_title'] . '</h3>';
     $html .= '<p>' . $LANG_MAPS_1['admin_help_trouble'] . '</p>';
 
-    if ($browserKey !== '' && $serverKey === '') {
-        $html .= '<p><small>Geocoding: Google Maps server API key is not configured; Maps will fall back to the browser key for compatibility.</small></p>';
+    if ((int) MAPS_arrayGet($_MAPS_CONF, 'autofill_coord', 0) === 1 && $serverKey === '') {
+        $warning = isset($LANG_MAPS_1['server_geocode_key_missing'])
+            ? $LANG_MAPS_1['server_geocode_key_missing']
+            : 'Server-side geocoding is enabled, but no dedicated Google Geocoding server API key is configured.';
+        $html .= '<p><strong>' . htmlspecialchars($warning, ENT_QUOTES, 'UTF-8') . '</strong></p>';
     }
 
     if ($collapsible) {
