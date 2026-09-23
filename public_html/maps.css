@@ -590,7 +590,7 @@
 
 
 /* Public marker list search */
-.maps-marker-list .eclipse-admin-list-search {
+.maps-map-page .eclipse-admin-list-search {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -606,22 +606,22 @@
     line-height: 1.2;
 }
 
-.maps-marker-list .eclipse-admin-list-search-main,
-.maps-marker-list .eclipse-admin-list-search-field,
-.maps-marker-list .eclipse-admin-list-search-filters,
-.maps-marker-list .eclipse-admin-list-filter-limit,
-.maps-marker-list .eclipse-admin-list-search-meta,
-.maps-marker-list .eclipse-admin-list-search-status {
+.maps-map-page .eclipse-admin-list-search-main,
+.maps-map-page .eclipse-admin-list-search-field,
+.maps-map-page .eclipse-admin-list-search-filters,
+.maps-map-page .eclipse-admin-list-filter-limit,
+.maps-map-page .eclipse-admin-list-search-meta,
+.maps-map-page .eclipse-admin-list-search-status {
     display: inline-flex;
     align-items: center;
 }
 
-.maps-marker-list .eclipse-admin-list-search-main,
-.maps-marker-list .eclipse-admin-list-search-field {
+.maps-map-page .eclipse-admin-list-search-main,
+.maps-map-page .eclipse-admin-list-search-field {
     gap: .3rem;
 }
 
-.maps-marker-list .eclipse-admin-list-search-label {
+.maps-map-page .eclipse-admin-list-search-label {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -633,7 +633,7 @@
     border: 0;
 }
 
-.maps-marker-list .eclipse-admin-list-search-field input[type="search"] {
+.maps-map-page .eclipse-admin-list-search-field input[type="search"] {
     box-sizing: border-box;
     width: 11rem;
     min-width: 0;
@@ -644,7 +644,7 @@
     font-size: .75rem;
 }
 
-.maps-marker-list .eclipse-admin-list-search-field button {
+.maps-map-page .eclipse-admin-list-search-field button {
     box-sizing: border-box;
     min-width: 0;
     height: 1.8rem;
@@ -656,16 +656,16 @@
     line-height: 1;
 }
 
-.maps-marker-list .eclipse-admin-list-filter-primary:empty,
-.maps-marker-list .eclipse-admin-list-search-tools:empty {
+.maps-map-page .eclipse-admin-list-filter-primary:empty,
+.maps-map-page .eclipse-admin-list-search-tools:empty {
     display: none;
 }
 
-.maps-marker-list .eclipse-admin-list-search-filters {
+.maps-map-page .eclipse-admin-list-search-filters {
     gap: .3rem;
 }
 
-.maps-marker-list .eclipse-admin-list-filter-limit {
+.maps-map-page .eclipse-admin-list-filter-limit {
     gap: .25rem;
     margin: 0;
     font-size: .7rem;
@@ -674,7 +674,7 @@
     white-space: nowrap;
 }
 
-.maps-marker-list .eclipse-admin-list-filter-limit select {
+.maps-map-page .eclipse-admin-list-filter-limit select {
     box-sizing: border-box;
     width: 4rem;
     min-width: 4rem;
@@ -687,11 +687,11 @@
     font-weight: 400;
 }
 
-.maps-marker-list .eclipse-admin-list-search-meta {
+.maps-map-page .eclipse-admin-list-search-meta {
     gap: .3rem;
 }
 
-.maps-marker-list .eclipse-admin-list-search-status {
+.maps-map-page .eclipse-admin-list-search-status {
     gap: .2rem;
     color: inherit;
     font-size: .68rem;
@@ -700,13 +700,13 @@
     white-space: nowrap;
 }
 
-.maps-marker-list .eclipse-admin-list-search-status strong {
+.maps-map-page .eclipse-admin-list-search-status strong {
     font-size: inherit;
     font-weight: 600;
 }
 
 /* Geeklog themes using the classic admin-list search markup. */
-.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) {
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -721,7 +721,7 @@
     line-height: 1.2;
 }
 
-.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) .search-part {
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part {
     display: inline-flex;
     align-items: center;
     gap: .25rem;
@@ -732,13 +732,13 @@
     opacity: .68;
 }
 
-.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) .search-part:empty {
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part:empty {
     display: none;
 }
 
-.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) input[type="text"],
-.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) select,
-.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) button {
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"],
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) select,
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) button {
     box-sizing: border-box;
     height: 1.8rem;
     min-height: 1.8rem;
@@ -747,24 +747,24 @@
     line-height: 1;
 }
 
-.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
     width: 11rem;
     padding: .2rem .4rem;
 }
 
-.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) select {
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) select {
     width: 4rem;
     min-width: 4rem;
     padding: .15rem .3rem;
 }
 
-.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) button {
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) button {
     padding: .2rem .5rem;
     font-weight: 500;
     text-transform: none;
 }
 
-.maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) .search-part:last-child {
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part:last-child {
     flex-basis: 100%;
     justify-content: center;
     font-size: .68rem;
@@ -772,22 +772,22 @@
 }
 
 @media (max-width: 640px) {
-    .maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) {
+    .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) {
         max-width: 100%;
     }
 
-    .maps-marker-list .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
+    .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
         width: min(11rem, 48vw);
     }
 }
 
 @media (max-width: 640px) {
-    .maps-marker-list .eclipse-admin-list-search {
+    .maps-map-page .eclipse-admin-list-search {
         max-width: 100%;
         justify-content: flex-start;
     }
 
-    .maps-marker-list .eclipse-admin-list-search-field input[type="search"] {
+    .maps-map-page .eclipse-admin-list-search-field input[type="search"] {
         width: min(11rem, 48vw);
     }
 }
