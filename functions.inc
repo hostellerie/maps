@@ -1154,6 +1154,12 @@ function MAPS_repairConfig151()
 
         'fs_global_map' => array(null, 'fieldset', 1, 1, null, 0),
         'users_map' => array($_MAPS_DEFAULT['users_map'], 'select', 1, 1, 3, 10),
+        'users_map_lat' => array($_MAPS_DEFAULT['users_map_lat'], 'text', 1, 1, 0, 12),
+        'users_map_lng' => array($_MAPS_DEFAULT['users_map_lng'], 'text', 1, 1, 0, 14),
+        'users_map_zoom' => array($_MAPS_DEFAULT['users_map_zoom'], 'text', 1, 1, 0, 16),
+        'users_map_type' => array($_MAPS_DEFAULT['users_map_type'], 'select', 1, 1, 20, 18),
+        'users_map_width' => array($_MAPS_DEFAULT['users_map_width'], 'text', 1, 1, 0, 19),
+        'users_map_height' => array($_MAPS_DEFAULT['users_map_height'], 'text', 1, 1, 0, 20),
         'global_map' => array($_MAPS_DEFAULT['global_map'], 'select', 1, 1, 3, 20),
         'global_type' => array($_MAPS_DEFAULT['global_type'], 'select', 1, 1, 20, 30),
         'global_width' => array($_MAPS_DEFAULT['global_width'], 'text', 1, 1, 0, 40),
