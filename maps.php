@@ -148,13 +148,11 @@ function MAPS_googleGeocodeUrl($address)
 {
     global $_MAPS_CONF;
 
-    $key = '';
-    if (isset($_MAPS_CONF['google_server_api_key'])
-        && trim($_MAPS_CONF['google_server_api_key']) !== ''
-    ) {
-        $key = trim($_MAPS_CONF['google_server_api_key']);
-    } elseif (isset($_MAPS_CONF['google_api_key'])) {
-        $key = trim($_MAPS_CONF['google_api_key']);
+    $key = isset($_MAPS_CONF['google_server_api_key'])
+        ? trim((string) $_MAPS_CONF['google_server_api_key'])
+        : '';
+    if ($key === '') {
+        return '';
     }
 
     $params = array(
@@ -169,7 +167,14 @@ function MAPS_googleGeocodeUrl($address)
         $params['region'] = trim($_MAPS_CONF['google_region']);
     }
 
-    return 'https://maps.googleapis.com/maps/api/geocode/json?'
+    $baseUrl = isset($_MAPS_CONF['url_geocode'])
+        ? trim((string) $_MAPS_CONF['url_geocode'])
+        : '';
+    if ($baseUrl === '') {
+        $baseUrl = 'https://maps.googleapis.com/maps/api/geocode/json';
+    }
+
+    return rtrim($baseUrl, '?&') . '?'
         . http_build_query($params, '', '&');
 }
 
