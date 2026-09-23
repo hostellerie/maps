@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: maps-1.7-package
+  cancel-in-progress: false
+
 jobs:
   package:
     runs-on: ubuntu-latest
