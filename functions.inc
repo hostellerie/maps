@@ -3012,7 +3012,9 @@ function MAPS_ListMarkers($mid = '')
     $query = array('table' => 'maps_markers', 'sql' => $sql, 'query_fields' => array('name','code','city'), 'default_filter' => COM_getPermSQL('AND', 0, 2));
     $text = array('has_extras' => true, 'form_url' => $_MAPS_CONF['site_url'] . '/index.php?mode=markers&mid=' . $mid);
     $sort = array('field' => 'code', 'direction' => 'asc');
-    return ADMIN_list('markers', 'MAPS_getListField_markersList', $header, $text, $query, $sort);
+    return '<div class="maps-marker-list">'
+        . ADMIN_list('markers', 'MAPS_getListField_markersList', $header, $text, $query, $sort)
+        . '</div>';
 }
 
 function MAPS_getListField_markersList($fieldname, $fieldvalue, $a, $icon_arr)
