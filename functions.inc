@@ -1971,14 +1971,17 @@ function MAPS_getCoords($address, &$lat, &$lng)
 
     $lat = 0;
     $lng = 0;
-    $browserKey = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_api_key', ''));
     $serverKey = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_server_api_key', ''));
-    if ($browserKey === '' && $serverKey === '') {
-        COM_errorLog('MAPS geocoder: no Google API key configured.');
+    if ($serverKey === '') {
+        COM_errorLog('MAPS geocoder: no dedicated Google Geocoding server API key configured.');
         return false;
     }
 
     $url = MAPS_googleGeocodeUrl(stripslashes((string) $address));
+    if ($url === '') {
+        COM_errorLog('MAPS geocoder: unable to build Geocoding API URL without a server API key.');
+        return false;
+    }
     $response = false;
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
