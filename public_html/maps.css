@@ -570,3 +570,10 @@
     .maps-import-requirements, .maps-import-fields-grid, .maps-import-summary { grid-template-columns:1fr; }
 }
 
+
+
+.maps-public-footer-content {
+    max-width: 76ch;
+    margin-top: 2rem;
+    line-height: 1.65;
+}
