@@ -189,6 +189,7 @@
     border-radius: 6px;
     text-decoration: none;
     font-size: .92em;
+    font-weight: 600;
 }
 .maps-list-edit:hover,
 .maps-list-edit:focus {
