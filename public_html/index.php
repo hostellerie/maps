@@ -314,13 +314,13 @@ switch ($mode) {
     case 'map':
         if ($mid > 0) {
             $content .= MAPS_getMap($mid);
+            $content .= MAPS_renderMapStatistics($mid, true);
             $markersHeading = isset($LANG_MAPS_1['map_markers_heading'])
                 ? $LANG_MAPS_1['map_markers_heading']
                 : $LANG_MAPS_1['markers_list'];
             $content .= '<h2 class="maps-markers-heading">'
                 . htmlspecialchars($markersHeading, ENT_QUOTES, 'UTF-8') . '</h2>';
             $content .= MAPS_ListMarkers($mid);
-            $content .= MAPS_renderMapStatistics($mid, true);
         } else {
             $content .= MAPS_getGlobalMap();
         }
