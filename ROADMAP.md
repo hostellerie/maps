@@ -89,6 +89,15 @@ Available services include:
 
 Mutation services remain internal/trusted service surfaces and retain idempotent operation support where applicable.
 
+## Closed by 1.7.0
+
+- #4 — independent Users Map center/display configuration;
+- #5 — integration discovery/status in administration;
+- #14 — strict browser/server API-key separation for Geocoding;
+- #15 — API usage audit, administration diagnostics and browser geolocation for route planning.
+
+The Routes API migration and Places autocomplete discussed in #15 remain evaluated future enhancements rather than 1.7.0 dependencies.
+
 ## Release gates
 
 Before tagging 1.7.0:
