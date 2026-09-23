@@ -59,7 +59,7 @@ jobs:
         run: |
           set -e
           rm -rf build
-          mkdir -p build/maps
+          mkdir -p build/maps/docs
 
           cp -a \
             admin \
@@ -78,8 +78,8 @@ jobs:
             README.md \
             ROADMAP.md \
             plugin.json \
-            docs/google-maps-platform.md \
             build/maps/
+          cp docs/google-maps-platform.md build/maps/docs/
 
           if [ -f RELEASE-NOTES-1.7.0.md ]; then
             cp RELEASE-NOTES-1.7.0.md build/maps/
