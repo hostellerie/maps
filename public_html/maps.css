@@ -590,19 +590,21 @@
 
 
 /* Public marker list search */
-.maps-map-page .eclipse-admin-list-search {
+.maps-map-page .eclipse-admin-list-search,
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    justify-content: center;
-    gap: .3rem .5rem;
-    max-width: 620px;
-    margin: .35rem auto .65rem;
+    justify-content: flex-start;
+    gap: .35rem .5rem;
+    width: 100%;
+    max-width: none;
+    margin: .35rem 0 .65rem;
     padding: 0;
     border: 0;
     background: transparent;
     box-shadow: none;
-    font-size: .75rem;
+    font-size: .72rem;
     line-height: 1.2;
 }
 
@@ -611,14 +613,13 @@
 .maps-map-page .eclipse-admin-list-search-filters,
 .maps-map-page .eclipse-admin-list-filter-limit,
 .maps-map-page .eclipse-admin-list-search-meta,
-.maps-map-page .eclipse-admin-list-search-status {
+.maps-map-page .eclipse-admin-list-search-status,
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part {
     display: inline-flex;
+    flex: 0 0 auto;
     align-items: center;
-}
-
-.maps-map-page .eclipse-admin-list-search-main,
-.maps-map-page .eclipse-admin-list-search-field {
-    gap: .3rem;
+    gap: .25rem;
+    margin: 0;
 }
 
 .maps-map-page .eclipse-admin-list-search-label {
@@ -633,7 +634,14 @@
     border: 0;
 }
 
-.maps-map-page .eclipse-admin-list-search-field input[type="search"] {
+.maps-map-page .eclipse-admin-list-filter-primary:empty,
+.maps-map-page .eclipse-admin-list-search-tools:empty,
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part:empty {
+    display: none;
+}
+
+.maps-map-page .eclipse-admin-list-search-field input[type="search"],
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
     box-sizing: border-box;
     width: 11rem;
     min-width: 0;
@@ -641,40 +649,33 @@
     min-height: 1.8rem;
     margin: 0;
     padding: .2rem .4rem;
-    font-size: .75rem;
+    font-size: .72rem;
 }
 
-.maps-map-page .eclipse-admin-list-search-field button {
+.maps-map-page .eclipse-admin-list-search-field button,
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) button {
     box-sizing: border-box;
     min-width: 0;
     height: 1.8rem;
     min-height: 1.8rem;
     margin: 0;
-    padding: .2rem .55rem;
-    font-size: .72rem;
+    padding: .2rem .5rem;
+    font-size: .7rem;
     font-weight: 500;
     line-height: 1;
 }
 
-.maps-map-page .eclipse-admin-list-filter-primary:empty,
-.maps-map-page .eclipse-admin-list-search-tools:empty {
-    display: none;
-}
-
-.maps-map-page .eclipse-admin-list-search-filters {
-    gap: .3rem;
-}
-
-.maps-map-page .eclipse-admin-list-filter-limit {
-    gap: .25rem;
-    margin: 0;
+.maps-map-page .eclipse-admin-list-filter-limit,
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part {
+    color: inherit;
     font-size: .7rem;
     font-weight: 400;
-    opacity: .62;
+    opacity: .65;
     white-space: nowrap;
 }
 
-.maps-map-page .eclipse-admin-list-filter-limit select {
+.maps-map-page .eclipse-admin-list-filter-limit select,
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) select {
     box-sizing: border-box;
     width: 4rem;
     min-width: 4rem;
@@ -682,21 +683,19 @@
     height: 1.8rem;
     min-height: 1.8rem;
     margin: 0;
-    padding: .15rem 1.25rem .15rem .35rem;
-    font-size: .72rem;
+    padding: .15rem .3rem;
+    font-size: .7rem;
     font-weight: 400;
 }
 
-.maps-map-page .eclipse-admin-list-search-meta {
-    gap: .3rem;
-}
-
-.maps-map-page .eclipse-admin-list-search-status {
-    gap: .2rem;
+.maps-map-page .eclipse-admin-list-search-status,
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part:last-child {
+    flex-basis: auto;
+    justify-content: flex-start;
     color: inherit;
     font-size: .68rem;
     font-weight: 400;
-    opacity: .55;
+    opacity: .52;
     white-space: nowrap;
 }
 
@@ -705,89 +704,14 @@
     font-weight: 600;
 }
 
-/* Geeklog themes using the classic admin-list search markup. */
-.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: .3rem .5rem;
-    max-width: 620px;
-    margin: .35rem auto .65rem;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    font-size: .7rem;
-    line-height: 1.2;
-}
-
-.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part {
-    display: inline-flex;
-    align-items: center;
-    gap: .25rem;
-    margin: 0;
-    color: inherit;
-    font-size: .7rem;
-    font-weight: 400;
-    opacity: .68;
-}
-
-.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part:empty {
-    display: none;
-}
-
-.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"],
-.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) select,
-.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) button {
-    box-sizing: border-box;
-    height: 1.8rem;
-    min-height: 1.8rem;
-    margin: 0;
-    font-size: .72rem;
-    line-height: 1;
-}
-
-.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
-    width: 11rem;
-    padding: .2rem .4rem;
-}
-
-.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) select {
-    width: 4rem;
-    min-width: 4rem;
-    padding: .15rem .3rem;
-}
-
-.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) button {
-    padding: .2rem .5rem;
-    font-weight: 500;
-    text-transform: none;
-}
-
-.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part:last-child {
-    flex-basis: 100%;
-    justify-content: center;
-    font-size: .68rem;
-    opacity: .52;
-}
-
 @media (max-width: 640px) {
+    .maps-map-page .eclipse-admin-list-search,
     .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) {
-        max-width: 100%;
+        flex-wrap: wrap;
     }
 
+    .maps-map-page .eclipse-admin-list-search-field input[type="search"],
     .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
-        width: min(11rem, 48vw);
-    }
-}
-
-@media (max-width: 640px) {
-    .maps-map-page .eclipse-admin-list-search {
-        max-width: 100%;
-        justify-content: flex-start;
-    }
-
-    .maps-map-page .eclipse-admin-list-search-field input[type="search"] {
         width: min(11rem, 48vw);
     }
 }
