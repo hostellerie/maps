@@ -92,8 +92,10 @@
 }
 .maps-statistics-cards {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: .7rem;
+    max-width: 1120px;
+    margin-inline: auto;
 }
 .maps-stat-card {
     display: flex;
@@ -584,4 +586,69 @@
 
 .maps-public-footer-content {
     margin-top: 2rem;
+}
+
+
+/* Public marker list search */
+.maps-marker-list .admin-list-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: .65rem 1rem;
+    max-width: 900px;
+    margin: .85rem auto 1rem;
+    padding: .85rem 1rem;
+    border: 1px solid rgba(127,127,127,.20);
+    border-radius: 10px;
+    background: rgba(127,127,127,.035);
+}
+
+.maps-marker-list .admin-list-search .search-part {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    margin: 0;
+}
+
+.maps-marker-list .admin-list-search .search-part:empty {
+    display: none;
+}
+
+.maps-marker-list .admin-list-search input[type="text"],
+.maps-marker-list .admin-list-search select {
+    box-sizing: border-box;
+    min-height: 2.5rem;
+    padding: .45rem .6rem;
+}
+
+.maps-marker-list .admin-list-search input[type="text"] {
+    width: min(22rem, 60vw);
+}
+
+.maps-marker-list .admin-list-search button {
+    min-height: 2.5rem;
+}
+
+.maps-marker-list .admin-list-search .search-part:last-child {
+    flex-basis: 100%;
+    justify-content: center;
+    font-size: .9em;
+    opacity: .78;
+}
+
+@media (max-width: 640px) {
+    .maps-marker-list .admin-list-search {
+        align-items: stretch;
+    }
+
+    .maps-marker-list .admin-list-search .search-part {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .maps-marker-list .admin-list-search input[type="text"] {
+        width: 100%;
+    }
 }
