@@ -96,6 +96,15 @@ Marker route planning now offers **Use my location**, implemented with the brows
 
 The maintained Google API footprint and future Routes API / optional Places evaluation are documented in `docs/google-maps-platform.md`.
 
+## Asset versioning
+
+Maps local CSS and JavaScript resources are now cache-busted with the plugin version and deployed file modification time. For example:
+
+- `/maps/maps.css?v=1.7.0-<mtime>`
+- `/maps/js/mapiconmaker.js?v=1.7.0-<mtime>`
+
+This prevents browsers and intermediary caches from keeping stale Maps assets after an update while retaining stable URLs during normal use.
+
 ## Compatibility
 
 Maps 1.7.0 targets:
