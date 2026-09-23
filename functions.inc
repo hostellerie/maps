@@ -753,7 +753,7 @@ function MAPS_assetUrl($relativePath)
     global $_MAPS_CONF;
 
     $relativePath = ltrim(str_replace('\\\\', '/', (string) $relativePath), '/');
-    $version = '1.7.0';
+    $version = plugin_chkVersion_maps();
     $file = rtrim((string) MAPS_arrayGet($_MAPS_CONF, 'path_html', ''), '/\\\\')
         . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
 
