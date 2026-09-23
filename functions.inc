@@ -702,6 +702,8 @@ function plugin_getheadercode_maps()
 {
     global $_MAPS_CONF, $_SCRIPTS, $_PLUGINS;
 
+    $headerCode = MAPS_localAssetHeaderCode();
+
     /*
      * The Maps administration dashboard performs its own Google Maps API
      * health check. Do not preload the API there, otherwise gm_authFailure
@@ -709,11 +711,11 @@ function plugin_getheadercode_maps()
      */
     $scriptName = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\', '/', (string) $_SERVER['SCRIPT_NAME']) : '';
     if (preg_match('#/admin/plugins/maps/index\.php$#', $scriptName)) {
-        return;
+        return $headerCode;
     }
 
     if (!MAPS_loadGoogleMapsApi()) {
-        return;
+        return $headerCode;
     }
 
     $_SCRIPTS->setJavaScriptLibrary('jquery');
@@ -735,6 +737,8 @@ function plugin_getheadercode_maps()
     if ($str !== '') {
         $_SCRIPTS->setJavaScript($str, true, true);
     }
+
+    return $headerCode;
 }
 
 /**
@@ -750,11 +754,12 @@ function plugin_getheadercode_maps()
  */
 function MAPS_assetUrl($relativePath)
 {
-    global $_MAPS_CONF;
+    global $_CONF;
 
     $relativePath = ltrim(str_replace('\\\\', '/', (string) $relativePath), '/');
     $version = plugin_chkVersion_maps();
-    $file = rtrim((string) MAPS_arrayGet($_MAPS_CONF, 'path_html', ''), '/\\\\')
+    $file = rtrim((string) $_CONF['path_html'], '/\\\\')
+        . DIRECTORY_SEPARATOR . 'maps'
         . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
 
     if (is_file($file)) {
@@ -764,7 +769,26 @@ function MAPS_assetUrl($relativePath)
         }
     }
 
-    return '/maps/' . $relativePath . '?v=' . rawurlencode($version);
+    return rtrim((string) $_CONF['site_url'], '/') . '/maps/' . $relativePath
+        . '?v=' . rawurlencode($version);
+}
+
+/**
+ * Return local Maps CSS/JS tags.
+ *
+ * Returning the tags from the plugin header hook is compatible with Geeklog
+ * 2.1.1 and avoids Resource API differences around query-string asset URLs.
+ *
+ * @return string
+ */
+function MAPS_localAssetHeaderCode()
+{
+    return LB
+        . '<link rel="stylesheet" type="text/css" href="'
+        . htmlspecialchars(MAPS_assetUrl('maps.css'), ENT_QUOTES, 'UTF-8') . '">' . LB
+        . '<script type="text/javascript" src="'
+        . htmlspecialchars(MAPS_assetUrl('js/mapiconmaker.js'), ENT_QUOTES, 'UTF-8')
+        . '"></script>' . LB;
 }
 
 /** Load plugin CSS/legacy color helper. */
@@ -772,11 +796,9 @@ function MAPS_getheadercode()
 {
     global $_CONF, $_MAPS_CONF, $_SCRIPTS;
 
-    $_SCRIPTS->setCSSFile('maps_css', MAPS_assetUrl('maps.css'));
     if (isset($_CONF['theme'])) {
         $_SCRIPTS->setCSSFile('datepicker_ui', '/layout/' . $_CONF['theme'] . '/jquery_ui/jquery.ui.datepicker.css');
     }
-    $_SCRIPTS->setJavaScriptFile('maps_iconmaker', MAPS_assetUrl('js/mapiconmaker.js'), false);
 
     /*
      * Public/admin Maps pages call this function explicitly before Geeklog
