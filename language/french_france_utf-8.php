@@ -654,7 +654,7 @@ $LANG_confignames['maps']['max_image_size'] = 'Taille maximale d’une image (oc
 /* Google */
 $LANG_confignames['maps']['autofill_coord'] = 'Compléter automatiquement les coordonnées manquantes';
 $LANG_confignames['maps']['google_api_key'] = 'Clé API Google Maps (navigateur)';
-$LANG_confignames['maps']['google_server_api_key'] = 'Clé API Google Geocoding (serveur, optionnelle)';
+$LANG_confignames['maps']['google_server_api_key'] = 'Clé API Google Geocoding (serveur)';
 $LANG_confignames['maps']['google_map_id'] = 'Google Map ID (préparation Advanced Markers)';
 $LANG_confignames['maps']['google_language'] = 'Langue Google Maps (optionnelle, ex. fr)';
 $LANG_confignames['maps']['google_region'] = 'Région Google Maps (optionnelle, ex. FR)';
@@ -667,6 +667,12 @@ $LANG_confignames['maps']['map_label'] = 'Libellé de marqueur par défaut';
 $LANG_confignames['maps']['map_label_color'] = 'Couleur de libellé par défaut';
 $LANG_confignames['maps']['events_map_zoom'] = 'Zoom de la carte des événements';
 $LANG_confignames['maps']['events_map_height'] = 'Hauteur de la carte des événements';
+$LANG_confignames['maps']['users_map_lat'] = 'Latitude du centre de la carte des membres (vide = automatique)';
+$LANG_confignames['maps']['users_map_lng'] = 'Longitude du centre de la carte des membres (vide = automatique)';
+$LANG_confignames['maps']['users_map_zoom'] = 'Zoom de la carte des membres (vide = carte globale)';
+$LANG_confignames['maps']['users_map_type'] = 'Type de carte des membres (vide = carte globale)';
+$LANG_confignames['maps']['users_map_width'] = 'Largeur de la carte des membres (vide = carte globale)';
+$LANG_confignames['maps']['users_map_height'] = 'Hauteur de la carte des membres (vide = carte globale)';
 
 /* Markers */
 $LANG_confignames['maps']['marker_editor_type'] = 'Type de carte pour l’éditeur';
@@ -695,4 +701,29 @@ $LANG_confignames['maps']['maps_page_title'] = 'Titre SEO de la page des cartes'
 $LANG_confignames['maps']['maps_page_h1'] = 'Titre H1 de la page des cartes';
 $LANG_confignames['maps']['maps_meta_description'] = 'Meta description de la page des cartes';
 $LANG_confignames['maps']['map_main_header'] = 'Contenu introductif de la page Maps (autotags acceptés)';
+
+$LANG_MAPS_1['server_geocode_key_missing'] = 'La recherche de coordonnées côté serveur est activée, mais aucune clé Google Geocoding serveur dédiée n’est configurée. La clé navigateur n’est jamais utilisée pour le géocodage serveur.';
+$LANG_MAPS_1['api_diag_title'] = 'Configuration Google Maps Platform';
+$LANG_MAPS_1['api_diag_maps_js'] = 'API Maps JavaScript';
+$LANG_MAPS_1['api_diag_geocoding'] = 'API Geocoding';
+$LANG_MAPS_1['api_diag_directions'] = 'API Directions';
+$LANG_MAPS_1['api_diag_browser_key'] = 'Clé API navigateur';
+$LANG_MAPS_1['api_diag_server_key'] = 'Clé API serveur';
+$LANG_MAPS_1['api_diag_map_id'] = 'Map ID';
+$LANG_MAPS_1['api_diag_configured'] = 'Configuré';
+$LANG_MAPS_1['api_diag_missing'] = 'Manquant';
+$LANG_MAPS_1['api_diag_optional'] = 'Optionnel / non configuré';
+$LANG_MAPS_1['integrations_title'] = 'Intégrations';
+$LANG_MAPS_1['integrations_intro'] = 'Maps utilise les API et services Geeklog afin que les plugins associés découvrent Maps sans couplage direct avec sa base de données.';
+$LANG_MAPS_1['integration_active'] = 'Actif';
+$LANG_MAPS_1['integration_missing'] = 'Plugin absent';
+$LANG_MAPS_1['integration_native'] = 'Support natif';
+$LANG_MAPS_1['integration_xmlsitemap'] = 'XML Sitemap';
+$LANG_MAPS_1['integration_documents'] = 'Documents';
+$LANG_MAPS_1['integration_indexnow'] = 'IndexNow';
+$LANG_MAPS_1['integration_rss'] = 'Flux RSS / Atom';
+$LANG_MAPS_1['use_my_location'] = 'Utiliser ma position';
+$LANG_MAPS_1['geolocation_unavailable'] = 'La géolocalisation du navigateur n’est pas disponible. Saisissez manuellement un point de départ.';
+$LANG_MAPS_1['geolocation_denied'] = 'Votre position n’a pas pu être obtenue. Autorisez l’accès à la localisation ou saisissez manuellement un point de départ.';
+$LANG_MAPS_1['geolocation_https'] = 'La géolocalisation du navigateur nécessite généralement HTTPS.';
 ?>
