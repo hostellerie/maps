@@ -131,7 +131,7 @@
     }
 }
 
-/* Maps 1.6.0 public map directory */
+/* Maps 1.7.0 public map directory */
 .maps-public-list {
     margin: 2.25rem 0 2rem;
 }
@@ -156,6 +156,7 @@
 .maps-list-card-title {
     margin: 0;
     font-size: 1.1rem;
+    font-weight: 600;
     line-height: 1.28;
 }
 .maps-list-card-description {
