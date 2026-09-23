@@ -737,16 +737,46 @@ function plugin_getheadercode_maps()
     }
 }
 
+/**
+ * Build a cache-busted URL for a local Maps asset.
+ *
+ * The public version combines the Maps release and the deployed file mtime,
+ * matching the versioned-resource pattern used elsewhere in Geeklog while
+ * ensuring that CSS/JS changes inside the same release candidate are not
+ * hidden by a browser or intermediary cache.
+ *
+ * @param string $relativePath Path below the public maps/ directory
+ * @return string
+ */
+function MAPS_assetUrl($relativePath)
+{
+    global $_MAPS_CONF;
+
+    $relativePath = ltrim(str_replace('\\\\', '/', (string) $relativePath), '/');
+    $version = '1.7.0';
+    $file = rtrim((string) MAPS_arrayGet($_MAPS_CONF, 'path_html', ''), '/\\\\')
+        . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+
+    if (is_file($file)) {
+        $mtime = @filemtime($file);
+        if ($mtime !== false && $mtime > 0) {
+            $version .= '-' . (int) $mtime;
+        }
+    }
+
+    return '/maps/' . $relativePath . '?v=' . rawurlencode($version);
+}
+
 /** Load plugin CSS/legacy color helper. */
 function MAPS_getheadercode()
 {
     global $_CONF, $_MAPS_CONF, $_SCRIPTS;
 
-    $_SCRIPTS->setCSSFile('maps_css', '/maps/maps.css');
+    $_SCRIPTS->setCSSFile('maps_css', MAPS_assetUrl('maps.css'));
     if (isset($_CONF['theme'])) {
         $_SCRIPTS->setCSSFile('datepicker_ui', '/layout/' . $_CONF['theme'] . '/jquery_ui/jquery.ui.datepicker.css');
     }
-    $_SCRIPTS->setJavaScriptFile('maps_iconmaker', '/maps/js/mapiconmaker.js', false);
+    $_SCRIPTS->setJavaScriptFile('maps_iconmaker', MAPS_assetUrl('js/mapiconmaker.js'), false);
 
     /*
      * Public/admin Maps pages call this function explicitly before Geeklog
