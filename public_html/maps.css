@@ -145,10 +145,6 @@
     border-radius: 9px;
     background: rgba(127,127,127,.028);
 }
-.maps-list-card-main {
-    flex: 1 1 auto;
-    min-width: 0;
-}
 .maps-list-card-title {
     margin: 0;
     font-size: 1.1rem;
@@ -212,9 +208,6 @@
     }
     .maps-list-card-footer {
         align-items: center;
-    }
-    .maps-list-card-actions {
-        margin-left: auto;
     }
     .maps-list-card-meta {
         display: grid;
