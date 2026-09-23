@@ -2518,6 +2518,9 @@ function MAPS_getMarkerDetail($mid = 0, $mkid = '', $autotag = 0, $mapwidth = ''
     $t->set_var('header', '');
     $t->set_var('footer', '');
     $t->set_var('address', '');
+    $t->set_var('use_my_location', htmlspecialchars(MAPS_arrayGet($LANG_MAPS_1, 'use_my_location', 'Use my location'), ENT_QUOTES, 'UTF-8'));
+    $t->set_var('geolocation_unavailable_js', MAPS_jsString(MAPS_arrayGet($LANG_MAPS_1, 'geolocation_unavailable', 'Browser geolocation is unavailable.')));
+    $t->set_var('geolocation_denied_js', MAPS_jsString(MAPS_arrayGet($LANG_MAPS_1, 'geolocation_denied', 'Your position could not be obtained.')));
 
     $js = 'var markers = [];' . LB;
     foreach ($list as $marker) {
@@ -2544,7 +2547,10 @@ function MAPS_getMarkerDetail($mid = 0, $mkid = '', $autotag = 0, $mapwidth = ''
             . htmlspecialchars($directionsStart, ENT_QUOTES, 'UTF-8') . '</label><div class="maps-directions-form"><input type="text" id="from_address'
             . $gid . '" value="" placeholder="' . $value . '" autocomplete="street-address"><input type="button" value="'
             . htmlspecialchars(trim($LANG_MAPS_1['get_directions']), ENT_QUOTES, 'UTF-8') . '" onclick="get_directions' . $gid
-            . '();"></div></section><a id="directions_' . $gid . '_table"></a><div id="directions' . $gid . '" class="maps-directions-result"></div>');
+            . '();"><input type="button" value="' . htmlspecialchars(MAPS_arrayGet($LANG_MAPS_1, 'use_my_location', 'Use my location'), ENT_QUOTES, 'UTF-8')
+            . '" onclick="use_current_location' . $gid . '();"></div><small>'
+            . htmlspecialchars(MAPS_arrayGet($LANG_MAPS_1, 'geolocation_https', 'Browser geolocation normally requires HTTPS.'), ENT_QUOTES, 'UTF-8')
+            . '</small></section><a id="directions_' . $gid . '_table"></a><div id="directions' . $gid . '" class="maps-directions-result"></div>');
     }
     $t->parse('output', 'page');
     return $t->finish($t->get_var('output'));
