@@ -42,7 +42,7 @@ function MAPS_displayFrontPage()
 
     $retval = '';
     if (MAPS_arrayGet($_MAPS_CONF, 'map_main_header', '') !== '') {
-        $retval .= '<div>' . PLG_replaceTags($_MAPS_CONF['map_main_header']) . '</div>';
+        $retval .= '<div class="maps-public-header-content">' . PLG_replaceTags($_MAPS_CONF['map_main_header']) . '</div>';
     }
 
     if ((int) MAPS_arrayGet($_MAPS_CONF, 'global_map', 1) === 1
