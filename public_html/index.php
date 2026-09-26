@@ -159,7 +159,7 @@ function MAPS_publicDescription($text, $fallback = '')
  * @param array  $jsonLd
  * @return string
  */
-function MAPS_publicSeoHeader($title, $description, $canonical, $robots = '', $jsonLd = array())
+function MAPS_publicSeoHeader($title, $description, $canonical, $robots = '', $jsonLd = array(), $includeSocial = true)
 {
     $safeTitle = htmlspecialchars((string) $title, ENT_QUOTES, 'UTF-8');
     $safeDescription = htmlspecialchars((string) $description, ENT_QUOTES, 'UTF-8');
@@ -171,16 +171,18 @@ function MAPS_publicSeoHeader($title, $description, $canonical, $robots = '', $j
     if ($robots !== '') {
         $header .= '<meta name="robots" content="' . htmlspecialchars($robots, ENT_QUOTES, 'UTF-8') . '">' . LB;
     }
-    $header .= '<meta property="og:title" content="' . $safeTitle . '">' . LB
-        . '<meta property="og:url" content="' . $safeCanonical . '">' . LB
-        . '<meta property="og:type" content="website">' . LB;
-    if ($description !== '') {
-        $header .= '<meta property="og:description" content="' . $safeDescription . '">' . LB;
-    }
-    $header .= '<meta name="twitter:card" content="summary">' . LB
-        . '<meta name="twitter:title" content="' . $safeTitle . '">' . LB;
-    if ($description !== '') {
-        $header .= '<meta name="twitter:description" content="' . $safeDescription . '">' . LB;
+    if ($includeSocial) {
+        $header .= '<meta property="og:title" content="' . $safeTitle . '">' . LB
+            . '<meta property="og:url" content="' . $safeCanonical . '">' . LB
+            . '<meta property="og:type" content="website">' . LB;
+        if ($description !== '') {
+            $header .= '<meta property="og:description" content="' . $safeDescription . '">' . LB;
+        }
+        $header .= '<meta name="twitter:card" content="summary">' . LB
+            . '<meta name="twitter:title" content="' . $safeTitle . '">' . LB;
+        if ($description !== '') {
+            $header .= '<meta name="twitter:description" content="' . $safeDescription . '">' . LB;
+        }
     }
     if (!empty($jsonLd)) {
         $json = json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -189,6 +191,29 @@ function MAPS_publicSeoHeader($title, $description, $canonical, $robots = '', $j
         }
     }
     return $header;
+}
+
+/**
+ * Delegate social metadata rendering to OGP when a compatible OGP API is active.
+ *
+ * Older OGP releases do not expose OGP_registerSocialMetadata(). In that case
+ * Maps keeps rendering its own Open Graph and Twitter/X tags.
+ *
+ * @param array $metadata
+ * @return bool
+ */
+function MAPS_delegateSocialMetadata($metadata)
+{
+    global $_PLUGINS;
+
+    if (!isset($_PLUGINS) || !is_array($_PLUGINS) || !in_array('ogp', $_PLUGINS, true)) {
+        return false;
+    }
+    if (!function_exists('OGP_registerSocialMetadata')) {
+        return false;
+    }
+
+    return OGP_registerSocialMetadata($metadata) === true;
 }
 
 $pageTitle = trim((string) MAPS_arrayGet($_MAPS_CONF, 'maps_page_title', ''));
@@ -350,7 +375,28 @@ switch ($mode) {
         break;
 }
 
-$headercode = MAPS_publicSeoHeader($pageTitle, $pageDescription, $canonical, $robots, $jsonLd);
+$socialDelegated = MAPS_delegateSocialMetadata(array(
+    'title' => $pageTitle,
+    'description' => $pageDescription,
+    'url' => $canonical,
+    'type' => 'website',
+    'twitter_card' => 'summary',
+    'plugin' => 'maps',
+    'item_id' => ($mode === 'marker' && $mkid !== '')
+        ? 'marker:' . $mkid
+        : (($mode === 'map' && $mid > 0) ? (string) $mid : ''),
+    'subtype' => ($mode === 'marker' && $mkid !== '')
+        ? 'marker'
+        : (($mode === 'map' && $mid > 0) ? 'map' : 'index')
+));
+$headercode = MAPS_publicSeoHeader(
+    $pageTitle,
+    $pageDescription,
+    $canonical,
+    $robots,
+    $jsonLd,
+    !$socialDelegated
+);
 COM_output(COM_createHTMLDocument(
     $content,
     array(
