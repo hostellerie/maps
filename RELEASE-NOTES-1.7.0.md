@@ -135,3 +135,5 @@ Before publishing the tag/release, validate:
 - Item Info for maps and `marker:<mkid>`;
 - lifecycle delivery to at least one consumer;
 - generated installable ZIP through normal Plugin Administration.
+
+- Social metadata can now be delegated to a compatible OGP plugin through `OGP_registerSocialMetadata()`. When that API is unavailable, Maps continues to render its own Open Graph and Twitter/X tags, preserving standalone behavior.
