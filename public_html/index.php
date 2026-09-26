@@ -42,7 +42,7 @@ function MAPS_displayFrontPage()
 
     $retval = '';
     if (MAPS_arrayGet($_MAPS_CONF, 'map_main_header', '') !== '') {
-        $retval .= '<div>' . PLG_replaceTags($_MAPS_CONF['map_main_header']) . '</div>';
+        $retval .= '<div class="maps-public-header-content">' . PLG_replaceTags($_MAPS_CONF['map_main_header']) . '</div>';
     }
 
     if ((int) MAPS_arrayGet($_MAPS_CONF, 'global_map', 1) === 1
@@ -70,6 +70,7 @@ function MAPS_displayFrontPage()
                 . htmlspecialchars(stripslashes($map['description']), ENT_QUOTES, 'UTF-8') . '</div>';
         }
         $modified = COM_getUserDateTimeFormat($map['modified']);
+        $retval .= '<div class="maps-list-card-footer">';
         $retval .= '<div class="maps-list-card-meta">';
         $retval .= '<span>' . htmlspecialchars($LANG_MAPS_1['last_modification'], ENT_QUOTES, 'UTF-8') . ' '
             . htmlspecialchars($modified[0], ENT_QUOTES, 'UTF-8') . '</span>';
@@ -79,13 +80,13 @@ function MAPS_displayFrontPage()
             $retval .= '<span>' . $markers . ' ' . htmlspecialchars($markerLabel, ENT_QUOTES, 'UTF-8') . '</span>';
             $retval .= '<span>' . (int) $map['hits'] . ' ' . htmlspecialchars($LANG_MAPS_1['views_label'], ENT_QUOTES, 'UTF-8') . '</span>';
         }
-        $retval .= '</div></div>';
+        $retval .= '</div>';
         if (SEC_hasRights('maps.admin')) {
             $retval .= '<div class="maps-list-card-actions"><a class="maps-list-edit" href="'
                 . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=edit&amp;mid=' . (int) $map['mid'] . '">'
                 . htmlspecialchars($LANG_MAPS_1['edit_button'], ENT_QUOTES, 'UTF-8') . '</a></div>';
         }
-        $retval .= '</article>';
+        $retval .= '</div></div></article>';
     }
 
     if ($count === 0) {
@@ -104,7 +105,7 @@ function MAPS_displayFrontPage()
         $retval .= '<p>' . $LANG_MAPS_1['admin_can'] . ' <a href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php?mode=new">' . $LANG_MAPS_1['create_map'] . '</a></p>';
     }
     if (MAPS_arrayGet($_MAPS_CONF, 'map_main_footer', '') !== '') {
-        $retval .= '<div>' . PLG_replaceTags($_MAPS_CONF['map_main_footer']) . '</div>';
+        $retval .= '<div class="maps-public-footer-content">' . PLG_replaceTags($_MAPS_CONF['map_main_footer']) . '</div>';
     }
     return $retval;
 }
@@ -158,7 +159,7 @@ function MAPS_publicDescription($text, $fallback = '')
  * @param array  $jsonLd
  * @return string
  */
-function MAPS_publicSeoHeader($title, $description, $canonical, $robots = '', $jsonLd = array())
+function MAPS_publicSeoHeader($title, $description, $canonical, $robots = '', $jsonLd = array(), $includeSocial = true)
 {
     $safeTitle = htmlspecialchars((string) $title, ENT_QUOTES, 'UTF-8');
     $safeDescription = htmlspecialchars((string) $description, ENT_QUOTES, 'UTF-8');
@@ -170,16 +171,18 @@ function MAPS_publicSeoHeader($title, $description, $canonical, $robots = '', $j
     if ($robots !== '') {
         $header .= '<meta name="robots" content="' . htmlspecialchars($robots, ENT_QUOTES, 'UTF-8') . '">' . LB;
     }
-    $header .= '<meta property="og:title" content="' . $safeTitle . '">' . LB
-        . '<meta property="og:url" content="' . $safeCanonical . '">' . LB
-        . '<meta property="og:type" content="website">' . LB;
-    if ($description !== '') {
-        $header .= '<meta property="og:description" content="' . $safeDescription . '">' . LB;
-    }
-    $header .= '<meta name="twitter:card" content="summary">' . LB
-        . '<meta name="twitter:title" content="' . $safeTitle . '">' . LB;
-    if ($description !== '') {
-        $header .= '<meta name="twitter:description" content="' . $safeDescription . '">' . LB;
+    if ($includeSocial) {
+        $header .= '<meta property="og:title" content="' . $safeTitle . '">' . LB
+            . '<meta property="og:url" content="' . $safeCanonical . '">' . LB
+            . '<meta property="og:type" content="website">' . LB;
+        if ($description !== '') {
+            $header .= '<meta property="og:description" content="' . $safeDescription . '">' . LB;
+        }
+        $header .= '<meta name="twitter:card" content="summary">' . LB
+            . '<meta name="twitter:title" content="' . $safeTitle . '">' . LB;
+        if ($description !== '') {
+            $header .= '<meta name="twitter:description" content="' . $safeDescription . '">' . LB;
+        }
     }
     if (!empty($jsonLd)) {
         $json = json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -188,6 +191,29 @@ function MAPS_publicSeoHeader($title, $description, $canonical, $robots = '', $j
         }
     }
     return $header;
+}
+
+/**
+ * Delegate social metadata rendering to OGP when a compatible OGP API is active.
+ *
+ * Older OGP releases do not expose OGP_registerSocialMetadata(). In that case
+ * Maps keeps rendering its own Open Graph and Twitter/X tags.
+ *
+ * @param array $metadata
+ * @return bool
+ */
+function MAPS_delegateSocialMetadata($metadata)
+{
+    global $_PLUGINS;
+
+    if (!isset($_PLUGINS) || !is_array($_PLUGINS) || !in_array('ogp', $_PLUGINS, true)) {
+        return false;
+    }
+    if (!function_exists('OGP_registerSocialMetadata')) {
+        return false;
+    }
+
+    return OGP_registerSocialMetadata($metadata) === true;
 }
 
 $pageTitle = trim((string) MAPS_arrayGet($_MAPS_CONF, 'maps_page_title', ''));
@@ -312,14 +338,16 @@ if (isset($_REQUEST['msg']) && (int) $_REQUEST['msg'] > 0) {
 switch ($mode) {
     case 'map':
         if ($mid > 0) {
+            $content .= '<div class="maps-map-page">';
             $content .= MAPS_getMap($mid);
+            $content .= MAPS_renderMapStatistics($mid, true);
             $markersHeading = isset($LANG_MAPS_1['map_markers_heading'])
                 ? $LANG_MAPS_1['map_markers_heading']
                 : $LANG_MAPS_1['markers_list'];
             $content .= '<h2 class="maps-markers-heading">'
                 . htmlspecialchars($markersHeading, ENT_QUOTES, 'UTF-8') . '</h2>';
             $content .= MAPS_ListMarkers($mid);
-            $content .= MAPS_renderMapStatistics($mid, true);
+            $content .= '</div>';
         } else {
             $content .= MAPS_getGlobalMap();
         }
@@ -347,7 +375,28 @@ switch ($mode) {
         break;
 }
 
-$headercode = MAPS_publicSeoHeader($pageTitle, $pageDescription, $canonical, $robots, $jsonLd);
+$socialDelegated = MAPS_delegateSocialMetadata(array(
+    'title' => $pageTitle,
+    'description' => $pageDescription,
+    'url' => $canonical,
+    'type' => 'website',
+    'twitter_card' => 'summary',
+    'plugin' => 'maps',
+    'item_id' => ($mode === 'marker' && $mkid !== '')
+        ? 'marker:' . $mkid
+        : (($mode === 'map' && $mid > 0) ? (string) $mid : ''),
+    'subtype' => ($mode === 'marker' && $mkid !== '')
+        ? 'marker'
+        : (($mode === 'map' && $mid > 0) ? 'map' : 'index')
+));
+$headercode = MAPS_publicSeoHeader(
+    $pageTitle,
+    $pageDescription,
+    $canonical,
+    $robots,
+    $jsonLd,
+    !$socialDelegated
+);
 COM_output(COM_createHTMLDocument(
     $content,
     array(

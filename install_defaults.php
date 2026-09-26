@@ -3,7 +3,7 @@
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
 // | Maintainer: ::Ben                                                         |
-// | Maps Plugin 1.6.0                                                         |
+// | Maps Plugin 1.7.0                                                         |
 // +---------------------------------------------------------------------------+
 // | install_defaults.php                                                      |
 // +---------------------------------------------------------------------------+
@@ -50,6 +50,12 @@ $_MAPS_DEFAULT['display_events_map'] = 1;
 
 /* Global/users map */
 $_MAPS_DEFAULT['users_map'] = 1;
+$_MAPS_DEFAULT['users_map_lat'] = '';
+$_MAPS_DEFAULT['users_map_lng'] = '';
+$_MAPS_DEFAULT['users_map_zoom'] = '';
+$_MAPS_DEFAULT['users_map_type'] = '';
+$_MAPS_DEFAULT['users_map_width'] = '';
+$_MAPS_DEFAULT['users_map_height'] = '';
 $_MAPS_DEFAULT['global_map'] = 1;
 $_MAPS_DEFAULT['global_type'] = 'ROADMAP';
 $_MAPS_DEFAULT['global_zoom'] = '2';
@@ -175,6 +181,12 @@ function MAPS_configDefinition155()
         'maps_meta_description' => array($_MAPS_DEFAULT['maps_meta_description'], 'text', 0, 6, 0, 30, 2),
         'fs_global_map' => array(null, 'fieldset', 0, 1, null, 0, 2),
         'users_map' => array($_MAPS_DEFAULT['users_map'], 'select', 0, 1, 3, 10, 2),
+        'users_map_lat' => array($_MAPS_DEFAULT['users_map_lat'], 'text', 0, 1, 0, 12, 2),
+        'users_map_lng' => array($_MAPS_DEFAULT['users_map_lng'], 'text', 0, 1, 0, 14, 2),
+        'users_map_zoom' => array($_MAPS_DEFAULT['users_map_zoom'], 'text', 0, 1, 0, 16, 2),
+        'users_map_type' => array($_MAPS_DEFAULT['users_map_type'], 'text', 0, 1, 0, 18, 2),
+        'users_map_width' => array($_MAPS_DEFAULT['users_map_width'], 'text', 0, 1, 0, 19, 2),
+        'users_map_height' => array($_MAPS_DEFAULT['users_map_height'], 'text', 0, 1, 0, 20, 2),
         'global_map' => array($_MAPS_DEFAULT['global_map'], 'select', 0, 1, 3, 20, 2),
         'global_type' => array($_MAPS_DEFAULT['global_type'], 'select', 0, 1, 20, 30, 2),
         'global_width' => array($_MAPS_DEFAULT['global_width'], 'text', 0, 1, 0, 40, 2),

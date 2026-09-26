@@ -3,7 +3,7 @@ name: PHP compatibility lint
 on:
   push:
     branches:
-      - modernize/maps-1.5
+      - update/maps-1.7
   pull_request:
 
 permissions:
@@ -38,3 +38,6 @@ jobs:
           while IFS= read -r -d '' file; do
             php -l "$file"
           done < <(find . -type f \( -name '*.php' -o -name '*.inc' \) -print0)
+
+      - name: Marker service contract
+        run: php tests/marker_service_contract_test.php

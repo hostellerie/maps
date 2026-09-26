@@ -1,8 +1,8 @@
 <?php
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.6.0                                                         |
+// | Maps Plugin 1.7.0                                                         |
 // +---------------------------------------------------------------------------+
-// | services.inc.php                                                           |
+// | services.inc.php                                                          |
 // | Copyright (C) 2010-2026                                                   |
 // | Maintainer: ::Ben                                                         |
 // +---------------------------------------------------------------------------+
@@ -54,7 +54,6 @@ function MAPS_serviceMarkerRow($markerId, $publicOnly = true, $checkAccess = tru
 
 function MAPS_serviceMarkerData($row)
 {
-    global $_MAPS_CONF;
     return array(
         'id' => (string)$row['mkid'],
         'name' => MAPS_decodeStoredText($row['name']),
@@ -118,16 +117,74 @@ function MAPS_serviceOperationRollback($args)
     }
 }
 
-function plugin_wsEnabled_maps()
+function service_marker_save_maps($args, &$output, &$svc_msg)
 {
-    return true;
+    global $_TABLES, $_USER, $_GROUPS;
+    $output = array();
+    $svc_msg = array();
+    if (MAPS_serviceRejectWeb($args, $svc_msg)) return PLG_RET_AUTH_FAILED;
+    $source = substr(trim((string)MAPS_arrayGet($args, 'source', '')), 0, 64);
+    $sourceId = substr(trim((string)MAPS_arrayGet($args, 'source_id', '')), 0, 255);
+    if ($source === '' || $sourceId === '') { $svc_msg['error_desc'] = 'source and source_id are required for marker_save.'; return PLG_RET_ERROR; }
+    $markerId = preg_replace('/[^0-9]/', '', (string)MAPS_arrayGet($args, 'marker_id', ''));
+    $existing = ($markerId !== '') ? MAPS_serviceMarkerRow($markerId, false, false) : false;
+    if ($markerId !== '' && $existing === false) { $svc_msg['error_desc'] = 'Marker not found.'; return PLG_RET_ERROR; }
+    $mapId = (int)MAPS_arrayGet($args, 'map_id', $existing ? $existing['mid'] : 0);
+    if ($mapId <= 0 || DB_getItem($_TABLES['maps_maps'], 'mid', 'mid=' . $mapId) === '') { $svc_msg['error_desc'] = 'A valid map_id is required.'; return PLG_RET_ERROR; }
+    $name = MAPS_normalizeMarkerText(MAPS_arrayGet($args, 'name', $existing ? $existing['name'] : ''));
+    $address = MAPS_normalizeMarkerText(MAPS_arrayGet($args, 'address', $existing ? $existing['address'] : ''));
+    if ($name === '' || $address === '') { $svc_msg['error_desc'] = 'Marker name and address are required.'; return PLG_RET_ERROR; }
+    $lat = MAPS_arrayGet($args, 'lat', $existing ? $existing['lat'] : '');
+    $lng = MAPS_arrayGet($args, 'lng', $existing ? $existing['lng'] : '');
+    if (!MAPS_isValidCoordinatePair($lat, $lng)) {
+        MAPS_getCoords($address, $lat, $lng);
+        if (!MAPS_isValidCoordinatePair($lat, $lng)) { $svc_msg['error_desc'] = 'Unable to resolve valid marker coordinates.'; return PLG_RET_ERROR; }
+    }
+    $lat = MAPS_canonicalNumberString($lat, '0');
+    $lng = MAPS_canonicalNumberString($lng, '0');
+    $ownerId = (int)MAPS_arrayGet($args, 'owner_id', $existing ? $existing['owner_id'] : (isset($_USER['uid']) ? $_USER['uid'] : 2));
+    $groupId = (int)MAPS_arrayGet($args, 'group_id', $existing ? $existing['group_id'] : (isset($_GROUPS['Maps Admin']) ? $_GROUPS['Maps Admin'] : 2));
+    if ($ownerId <= 0) $ownerId = 2;
+    if ($groupId <= 0) $groupId = 2;
+    $permOwner = (int)MAPS_arrayGet($args, 'perm_owner', $existing ? $existing['perm_owner'] : 3);
+    $permGroup = (int)MAPS_arrayGet($args, 'perm_group', $existing ? $existing['perm_group'] : 3);
+    $permMembers = (int)MAPS_arrayGet($args, 'perm_members', $existing ? $existing['perm_members'] : 2);
+    $permAnon = (int)MAPS_arrayGet($args, 'perm_anon', $existing ? $existing['perm_anon'] : 2);
+    $active = (int)MAPS_arrayGet($args, 'active', $existing ? $existing['active'] : 1) ? 1 : 0;
+    $hidden = (int)MAPS_arrayGet($args, 'hidden', $existing ? $existing['hidden'] : 0) ? 1 : 0;
+    $sourceUrl = trim((string)MAPS_arrayGet($args, 'source_url', $existing ? $existing['url'] : ''));
+    if ($markerId === '') {
+        $markerId = preg_replace('/[^0-9]/', '', (string)COM_makeSid());
+        if ($markerId === '') { $svc_msg['error_desc'] = 'Unable to allocate a marker id.'; return PLG_RET_ERROR; }
+    }
+    $duplicate = false;
+    if (!MAPS_serviceOperationClaim($args, 'marker_save', $markerId, $duplicate, $svc_msg)) return PLG_RET_ERROR;
+    if ($duplicate) {
+        $row = MAPS_serviceMarkerRow($markerId, false, false);
+        if ($row !== false) { $output = MAPS_serviceMarkerData($row); $output['idempotent'] = true; return PLG_RET_OK; }
+        $svc_msg['error_desc'] = 'Idempotent marker operation has no marker.'; return PLG_RET_ERROR;
+    }
+    $now = date('YmdHis');
+    $safeId = MAPS_dbEscape($markerId); $safeName = MAPS_dbEscape($name); $safeAddress = MAPS_dbEscape($address); $safeUrl = MAPS_dbEscape($sourceUrl); $safeSource = MAPS_dbEscape($source);
+    if ($existing !== false) {
+        DB_query("UPDATE {$_TABLES['maps_markers']} SET name='{$safeName}',modified='{$now}',address='{$safeAddress}',lat='{$lat}',lng='{$lng}',mid={$mapId},url='{$safeUrl}',type='{$safeSource}',active={$active},hidden={$hidden},owner_id={$ownerId},group_id={$groupId},perm_owner={$permOwner},perm_group={$permGroup},perm_members={$permMembers},perm_anon={$permAnon} WHERE mkid='{$safeId}'");
+    } else {
+        DB_query("INSERT INTO {$_TABLES['maps_markers']} SET mkid='{$safeId}',name='{$safeName}',created='{$now}',modified='{$now}',address='{$safeAddress}',lat='{$lat}',lng='{$lng}',mid={$mapId},url='{$safeUrl}',type='{$safeSource}',active={$active},hidden={$hidden},owner_id={$ownerId},group_id={$groupId},perm_owner={$permOwner},perm_group={$permGroup},perm_members={$permMembers},perm_anon={$permAnon},submission=0");
+    }
+    if (DB_error()) { MAPS_serviceOperationRollback($args); $svc_msg['error_desc'] = 'Unable to save marker.'; return PLG_RET_ERROR; }
+    MAPS_notifyMarkerSaved($markerId, $mapId);
+    $row = MAPS_serviceMarkerRow($markerId, false, false);
+    $output = ($row !== false) ? MAPS_serviceMarkerData($row) : array('id' => $markerId, 'map_id' => $mapId);
+    $output['idempotent'] = false;
+    return PLG_RET_OK;
 }
+
+function plugin_wsEnabled_maps() { return true; }
 
 function service_marker_list_maps($args, &$output, &$svc_msg)
 {
     global $_TABLES;
-    $output = array();
-    $svc_msg = array();
+    $output = array(); $svc_msg = array();
     if (MAPS_serviceRejectWeb($args, $svc_msg)) return PLG_RET_AUTH_FAILED;
     $includeInactive = !empty($args['include_inactive']) && SEC_hasRights('maps.admin');
     $mapId = (int)MAPS_arrayGet($args, 'map_id', 0);
@@ -137,9 +194,7 @@ function service_marker_list_maps($args, &$output, &$svc_msg)
     $sql .= ' ORDER BY mp.name,m.name';
     $res = DB_query($sql);
     while ($res && ($row = DB_fetchArray($res))) {
-        if (SEC_hasAccess((int)$row['owner_id'], (int)$row['group_id'], (int)$row['perm_owner'], (int)$row['perm_group'], (int)$row['perm_members'], (int)$row['perm_anon']) >= 2) {
-            $output[] = MAPS_serviceMarkerData($row);
-        }
+        if (SEC_hasAccess((int)$row['owner_id'], (int)$row['group_id'], (int)$row['perm_owner'], (int)$row['perm_group'], (int)$row['perm_members'], (int)$row['perm_anon']) >= 2) $output[] = MAPS_serviceMarkerData($row);
     }
     return PLG_RET_OK;
 }
@@ -149,7 +204,7 @@ function service_marker_get_maps($args, &$output, &$svc_msg)
     $output = array(); $svc_msg = array();
     if (MAPS_serviceRejectWeb($args, $svc_msg)) return PLG_RET_AUTH_FAILED;
     $row = MAPS_serviceMarkerRow(MAPS_arrayGet($args, 'marker_id', ''), empty($args['include_inactive']) || !SEC_hasRights('maps.admin'));
-    if ($row === false) { $svc_msg['error_desc']='Marker not found or not accessible.'; return PLG_RET_ERROR; }
+    if ($row === false) { $svc_msg['error_desc'] = 'Marker not found or not accessible.'; return PLG_RET_ERROR; }
     $output = MAPS_serviceMarkerData($row);
     return PLG_RET_OK;
 }
@@ -157,64 +212,274 @@ function service_marker_get_maps($args, &$output, &$svc_msg)
 function service_marker_render_maps($args, &$output, &$svc_msg)
 {
     global $_SCRIPTS;
-    $output=''; $svc_msg=array();
+    $output = ''; $svc_msg = array();
     if (MAPS_serviceRejectWeb($args, $svc_msg)) return PLG_RET_AUTH_FAILED;
-    $row=MAPS_serviceMarkerRow(MAPS_arrayGet($args,'marker_id',''), true);
-    if ($row===false) { $svc_msg['error_desc']='Marker not found or not accessible.'; return PLG_RET_ERROR; }
-    $width=MAPS_cssSize(MAPS_arrayGet($args,'width','100%'),'100%');
-    $height=MAPS_cssSize(MAPS_arrayGet($args,'height','320px'),'320px');
-    $zoom=MAPS_zoom(MAPS_arrayGet($args,'zoom',14),14);
-    $id='maps-service-marker-' . preg_replace('/[^a-zA-Z0-9_-]/','-',(string)$row['mkid']) . '-' . substr(md5(uniqid('',true)),0,8);
-    if (isset($_SCRIPTS) && is_object($_SCRIPTS) && method_exists($_SCRIPTS,'setJavaScriptFile')) {
+    $row = MAPS_serviceMarkerRow(MAPS_arrayGet($args, 'marker_id', ''), true);
+    if ($row === false) { $svc_msg['error_desc'] = 'Marker not found or not accessible.'; return PLG_RET_ERROR; }
+    $width = MAPS_cssSize(MAPS_arrayGet($args, 'width', '100%'), '100%');
+    $height = MAPS_cssSize(MAPS_arrayGet($args, 'height', '320px'), '320px');
+    $zoom = MAPS_zoom(MAPS_arrayGet($args, 'zoom', 14), 14);
+    $id = 'maps-service-marker-' . preg_replace('/[^a-zA-Z0-9_-]/', '-', (string)$row['mkid']) . '-' . substr(md5(uniqid('', true)), 0, 8);
+    if (isset($_SCRIPTS) && is_object($_SCRIPTS) && method_exists($_SCRIPTS, 'setJavaScriptFile')) {
         $_SCRIPTS->setJavaScriptFile('maps_google_api_service', MAPS_googleMapsApiUrl(), false);
     }
-    $js="(function ready(){if(!window.google||!google.maps){setTimeout(ready,50);return;}var el=document.getElementById(" . MAPS_jsString($id) . ");if(!el)return;var p={lat:Number(" . MAPS_jsNumber($row['lat'],0) . "),lng:Number(" . MAPS_jsNumber($row['lng'],0) . ")};var m=new google.maps.Map(el,{center:p,zoom:" . (int)$zoom . "});new google.maps.Marker({position:p,map:m,title:" . MAPS_jsString(MAPS_decodeStoredText($row['name'])) . "});})();";
-    if (isset($_SCRIPTS) && is_object($_SCRIPTS) && method_exists($_SCRIPTS,'setJavaScript')) $_SCRIPTS->setJavaScript($js,true,true);
-    $output='<div class="maps-marker-service"><div id="'.htmlspecialchars($id,ENT_QUOTES,'UTF-8').'" style="width:'.htmlspecialchars($width,ENT_QUOTES,'UTF-8').';height:'.htmlspecialchars($height,ENT_QUOTES,'UTF-8').'"></div></div>';
+    $js = "(function ready(attempt){var el=document.getElementById(" . MAPS_jsString($id) . ");function retry(){if(attempt<200){setTimeout(function(){ready(attempt+1);},50);}}if(!window.google||!google.maps||!el||el.offsetWidth===0||el.offsetHeight===0){retry();return;}var p={lat:Number(" . MAPS_jsNumber($row['lat'], 0) . "),lng:Number(" . MAPS_jsNumber($row['lng'], 0) . ")};function draw(MapCtor){if(typeof MapCtor!=='function'||typeof google.maps.Marker!=='function'){retry();return;}var m=new MapCtor(el,{center:p,zoom:" . (int)$zoom . "});new google.maps.Marker({position:p,map:m,title:" . MAPS_jsString(MAPS_decodeStoredText($row['name'])) . "});}if(typeof google.maps.importLibrary==='function'){google.maps.importLibrary('maps').then(function(lib){draw(lib&&lib.Map?lib.Map:google.maps.Map);}).catch(function(){retry();});return;}draw(google.maps.Map);})(0);";
+    if (isset($_SCRIPTS) && is_object($_SCRIPTS) && method_exists($_SCRIPTS, 'setJavaScript')) $_SCRIPTS->setJavaScript($js, true, true);
+    $output = '<div class="maps-marker-service"><div id="' . htmlspecialchars($id, ENT_QUOTES, 'UTF-8') . '" style="width:' . htmlspecialchars($width, ENT_QUOTES, 'UTF-8') . ';height:' . htmlspecialchars($height, ENT_QUOTES, 'UTF-8') . '"></div></div>';
     return PLG_RET_OK;
 }
 
 function MAPS_serviceApplyValidity($args, $extend, &$output, &$svc_msg)
 {
     global $_TABLES;
-    $output=array(); $svc_msg=array();
+    $output = array(); $svc_msg = array();
     if (MAPS_serviceRejectWeb($args, $svc_msg)) return PLG_RET_AUTH_FAILED;
-    $markerId=(string)MAPS_arrayGet($args,'marker_id','');
-    $row=MAPS_serviceMarkerRow($markerId,false,false);
-    if ($row===false) { $svc_msg['error_desc']='Marker not found or not accessible.'; return PLG_RET_ERROR; }
-    $action=$extend?'marker_extend_validity':'marker_set_validity';
-    $duplicate=false;
-    if (!MAPS_serviceOperationClaim($args,$action,$markerId,$duplicate,$svc_msg)) return PLG_RET_ERROR;
-    if ($duplicate) { $output=MAPS_serviceMarkerData($row); $output['idempotent']=true; return PLG_RET_OK; }
-    $now=time();
+    $markerId = (string)MAPS_arrayGet($args, 'marker_id', '');
+    $row = MAPS_serviceMarkerRow($markerId, false, false);
+    if ($row === false) { $svc_msg['error_desc'] = 'Marker not found or not accessible.'; return PLG_RET_ERROR; }
+    $action = $extend ? 'marker_extend_validity' : 'marker_set_validity';
+    $duplicate = false;
+    if (!MAPS_serviceOperationClaim($args, $action, $markerId, $duplicate, $svc_msg)) return PLG_RET_ERROR;
+    if ($duplicate) { $output = MAPS_serviceMarkerData($row); $output['idempotent'] = true; return PLG_RET_OK; }
+    $now = time();
     if ($extend) {
-        $days=(int)MAPS_arrayGet($args,'days',0);
-        if ($days<1 || $days>36500) { MAPS_serviceOperationRollback($args); $svc_msg['error_desc']='days must be between 1 and 36500.'; return PLG_RET_ERROR; }
-        $currentEnd=strtotime((string)$row['validity_end']);
-        $base=($currentEnd!==false && $currentEnd>$now)?$currentEnd:$now;
-        $start=((int)$row['validity']===1 && strtotime((string)$row['validity_start'])!==false)?strtotime((string)$row['validity_start']):$now;
-        $end=strtotime('+' . $days . ' days',$base);
+        $days = (int)MAPS_arrayGet($args, 'days', 0);
+        if ($days < 1 || $days > 36500) { MAPS_serviceOperationRollback($args); $svc_msg['error_desc'] = 'days must be between 1 and 36500.'; return PLG_RET_ERROR; }
+        $currentEnd = strtotime((string)$row['validity_end']);
+        $base = ($currentEnd !== false && $currentEnd > $now) ? $currentEnd : $now;
+        $start = ((int)$row['validity'] === 1 && strtotime((string)$row['validity_start']) !== false) ? strtotime((string)$row['validity_start']) : $now;
+        $end = strtotime('+' . $days . ' days', $base);
     } else {
-        $start=strtotime((string)MAPS_arrayGet($args,'validity_start',''));
-        $end=strtotime((string)MAPS_arrayGet($args,'validity_end',''));
-        if ($start===false || $end===false || $end<=$start) { MAPS_serviceOperationRollback($args); $svc_msg['error_desc']='A valid validity_start and later validity_end are required.'; return PLG_RET_ERROR; }
+        $start = strtotime((string)MAPS_arrayGet($args, 'validity_start', ''));
+        $end = strtotime((string)MAPS_arrayGet($args, 'validity_end', ''));
+        if ($start === false || $end === false || $end <= $start) { MAPS_serviceOperationRollback($args); $svc_msg['error_desc'] = 'A valid validity_start and later validity_end are required.'; return PLG_RET_ERROR; }
     }
     $paid = isset($args['payed']) ? ((int)$args['payed'] ? 1 : 0) : (int)$row['payed'];
-    DB_query("UPDATE {$_TABLES['maps_markers']} SET validity=1,validity_start='".date('Y-m-d H:i:s',$start)."',validity_end='".date('Y-m-d H:i:s',$end)."',payed=".$paid.",modified='".date('Y-m-d H:i:s')."' WHERE mkid='".MAPS_dbEscape($markerId)."'");
-    if (DB_error()) { MAPS_serviceOperationRollback($args); $svc_msg['error_desc']='Unable to update marker validity.'; return PLG_RET_ERROR; }
+    DB_query("UPDATE {$_TABLES['maps_markers']} SET validity=1,validity_start='" . date('Y-m-d H:i:s', $start) . "',validity_end='" . date('Y-m-d H:i:s', $end) . "',payed=" . $paid . ",modified='" . date('Y-m-d H:i:s') . "' WHERE mkid='" . MAPS_dbEscape($markerId) . "'");
+    if (DB_error()) { MAPS_serviceOperationRollback($args); $svc_msg['error_desc'] = 'Unable to update marker validity.'; return PLG_RET_ERROR; }
     MAPS_notifyMarkerSaved($markerId, (int)$row['mid']);
-    $updated=MAPS_serviceMarkerRow($markerId,false,false);
-    $output=MAPS_serviceMarkerData($updated);
-    $output['idempotent']=false;
+    $updated = MAPS_serviceMarkerRow($markerId, false, false);
+    $output = MAPS_serviceMarkerData($updated);
+    $output['idempotent'] = false;
     return PLG_RET_OK;
 }
 
 function service_marker_set_validity_maps($args, &$output, &$svc_msg)
 {
-    return MAPS_serviceApplyValidity($args,false,$output,$svc_msg);
+    return MAPS_serviceApplyValidity($args, false, $output, $svc_msg);
 }
 
 function service_marker_extend_validity_maps($args, &$output, &$svc_msg)
 {
-    return MAPS_serviceApplyValidity($args,true,$output,$svc_msg);
+    return MAPS_serviceApplyValidity($args, true, $output, $svc_msg);
+}
+
+
+/**
+ * Return a bounded administration summary for generic dashboards.
+ *
+ * @param array $args
+ * @param array $output
+ * @param array $svc_msg
+ * @return int
+ */
+function service_dashboard_summary_maps($args, &$output, &$svc_msg)
+{
+    global $_CONF, $_TABLES;
+
+    $output = array();
+    $svc_msg = array();
+
+    if (!SEC_hasRights('maps.admin')) {
+        $svc_msg['error_desc'] = 'Maps administration permission is required.';
+        return PLG_RET_AUTH_FAILED;
+    }
+
+    $maps = (int) DB_count($_TABLES['maps_maps']);
+    $markers = (int) DB_count($_TABLES['maps_markers']);
+    $submissions = (int) DB_count($_TABLES['maps_submission']);
+
+    $expiring = 0;
+    $now = date('Y-m-d H:i:s');
+    $until = date('Y-m-d H:i:s', time() + (30 * 86400));
+    $result = DB_query(
+        "SELECT COUNT(*) AS total FROM {$_TABLES['maps_markers']} "
+        . "WHERE validity=1 AND active=1 AND hidden=0 "
+        . "AND validity_end>='" . MAPS_dbEscape($now) . "' "
+        . "AND validity_end<='" . MAPS_dbEscape($until) . "'"
+    );
+    if ($result) {
+        $row = DB_fetchArray($result);
+        if (is_array($row) && isset($row['total'])) {
+            $expiring = (int) $row['total'];
+        }
+    }
+
+    $status = ($submissions > 0 || $expiring > 0) ? 'info' : 'ok';
+    $alerts = array();
+    if ($submissions > 0) {
+        $alerts[] = array(
+            'id' => 'pending',
+            'status' => 'warning',
+            'message' => $submissions . ' marker submission(s) require review.',
+            'count' => $submissions
+        );
+    }
+    if ($expiring > 0) {
+        $alerts[] = array(
+            'id' => 'expiring',
+            'status' => 'info',
+            'message' => $expiring . ' marker(s) expire within 30 days.',
+            'count' => $expiring
+        );
+    }
+
+    $output = array(
+        'schema' => 1,
+        'status' => $status,
+        'metrics' => array(
+            array('id' => 'maps', 'label' => 'Maps', 'value' => $maps),
+            array('id' => 'markers', 'label' => 'Markers', 'value' => $markers),
+            array('id' => 'pending', 'label' => 'Pending submissions', 'value' => $submissions),
+            array('id' => 'expiring', 'label' => 'Expiring markers', 'value' => $expiring)
+        ),
+        'alerts' => $alerts,
+        'links' => array(
+            array(
+                'label' => 'Manage Maps',
+                'url' => rtrim($_CONF['site_admin_url'], '/') . '/plugins/maps/index.php'
+            )
+        ),
+        'updated' => time()
+    );
+
+    return PLG_RET_OK;
+}
+
+/**
+ * Find accessible markers near a coordinate.
+ *
+ * This is a read-only provider service intended for Agent, Hub and other
+ * trusted in-process consumers. Permissions stay owned by Maps.
+ *
+ * @param array $args
+ * @param array $output
+ * @param array $svc_msg
+ * @return int
+ */
+function service_geo_nearby_maps($args, &$output, &$svc_msg)
+{
+    global $_TABLES;
+
+    $output = array();
+    $svc_msg = array();
+
+    if (MAPS_serviceRejectWeb($args, $svc_msg)) {
+        return PLG_RET_AUTH_FAILED;
+    }
+
+    $lat = MAPS_arrayGet($args, 'lat', null);
+    $lng = MAPS_arrayGet($args, 'lng', null);
+    if (!MAPS_isValidCoordinatePair($lat, $lng)) {
+        $svc_msg['error_desc'] = 'A valid lat/lng coordinate pair is required.';
+        return PLG_RET_ERROR;
+    }
+
+    $originLat = (float) $lat;
+    $originLng = (float) $lng;
+    $radius = isset($args['radius_km']) ? (float) $args['radius_km'] : 25.0;
+    $radius = max(0.1, min(500.0, $radius));
+    $limit = isset($args['limit']) ? (int) $args['limit'] : 20;
+    $limit = max(1, min(100, $limit));
+
+    $sql = "SELECT mk.*,mp.name AS map_name,"
+        . "mp.owner_id AS map_owner_id,mp.group_id AS map_group_id,"
+        . "mp.perm_owner AS map_perm_owner,mp.perm_group AS map_perm_group,"
+        . "mp.perm_members AS map_perm_members,mp.perm_anon AS map_perm_anon "
+        . "FROM {$_TABLES['maps_markers']} mk "
+        . "INNER JOIN {$_TABLES['maps_maps']} mp ON mp.mid=mk.mid "
+        . "WHERE mk.active=1 AND mk.hidden=0 AND mp.active=1 AND mp.hidden=0 "
+        . "LIMIT 1000";
+
+    $result = DB_query($sql);
+    $matches = array();
+
+    while ($result && ($row = DB_fetchArray($result))) {
+        if (SEC_hasAccess(
+            (int) $row['owner_id'],
+            (int) $row['group_id'],
+            (int) $row['perm_owner'],
+            (int) $row['perm_group'],
+            (int) $row['perm_members'],
+            (int) $row['perm_anon']
+        ) < 2) {
+            continue;
+        }
+        if (SEC_hasAccess(
+            (int) $row['map_owner_id'],
+            (int) $row['map_group_id'],
+            (int) $row['map_perm_owner'],
+            (int) $row['map_perm_group'],
+            (int) $row['map_perm_members'],
+            (int) $row['map_perm_anon']
+        ) < 2) {
+            continue;
+        }
+        if (!MAPS_checkMarkervalidity($row)
+            || !MAPS_isValidCoordinatePair($row['lat'], $row['lng'])
+        ) {
+            continue;
+        }
+
+        $markerLat = deg2rad((float) $row['lat']);
+        $markerLng = deg2rad((float) $row['lng']);
+        $lat1 = deg2rad($originLat);
+        $lng1 = deg2rad($originLng);
+        $dLat = $markerLat - $lat1;
+        $dLng = $markerLng - $lng1;
+        $a = sin($dLat / 2) * sin($dLat / 2)
+            + cos($lat1) * cos($markerLat)
+            * sin($dLng / 2) * sin($dLng / 2);
+        $distance = 6371.0088 * (2 * atan2(sqrt($a), sqrt(max(0, 1 - $a))));
+
+        if ($distance > $radius) {
+            continue;
+        }
+
+        $item = MAPS_serviceMarkerData($row);
+        $item['distance_km'] = round($distance, 3);
+        $matches[] = $item;
+    }
+
+    usort($matches, 'MAPS_serviceNearbySort');
+    if (count($matches) > $limit) {
+        $matches = array_slice($matches, 0, $limit);
+    }
+
+    $output = array(
+        'schema' => 1,
+        'origin' => array('lat' => $originLat, 'lng' => $originLng),
+        'radius_km' => $radius,
+        'count' => count($matches),
+        'markers' => $matches
+    );
+
+    return PLG_RET_OK;
+}
+
+/**
+ * Stable PHP 5.6-compatible nearby sort callback.
+ *
+ * @param array $a
+ * @param array $b
+ * @return int
+ */
+function MAPS_serviceNearbySort($a, $b)
+{
+    $ad = isset($a['distance_km']) ? (float) $a['distance_km'] : PHP_FLOAT_MAX;
+    $bd = isset($b['distance_km']) ? (float) $b['distance_km'] : PHP_FLOAT_MAX;
+    if ($ad == $bd) {
+        return 0;
+    }
+    return ($ad < $bd) ? -1 : 1;
 }

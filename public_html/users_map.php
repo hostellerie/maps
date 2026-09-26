@@ -82,22 +82,30 @@ function getUsersMap()
         exit;
     }
 
-    // Keep the Users Map consistent with the global map: use the coordinates
-    // of the first active map (lowest mid) as the initial center. If no active
-    // map is available, retain the historical 0,0 fallback.
-    $centerLat = 0;
-    $centerLng = 0;
-    $firstMap = DB_query("SELECT lat,lng FROM {$_TABLES['maps_maps']} WHERE active=1 ORDER BY mid ASC LIMIT 1");
-    if (DB_numRows($firstMap) > 0) {
-        $firstMapRow = DB_fetchArray($firstMap);
-        if (MAPS_isValidCoordinatePair(
-            MAPS_arrayGet($firstMapRow, 'lat', null),
-            MAPS_arrayGet($firstMapRow, 'lng', null)
-        )) {
-            $centerLat = MAPS_latitude(MAPS_arrayGet($firstMapRow, 'lat', 0), 0);
-            $centerLng = MAPS_longitude(MAPS_arrayGet($firstMapRow, 'lng', 0), 0);
+    // Maps 1.7: the Users Map can have its own center/display settings.
+    // Empty values preserve historical behavior by falling back to the first
+    // active map and then to the global-map display settings.
+    $centerLat = MAPS_arrayGet($_MAPS_CONF, 'users_map_lat', '');
+    $centerLng = MAPS_arrayGet($_MAPS_CONF, 'users_map_lng', '');
+    if (!MAPS_isValidCoordinatePair($centerLat, $centerLng)) {
+        $centerLat = 0;
+        $centerLng = 0;
+        $firstMap = DB_query("SELECT lat,lng FROM {$_TABLES['maps_maps']} WHERE active=1 ORDER BY mid ASC LIMIT 1");
+        if (DB_numRows($firstMap) > 0) {
+            $firstMapRow = DB_fetchArray($firstMap);
+            if (MAPS_isValidCoordinatePair(
+                MAPS_arrayGet($firstMapRow, 'lat', null),
+                MAPS_arrayGet($firstMapRow, 'lng', null)
+            )) {
+                $centerLat = MAPS_latitude(MAPS_arrayGet($firstMapRow, 'lat', 0), 0);
+                $centerLng = MAPS_longitude(MAPS_arrayGet($firstMapRow, 'lng', 0), 0);
+            }
         }
     }
+    $usersZoom = trim((string) MAPS_arrayGet($_MAPS_CONF, 'users_map_zoom', ''));
+    $usersType = trim((string) MAPS_arrayGet($_MAPS_CONF, 'users_map_type', ''));
+    $usersWidth = trim((string) MAPS_arrayGet($_MAPS_CONF, 'users_map_width', ''));
+    $usersHeight = trim((string) MAPS_arrayGet($_MAPS_CONF, 'users_map_height', ''));
 
     $T = COM_newTemplate($_CONF['path'] . 'plugins/maps/templates');
     $T->set_file('page', 'map.thtml');
@@ -106,10 +114,10 @@ function getUsersMap()
         0,
         $centerLat,
         $centerLng,
-        MAPS_arrayGet($_MAPS_CONF, 'global_zoom', 2),
-        MAPS_arrayGet($_MAPS_CONF, 'global_type', 'ROADMAP'),
-        MAPS_arrayGet($_MAPS_CONF, 'global_width', '100%'),
-        MAPS_arrayGet($_MAPS_CONF, 'global_height', '600px')
+        $usersZoom !== '' ? $usersZoom : MAPS_arrayGet($_MAPS_CONF, 'global_zoom', 2),
+        $usersType !== '' ? $usersType : MAPS_arrayGet($_MAPS_CONF, 'global_type', 'ROADMAP'),
+        $usersWidth !== '' ? $usersWidth : MAPS_arrayGet($_MAPS_CONF, 'global_width', '100%'),
+        $usersHeight !== '' ? $usersHeight : MAPS_arrayGet($_MAPS_CONF, 'global_height', '600px')
     );
     $T->set_var('name', $LANG_MAPS_1['users_map']);
     $T->set_var('description', '<p>' . $LANG_MAPS_1['info_users_map'] . '</p>');
