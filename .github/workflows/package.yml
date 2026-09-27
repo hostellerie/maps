@@ -54,6 +54,9 @@ jobs:
           grep -q "'maps.geo.nearby'" interoperability.php
           grep -q 'function service_dashboard_summary_maps' services.inc.php
           grep -q 'function service_geo_nearby_maps' services.inc.php
+          grep -Fq "PLG_itemDisplay((string) \$id, 'maps')" public_html/index.php
+          grep -Fq 'MAPS_publicItemDisplay($mid)' public_html/index.php
+          grep -Fq "MAPS_publicItemDisplay('marker:' . \$mkid)" public_html/index.php
           test -f plugin.json
           php -r '$d=json_decode(file_get_contents("plugin.json"), true); if (!is_array($d) || $d["id"] !== "maps" || $d["schema"] !== 1) exit(1);'
           test -f RELEASE-NOTES-1.7.0.md
@@ -94,6 +97,9 @@ jobs:
           cd build
           zip -r maps_1.7.0_2.1.1.zip maps >/dev/null
           unzip -t maps_1.7.0_2.1.1.zip >/dev/null
+          unzip -p maps_1.7.0_2.1.1.zip maps/public_html/index.php | grep -Fq "PLG_itemDisplay((string) \$id, 'maps')"
+          unzip -p maps_1.7.0_2.1.1.zip maps/public_html/index.php | grep -Fq 'MAPS_publicItemDisplay($mid)'
+          unzip -p maps_1.7.0_2.1.1.zip maps/public_html/index.php | grep -Fq "MAPS_publicItemDisplay('marker:' . \$mkid)"
           test "$(zipinfo -1 maps_1.7.0_2.1.1.zip | head -n 1)" = 'maps/'
 
       - name: Publish archive artifact
