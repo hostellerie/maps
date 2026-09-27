@@ -330,6 +330,33 @@ if ($mode === 'map' && $mid > 0) {
     $canonical = ($mid > 0) ? MAPS_contentUrl($mid) : rtrim($_MAPS_CONF['site_url'], '/') . '/';
 }
 
+/**
+ * Render fragments contributed by active Geeklog plugins for one canonical
+ * Maps public item.
+ *
+ * Maps remains provider-neutral: it only announces the item identity through
+ * PLG_itemDisplay(). Consumers such as Hub decide whether to return content.
+ *
+ * @param string|int $id
+ * @return string
+ */
+function MAPS_publicItemDisplay($id)
+{
+    $html = '';
+    $fragments = PLG_itemDisplay((string) $id, 'maps');
+    if (!is_array($fragments)) {
+        return $html;
+    }
+
+    foreach ($fragments as $fragment) {
+        if (is_string($fragment) && $fragment !== '') {
+            $html .= $fragment;
+        }
+    }
+
+    return $html;
+}
+
 $content = MAPS_user_menu();
 if (isset($_REQUEST['msg']) && (int) $_REQUEST['msg'] > 0) {
     $content .= COM_showMessage((int) $_REQUEST['msg'], 'maps');
@@ -340,6 +367,7 @@ switch ($mode) {
         if ($mid > 0) {
             $content .= '<div class="maps-map-page">';
             $content .= MAPS_getMap($mid);
+            $content .= MAPS_publicItemDisplay($mid);
             $content .= MAPS_renderMapStatistics($mid, true);
             $markersHeading = isset($LANG_MAPS_1['map_markers_heading'])
                 ? $LANG_MAPS_1['map_markers_heading']
@@ -366,6 +394,7 @@ switch ($mode) {
             }
             $content .= MAPS_ViewMarkerInfos($mkid);
             $content .= '</article>';
+            $content .= MAPS_publicItemDisplay('marker:' . $mkid);
         }
         break;
 
