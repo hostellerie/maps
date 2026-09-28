@@ -81,7 +81,19 @@ $display .= MAPS_user_menu();
 
 // query database for map
 if ($_REQUEST['mid'] !=0 && $_REQUEST['mid']>0) {
-	$display .= MAPS_getMap($_REQUEST['mid']);
+    $mapId = (int) $_REQUEST['mid'];
+    $display .= MAPS_getMap($mapId);
+
+    if (function_exists('PLG_itemDisplay')) {
+        $itemDisplayParts = PLG_itemDisplay((string) $mapId, 'maps');
+        if (is_array($itemDisplayParts)) {
+            foreach ($itemDisplayParts as $itemDisplayPart) {
+                if (is_string($itemDisplayPart) && $itemDisplayPart !== '') {
+                    $display .= $itemDisplayPart;
+                }
+            }
+        }
+    }
 } elseif ($_REQUEST['mid'] == 0) {
     //Display the Global Map 
 	$display .= MAPS_getGlobalMap();
