@@ -450,9 +450,9 @@ $LANG_MAPS_EMAIL = array(
 // Messages for the plugin upgrade
 $PLG_maps_MESSAGE3002 = $LANG32[9]; // "requires a newer version of Geeklog"
 
-$PLG_maps_MESSAGE1  = "Thank-you for submitting a marker to {$_CONF['site_name']}.  It has been submitted to our staff for approval.";
+$PLG_maps_MESSAGE1  = "Gracias por enviar un marcador a {$_CONF['site_name']}. Se ha enviado al equipo para su aprobación.";
 $PLG_maps_MESSAGE2  = "El envío de marcadores está cerrado.";
-$PLG_maps_MESSAGE3  = "Oups... There was an error. I can't save your marker.";
+$PLG_maps_MESSAGE3  = "Vaya… Se produjo un error. No se pudo guardar el marcador.";
 
 /**
 *   Localization of the Admin Configuration UI
