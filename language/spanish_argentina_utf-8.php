@@ -451,7 +451,7 @@ $LANG_MAPS_EMAIL = array(
 $PLG_maps_MESSAGE3002 = $LANG32[9]; // "requires a newer version of Geeklog"
 
 $PLG_maps_MESSAGE1  = "Thank-you for submitting a marker to {$_CONF['site_name']}.  It has been submitted to our staff for approval.";
-$PLG_maps_MESSAGE2  = "Marker submission is close.";
+$PLG_maps_MESSAGE2  = "El envío de marcadores está cerrado.";
 $PLG_maps_MESSAGE3  = "Oups... There was an error. I can't save your marker.";
 
 /**
