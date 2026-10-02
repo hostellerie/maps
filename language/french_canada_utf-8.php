@@ -50,8 +50,8 @@ global $LANG32;
 // +---------------------------------------------------------------------------+
 
 $LANG_MAPS_1 = array(
-    'module_name'           => 'Cartes',
-    'module_conf'           => 'Configuration du module',
+    'plugin_name'           => 'Cartes',
+    'plugin_conf'           => 'Configuration du module',
     'map'                   => 'carte',
     'need_google_api'       => 'Aucune clé API Google Maps pour navigateur n\'est configurée. Les cartes Google ne pourront pas être affichées tant que cette clé n\'aura pas été ajoutée.',
     'api_status_title' => 'État Google Maps API',
