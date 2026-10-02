@@ -59,6 +59,16 @@ function initialize{mid}() {
 if (window.addEventListener) { window.addEventListener('load', initialize{mid}, false); }
 else { window.attachEvent('onload', initialize{mid}); }
 
+function use_current_location{gid}() {
+    var input = document.getElementById('from_address{gid}');
+    if (!input || !navigator.geolocation) { alert({geolocation_unavailable_js}); return; }
+    navigator.geolocation.getCurrentPosition(function (position) {
+        input.value = position.coords.latitude + ',' + position.coords.longitude;
+        get_directions{gid}();
+    }, function () {
+        alert({geolocation_denied_js});
+    }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
+}
 function get_directions{gid}() {
     var input = document.getElementById('from_address{gid}');
     var panel = document.getElementById('directions{gid}');

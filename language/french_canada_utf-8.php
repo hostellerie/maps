@@ -2,7 +2,7 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.6.0                                                           |
+// | Maps Module 1.6.0                                                           |
 // +---------------------------------------------------------------------------+
 // | english.php                                                               |
 // |                                                                           |
@@ -12,7 +12,7 @@
 // |                                                                           |
 // | Authors: ::Ben                                                            |
 // +---------------------------------------------------------------------------+
-// | Created with the Geeklog Plugin Toolkit.                                  |
+// | Created with the Geeklog Module Toolkit.                                  |
 // +---------------------------------------------------------------------------+
 // |                                                                           |
 // | This program is free software; you can redistribute it and/or             |
@@ -36,7 +36,7 @@
 */
 
 /**
-* Import Geeklog plugin messages for reuse
+* Import Geeklog module messages for reuse
 *
 * @global array $LANG32
 */
@@ -51,7 +51,7 @@ global $LANG32;
 
 $LANG_MAPS_1 = array(
     'plugin_name'           => 'Cartes',
-    'plugin_conf'           => 'Configuration du plugin',
+    'plugin_conf'           => 'Configuration du module',
     'map'                   => 'carte',
     'need_google_api'       => 'Aucune clé API Google Maps pour navigateur n\'est configurée. Les cartes Google ne pourront pas être affichées tant que cette clé n\'aura pas été ajoutée.',
     'api_status_title' => 'État Google Maps API',
@@ -101,7 +101,7 @@ $LANG_MAPS_1 = array(
     'admin_help_trouble_title' => 'Dépannage rapide',
     'profile_title'         => 'Géolocalisation',
     'buy_marker'            => 'Acheter un  marqueur',
-    'menu_label'            => 'Administration du plugin Maps',
+    'menu_label'            => 'Administration du module Maps',
     'admin_home'            => 'Accueil', // In admin menu
     'user_home'             => 'Toutes les cartes', //In user menu
     'maps'                  => 'Les cartes',
@@ -133,7 +133,7 @@ $LANG_MAPS_1 = array(
     'required_field'        => 'Indique un champ requis',
     'address_label'         => 'Addresse : ',
     'message'               => 'Message',
-    'general_settings'      => 'Paramètres généraux',
+    'general_settings'      => 'Réglages généraux',
     'map_width'             => 'Largeur de la carte (% ou px, mini 550px): ',
     'map_height'             => 'Hauteur de la carte (px uniquement, mini 350px): ',
     'map_zoom'              => 'Zoom (0-21): ',
@@ -281,7 +281,7 @@ $LANG_MAPS_1 = array(
     'print'                 => 'Imprimer',
 	'to_complete'           => 'A compléter',
 	'autotag_desc_maps'     => '[maps: xx zoom:ZZ lieu] - Affiche la carte dont l\'id=XX. Options niveau de zoom (0 à 21) et centre la carte sur le lieu.',
-	'autotag_desc_geo'      => '[geo: Paris, France zoom:12] - Affiche une carte centrée sur un nom de lieu ou une adresse. Paramètres facultatifs : zoom, width et height. L’ancienne syntaxe [geo: map ...] reste compatible.',
+	'autotag_desc_geo'      => '[geo: Paris, France zoom:12] - Affiche une carte centrée sur un nom de lieu ou une adresse. Réglages facultatifs : zoom, width et height. L’ancienne syntaxe [geo: map ...] reste compatible.',
 	'autotag_desc_marker'   => '[marker: xx] - Affiche le marqueur dont l\'id=XX',
 	//v1.1
 	'marker_customisation'  => 'Personnalisation du marqueur',
@@ -360,7 +360,7 @@ $LANG_MAPS_1 = array(
     'import_status_partial' => 'Prêt · informations partielles',
     'import_status_geocoded' => 'géocodé',
     'import_confirm_title' => 'Confirmer l’import',
-    'import_confirm_text' => 'Vérifiez les paramètres du lot avant de créer les marqueurs.',
+    'import_confirm_text' => 'Vérifiez les réglages du lot avant de créer les marqueurs.',
     'import_confirm_button' => 'Importer %d marqueurs',
     'import_cancel_button' => 'Annuler',
 	'order'                 => 'Ordre',
@@ -447,7 +447,7 @@ $LANG_MAPS_EMAIL = array(
 	'description'           => 'Description :',
 );
 
-// Messages for the plugin upgrade
+// Messages for the module upgrade
 $PLG_maps_MESSAGE3002 = $LANG32[9]; // "requires a newer version of Geeklog"
 
 $PLG_maps_MESSAGE1  = "Merci d'avoir soumis un marqueur sur le site {$_CONF['site_name']}.  Il va être validé par notre équipe avant d'être affiché en ligne.";
@@ -496,7 +496,7 @@ $LANG_confignames['maps'] = array(
     'map_active'            => 'La carte est active',
     'map_hidden'            => 'La carte est masquée',
     'free_markers'          => 'La carte accepte les marqueurs gratuits',
-    'paid_markers'          => 'La carte accepte les marqueurs payants (plugin PayPal requis)',
+    'paid_markers'          => 'La carte accepte les marqueurs payants (module PayPal requis)',
     'street'                => 'Utiliser l’information de rue',
     'code'                  => 'Utiliser le code postal',
     'city'                  => 'Utiliser la ville',
@@ -504,7 +504,7 @@ $LANG_confignames['maps'] = array(
     'country'               => 'Utiliser le pays',
     'tel'                   => 'Utiliser le téléphone',
     'fax'                   => 'Utiliser le contact complémentaire',
-    'web'                   => 'Utiliser le site web',
+    'web'                   => 'Utiliser le site Web',
     'item_1'                => 'Libellé du champ personnalisé 1',
     'item_2'                => 'Libellé du champ personnalisé 2',
     'item_3'                => 'Libellé du champ personnalisé 3',
@@ -542,8 +542,8 @@ $LANG_confignames['maps'] = array(
 *   @global array $LANG_configsubgroups['maps']
 */
 $LANG_configsubgroups['maps'] = array(
-    'sg_main' => 'Paramètres principaux',
-    'sg_display' => 'Paramètres d’affichage'
+    'sg_main' => 'Réglages principaux',
+    'sg_display' => 'Réglages d’affichage'
 );
 
 /**
@@ -572,16 +572,16 @@ $LANG_tab['maps'] = array(
 *   @global array $LANG_fs['maps']
 */
 $LANG_fs['maps'] = array(
-    'fs_main'            => 'Paramètres généraux',
-    'fs_ads'             => 'Paramètres Google Ads',
-    'fs_google'          => 'Paramètres de l’API Google',
+    'fs_main'            => 'Réglages généraux',
+    'fs_ads'             => 'Réglages Google Ads',
+    'fs_google'          => 'Réglages de l’API Google',
     'fs_permissions'     => 'Permissions par défaut',
     'fs_display'         => 'Cartes',
     'fs_global_map'      => 'Cartes globales',
     'fs_display_profile' => 'Profil',
     'fs_display_geo'     => 'autotag geo',
-    'fs_map_default'     => 'Paramètres par défaut des cartes',
-    'fs_marker_default'  => 'Paramètres par défaut des marqueurs',
+    'fs_map_default'     => 'Réglages par défaut des cartes',
+    'fs_marker_default'  => 'Réglages par défaut des marqueurs',
  );
 
 /**
@@ -693,7 +693,7 @@ $LANG_confignames['maps']['state'] = 'Afficher la région / l’État';
 $LANG_confignames['maps']['country'] = 'Afficher le pays';
 $LANG_confignames['maps']['tel'] = 'Afficher le téléphone';
 $LANG_confignames['maps']['fax'] = 'Afficher le contact complémentaire';
-$LANG_confignames['maps']['web'] = 'Afficher le site web';
+$LANG_confignames['maps']['web'] = 'Afficher le site Web';
 
 /* Maps 1.5.10 landing-page SEO configuration. */
 $LANG_fs['maps']['fs_seo'] = 'SEO de la page des cartes';
@@ -716,9 +716,9 @@ $LANG_MAPS_1['api_diag_referrer_hint'] = 'Pour les restrictions HTTP referrer de
 $LANG_MAPS_1['api_diag_missing'] = 'Manquant';
 $LANG_MAPS_1['api_diag_optional'] = 'Optionnel / non configuré';
 $LANG_MAPS_1['integrations_title'] = 'Intégrations';
-$LANG_MAPS_1['integrations_intro'] = 'Maps utilise les API et services Geeklog afin que les plugins associés découvrent Maps sans couplage direct avec sa base de données.';
+$LANG_MAPS_1['integrations_intro'] = 'Maps utilise les API et services Geeklog afin que les modules associés découvrent Maps sans couplage direct avec sa base de données.';
 $LANG_MAPS_1['integration_active'] = 'Actif';
-$LANG_MAPS_1['integration_missing'] = 'Plugin absent';
+$LANG_MAPS_1['integration_missing'] = 'Module absent';
 $LANG_MAPS_1['integration_native'] = 'Support natif';
 $LANG_MAPS_1['integration_xmlsitemap'] = 'Plan de site XML';
 $LANG_MAPS_1['integration_documents'] = 'Documents';

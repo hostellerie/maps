@@ -2,7 +2,7 @@
 
 /* Reminder: always indent with 4 spaces (no tabs). */
 // +---------------------------------------------------------------------------+
-// | Maps Plugin 1.6.0                                                         |
+// | Maps Plugin 1.7.0                                                         |
 // +---------------------------------------------------------------------------+
 // | functions.inc                                                             |
 // |                                                                           |
@@ -702,6 +702,8 @@ function plugin_getheadercode_maps()
 {
     global $_MAPS_CONF, $_SCRIPTS, $_PLUGINS;
 
+    $headerCode = MAPS_localAssetHeaderCode();
+
     /*
      * The Maps administration dashboard performs its own Google Maps API
      * health check. Do not preload the API there, otherwise gm_authFailure
@@ -709,11 +711,11 @@ function plugin_getheadercode_maps()
      */
     $scriptName = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\', '/', (string) $_SERVER['SCRIPT_NAME']) : '';
     if (preg_match('#/admin/plugins/maps/index\.php$#', $scriptName)) {
-        return;
+        return $headerCode;
     }
 
     if (!MAPS_loadGoogleMapsApi()) {
-        return;
+        return $headerCode;
     }
 
     $_SCRIPTS->setJavaScriptLibrary('jquery');
@@ -735,6 +737,59 @@ function plugin_getheadercode_maps()
     if ($str !== '') {
         $_SCRIPTS->setJavaScript($str, true, true);
     }
+
+    return $headerCode;
+}
+
+/**
+ * Build a cache-busted URL for a local Maps asset.
+ *
+ * The public version combines the Maps release and the deployed file mtime,
+ * matching the versioned-resource pattern used elsewhere in Geeklog while
+ * ensuring that CSS/JS changes inside the same release candidate are not
+ * hidden by a browser or intermediary cache.
+ *
+ * @param string $relativePath Path below the public maps/ directory
+ * @return string
+ */
+function MAPS_assetUrl($relativePath)
+{
+    global $_CONF;
+
+    $relativePath = ltrim(str_replace('\\\\', '/', (string) $relativePath), '/');
+    $version = plugin_chkVersion_maps();
+    $file = rtrim((string) $_CONF['path_html'], '/\\\\')
+        . DIRECTORY_SEPARATOR . 'maps'
+        . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+
+    if (is_file($file)) {
+        $mtime = @filemtime($file);
+        if ($mtime !== false && $mtime > 0) {
+            $version .= '-' . (int) $mtime;
+        }
+    }
+
+    return rtrim((string) $_CONF['site_url'], '/') . '/maps/' . $relativePath
+        . '?v=' . rawurlencode($version);
+}
+
+/**
+ * Return local Maps CSS/JS tags.
+ *
+ * Returning the tags from the plugin header hook follows the Geeklog Plugin API
+ * used by both 2.1.1 and 2.2.2 and avoids Resource API differences around
+ * query-string asset URLs.
+ *
+ * @return string
+ */
+function MAPS_localAssetHeaderCode()
+{
+    return LB
+        . '<link rel="stylesheet" type="text/css" href="'
+        . htmlspecialchars(MAPS_assetUrl('maps.css'), ENT_QUOTES, 'UTF-8') . '">' . LB
+        . '<script type="text/javascript" src="'
+        . htmlspecialchars(MAPS_assetUrl('js/mapiconmaker.js'), ENT_QUOTES, 'UTF-8')
+        . '"></script>' . LB;
 }
 
 /** Load plugin CSS/legacy color helper. */
@@ -742,11 +797,9 @@ function MAPS_getheadercode()
 {
     global $_CONF, $_MAPS_CONF, $_SCRIPTS;
 
-    $_SCRIPTS->setCSSFile('maps_css', '/maps/maps.css');
     if (isset($_CONF['theme'])) {
         $_SCRIPTS->setCSSFile('datepicker_ui', '/layout/' . $_CONF['theme'] . '/jquery_ui/jquery.ui.datepicker.css');
     }
-    $_SCRIPTS->setJavaScriptFile('maps_iconmaker', '/maps/js/mapiconmaker.js', false);
 
     /*
      * Public/admin Maps pages call this function explicitly before Geeklog
@@ -1154,6 +1207,12 @@ function MAPS_repairConfig151()
 
         'fs_global_map' => array(null, 'fieldset', 1, 1, null, 0),
         'users_map' => array($_MAPS_DEFAULT['users_map'], 'select', 1, 1, 3, 10),
+        'users_map_lat' => array($_MAPS_DEFAULT['users_map_lat'], 'text', 1, 1, 0, 12),
+        'users_map_lng' => array($_MAPS_DEFAULT['users_map_lng'], 'text', 1, 1, 0, 14),
+        'users_map_zoom' => array($_MAPS_DEFAULT['users_map_zoom'], 'text', 1, 1, 0, 16),
+        'users_map_type' => array($_MAPS_DEFAULT['users_map_type'], 'text', 1, 1, 0, 18),
+        'users_map_width' => array($_MAPS_DEFAULT['users_map_width'], 'text', 1, 1, 0, 19),
+        'users_map_height' => array($_MAPS_DEFAULT['users_map_height'], 'text', 1, 1, 0, 20),
         'global_map' => array($_MAPS_DEFAULT['global_map'], 'select', 1, 1, 3, 20),
         'global_type' => array($_MAPS_DEFAULT['global_type'], 'select', 1, 1, 20, 30),
         'global_width' => array($_MAPS_DEFAULT['global_width'], 'text', 1, 1, 0, 40),
@@ -1965,14 +2024,17 @@ function MAPS_getCoords($address, &$lat, &$lng)
 
     $lat = 0;
     $lng = 0;
-    $browserKey = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_api_key', ''));
     $serverKey = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_server_api_key', ''));
-    if ($browserKey === '' && $serverKey === '') {
-        COM_errorLog('MAPS geocoder: no Google API key configured.');
+    if ($serverKey === '') {
+        COM_errorLog('MAPS geocoder: no dedicated Google Geocoding server API key configured.');
         return false;
     }
 
     $url = MAPS_googleGeocodeUrl(stripslashes((string) $address));
+    if ($url === '') {
+        COM_errorLog('MAPS geocoder: unable to build Geocoding API URL without a server API key.');
+        return false;
+    }
     $response = false;
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
@@ -2509,6 +2571,9 @@ function MAPS_getMarkerDetail($mid = 0, $mkid = '', $autotag = 0, $mapwidth = ''
     $t->set_var('header', '');
     $t->set_var('footer', '');
     $t->set_var('address', '');
+    $t->set_var('use_my_location', htmlspecialchars(MAPS_arrayGet($LANG_MAPS_1, 'use_my_location', 'Use my location'), ENT_QUOTES, 'UTF-8'));
+    $t->set_var('geolocation_unavailable_js', MAPS_jsString(MAPS_arrayGet($LANG_MAPS_1, 'geolocation_unavailable', 'Browser geolocation is unavailable.')));
+    $t->set_var('geolocation_denied_js', MAPS_jsString(MAPS_arrayGet($LANG_MAPS_1, 'geolocation_denied', 'Your position could not be obtained.')));
 
     $js = 'var markers = [];' . LB;
     foreach ($list as $marker) {
@@ -2535,7 +2600,10 @@ function MAPS_getMarkerDetail($mid = 0, $mkid = '', $autotag = 0, $mapwidth = ''
             . htmlspecialchars($directionsStart, ENT_QUOTES, 'UTF-8') . '</label><div class="maps-directions-form"><input type="text" id="from_address'
             . $gid . '" value="" placeholder="' . $value . '" autocomplete="street-address"><input type="button" value="'
             . htmlspecialchars(trim($LANG_MAPS_1['get_directions']), ENT_QUOTES, 'UTF-8') . '" onclick="get_directions' . $gid
-            . '();"></div></section><a id="directions_' . $gid . '_table"></a><div id="directions' . $gid . '" class="maps-directions-result"></div>');
+            . '();"><input type="button" value="' . htmlspecialchars(MAPS_arrayGet($LANG_MAPS_1, 'use_my_location', 'Use my location'), ENT_QUOTES, 'UTF-8')
+            . '" onclick="use_current_location' . $gid . '();"></div><small>'
+            . htmlspecialchars(MAPS_arrayGet($LANG_MAPS_1, 'geolocation_https', 'Browser geolocation normally requires HTTPS.'), ENT_QUOTES, 'UTF-8')
+            . '</small></section><a id="directions_' . $gid . '_table"></a><div id="directions' . $gid . '" class="maps-directions-result"></div>');
     }
     $t->parse('output', 'page');
     return $t->finish($t->get_var('output'));
@@ -2944,7 +3012,9 @@ function MAPS_ListMarkers($mid = '')
     $query = array('table' => 'maps_markers', 'sql' => $sql, 'query_fields' => array('name','code','city'), 'default_filter' => COM_getPermSQL('AND', 0, 2));
     $text = array('has_extras' => true, 'form_url' => $_MAPS_CONF['site_url'] . '/index.php?mode=markers&mid=' . $mid);
     $sort = array('field' => 'code', 'direction' => 'asc');
-    return ADMIN_list('markers', 'MAPS_getListField_markersList', $header, $text, $query, $sort);
+    return '<div class="maps-marker-list">'
+        . ADMIN_list('markers', 'MAPS_getListField_markersList', $header, $text, $query, $sort)
+        . '</div>';
 }
 
 function MAPS_getListField_markersList($fieldname, $fieldvalue, $a, $icon_arr)

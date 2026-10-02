@@ -92,8 +92,10 @@
 }
 .maps-statistics-cards {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: .7rem;
+    max-width: 1120px;
+    margin-inline: auto;
 }
 .maps-stat-card {
     display: flex;
@@ -131,7 +133,7 @@
     }
 }
 
-/* Maps 1.6.0 public map directory */
+/* Maps 1.7.0 public map directory */
 .maps-public-list {
     margin: 2.25rem 0 2rem;
 }
@@ -139,34 +141,37 @@
     margin: 0 0 .95rem;
 }
 .maps-list-card {
-    display: flex;
-    justify-content: space-between;
-    gap: .85rem 1.35rem;
-    align-items: flex-start;
     margin: 0 0 .7rem;
     padding: .85rem .95rem;
     border: 1px solid rgba(127,127,127,.22);
     border-radius: 9px;
     background: rgba(127,127,127,.028);
 }
-.maps-list-card-main {
-    flex: 1 1 auto;
-    min-width: 0;
-}
 .maps-list-card-title {
     margin: 0;
     font-size: 1.1rem;
     line-height: 1.28;
 }
+.maps-list-card-title a {
+    font-weight: 700;
+}
 .maps-list-card-description {
     margin-top: .28rem;
     line-height: 1.42;
+    max-width: 85ch;
+}
+.maps-list-card-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: .75rem 1rem;
+    margin-top: .5rem;
 }
 .maps-list-card-meta {
     display: flex;
     flex-wrap: wrap;
     gap: .3rem .85rem;
-    margin-top: .5rem;
+    margin-top: 0;
     font-size: .8em;
     line-height: 1.35;
     opacity: .62;
@@ -178,6 +183,7 @@
 }
 .maps-list-card-actions {
     flex: 0 0 auto;
+    margin-left: auto;
 }
 .maps-list-edit {
     display: inline-block;
@@ -186,6 +192,7 @@
     border-radius: 6px;
     text-decoration: none;
     font-size: .92em;
+    font-weight: 600;
 }
 .maps-list-edit:hover,
 .maps-list-edit:focus {
@@ -199,11 +206,10 @@
         margin-top: 1.75rem;
     }
     .maps-list-card {
-        display: block;
         padding: .8rem .85rem;
     }
-    .maps-list-card-actions {
-        margin-top: .65rem;
+    .maps-list-card-footer {
+        align-items: center;
     }
     .maps-list-card-meta {
         display: grid;
@@ -566,3 +572,98 @@
     .maps-import-requirements, .maps-import-fields-grid, .maps-import-summary { grid-template-columns:1fr; }
 }
 
+
+
+.maps-public-header-content,
+.maps-public-footer-content {
+    max-width: 76ch;
+    line-height: 1.65;
+}
+
+.maps-public-header-content {
+    margin-bottom: 2rem;
+}
+
+.maps-public-footer-content {
+    margin-top: 2rem;
+}
+
+
+/* Public marker list search
+ * Eclipse provides the shared .eclipse-admin-list-search component.
+ * Maps only styles the classic Geeklog fallback used by themes such as Denim.
+ */
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: .35rem .5rem;
+    width: 100%;
+    margin: .35rem 0 .65rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: .72rem;
+    line-height: 1.2;
+}
+
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: .25rem;
+    margin: 0;
+    color: inherit;
+    font-size: .7rem;
+    font-weight: 400;
+    opacity: .65;
+    white-space: nowrap;
+}
+
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part:empty {
+    display: none;
+}
+
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"],
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) button,
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) select {
+    box-sizing: border-box;
+    height: 1.8rem;
+    min-height: 1.8rem;
+    margin: 0;
+    font-size: .7rem;
+}
+
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
+    width: 11rem;
+    padding: .2rem .4rem;
+}
+
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) button {
+    padding: .2rem .5rem;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) select {
+    width: 4.8rem;
+    min-width: 4.8rem;
+    padding: .15rem .3rem;
+    font-weight: 400;
+}
+
+.maps-map-page .admin-list-search:not(.eclipse-admin-list-search) .search-part:last-child {
+    font-size: .68rem;
+    opacity: .52;
+}
+
+@media (max-width: 640px) {
+    .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) {
+        flex-wrap: wrap;
+    }
+
+    .maps-map-page .admin-list-search:not(.eclipse-admin-list-search) input[type="text"] {
+        width: min(11rem, 48vw);
+    }
+}

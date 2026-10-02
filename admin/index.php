@@ -285,6 +285,98 @@ function MAPS_adminGoogleApiStatus()
 }
 
 /**
+ * Render a concise Google Maps Platform configuration diagnostic.
+ *
+ * @return string
+ */
+function MAPS_adminPlatformConfiguration()
+{
+    global $_CONF, $_MAPS_CONF, $LANG_MAPS_1;
+
+    $browserKey = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_api_key', ''));
+    $serverKey = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_server_api_key', ''));
+    $mapId = trim((string) MAPS_arrayGet($_MAPS_CONF, 'google_map_id', ''));
+    $title = MAPS_arrayGet($LANG_MAPS_1, 'api_diag_title', 'Google Maps Platform configuration');
+    $configured = MAPS_arrayGet($LANG_MAPS_1, 'api_diag_configured', 'Key configured — API not verified');
+    $browserVerify = MAPS_arrayGet($LANG_MAPS_1, 'api_diag_browser_verify', 'Key configured — verify with the browser test below');
+    $missing = MAPS_arrayGet($LANG_MAPS_1, 'api_diag_missing', 'Missing');
+    $optional = MAPS_arrayGet($LANG_MAPS_1, 'api_diag_optional', 'Optional / not configured');
+
+    $rows = array(
+        array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_maps_js', 'Maps JavaScript API'), $browserKey !== '' ? $browserVerify : $missing),
+        array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_geocoding', 'Geocoding API'), $serverKey !== '' ? $configured : $missing),
+        array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_directions', 'Directions API'), $browserKey !== '' ? $browserVerify : $missing),
+        array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_browser_key', 'Browser API key'), $browserKey !== '' ? $configured : $missing),
+        array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_server_key', 'Server API key'), $serverKey !== '' ? $configured : $missing),
+        array(MAPS_arrayGet($LANG_MAPS_1, 'api_diag_map_id', 'Map ID'), $mapId !== '' ? $configured : $optional)
+    );
+
+    $html = COM_startBlock($title);
+    $html .= '<table class="admin-list"><tbody>';
+    foreach ($rows as $row) {
+        $html .= '<tr><td>' . htmlspecialchars($row[0], ENT_QUOTES, 'UTF-8') . '</td><td><strong>'
+            . htmlspecialchars($row[1], ENT_QUOTES, 'UTF-8') . '</strong></td></tr>';
+    }
+    $html .= '</tbody></table>';
+    $siteUrl = rtrim((string) MAPS_arrayGet($_CONF, 'site_url', ''), '/');
+    if ($siteUrl !== '') {
+        $referrerHint = MAPS_arrayGet(
+            $LANG_MAPS_1,
+            'api_diag_referrer_hint',
+            'For browser-key HTTP referrer restrictions, authorize this site (for example: %s/*).'
+        );
+        $html .= '<p><small>' . sprintf(
+            htmlspecialchars($referrerHint, ENT_QUOTES, 'UTF-8'),
+            '<code>' . htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') . '</code>'
+        ) . '</small></p>';
+    }
+    $html .= COM_endBlock();
+
+    return $html;
+}
+
+/**
+ * Render discovery/status links for supported Geeklog integrations.
+ *
+ * @return string
+ */
+function MAPS_adminIntegrations()
+{
+    global $_CONF, $_PLUGINS, $LANG_MAPS_1;
+
+    $active = MAPS_arrayGet($LANG_MAPS_1, 'integration_active', 'Active');
+    $missing = MAPS_arrayGet($LANG_MAPS_1, 'integration_missing', 'Plugin missing');
+    $native = MAPS_arrayGet($LANG_MAPS_1, 'integration_native', 'Native support');
+    $pluginAdmin = rtrim($_CONF['site_admin_url'], '/') . '/plugins.php';
+
+    $integrations = array(
+        array('xmlsitemap', MAPS_arrayGet($LANG_MAPS_1, 'integration_xmlsitemap', 'XML Sitemap'), rtrim($_CONF['site_admin_url'], '/') . '/plugins/xmlsitemap/index.php'),
+        array('documents', MAPS_arrayGet($LANG_MAPS_1, 'integration_documents', 'Documents'), rtrim($_CONF['site_admin_url'], '/') . '/plugins/documents/index.php'),
+        array('indexnow', MAPS_arrayGet($LANG_MAPS_1, 'integration_indexnow', 'IndexNow'), rtrim($_CONF['site_admin_url'], '/') . '/plugins/indexnow/index.php')
+    );
+
+    $html = COM_startBlock(MAPS_arrayGet($LANG_MAPS_1, 'integrations_title', 'Integrations'));
+    $html .= '<p>' . htmlspecialchars(MAPS_arrayGet($LANG_MAPS_1, 'integrations_intro', ''), ENT_QUOTES, 'UTF-8') . '</p>';
+    $html .= '<ul class="maps-integrations-list">';
+    foreach ($integrations as $integration) {
+        $enabled = in_array($integration[0], $_PLUGINS, true);
+        $url = $enabled ? $integration[2] : $pluginAdmin;
+        $html .= '<li><strong>' . htmlspecialchars($integration[1], ENT_QUOTES, 'UTF-8') . '</strong>: '
+            . htmlspecialchars($enabled ? $active : $missing, ENT_QUOTES, 'UTF-8')
+            . ' — <a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">'
+            . htmlspecialchars($enabled ? $integration[1] : $missing, ENT_QUOTES, 'UTF-8') . '</a></li>';
+    }
+    $html .= '<li><strong>' . htmlspecialchars(MAPS_arrayGet($LANG_MAPS_1, 'integration_rss', 'RSS / Atom feeds'), ENT_QUOTES, 'UTF-8')
+        . '</strong>: ' . htmlspecialchars($native, ENT_QUOTES, 'UTF-8')
+        . ' — <a href="' . htmlspecialchars(rtrim($_CONF['site_admin_url'], '/') . '/syndication.php', ENT_QUOTES, 'UTF-8') . '">'
+        . htmlspecialchars(MAPS_arrayGet($LANG_MAPS_1, 'integration_rss', 'RSS / Atom feeds'), ENT_QUOTES, 'UTF-8') . '</a></li>';
+    $html .= '</ul>';
+    $html .= COM_endBlock();
+
+    return $html;
+}
+
+/**
  * Render integrated administration help.
  *
  * @return string
@@ -372,8 +464,11 @@ function MAPS_adminDocumentation($collapsible = false)
     $html .= '<h3>' . $LANG_MAPS_1['admin_help_trouble_title'] . '</h3>';
     $html .= '<p>' . $LANG_MAPS_1['admin_help_trouble'] . '</p>';
 
-    if ($browserKey !== '' && $serverKey === '') {
-        $html .= '<p><small>Geocoding: Google Maps server API key is not configured; Maps will fall back to the browser key for compatibility.</small></p>';
+    if ((int) MAPS_arrayGet($_MAPS_CONF, 'autofill_coord', 0) === 1 && $serverKey === '') {
+        $warning = isset($LANG_MAPS_1['server_geocode_key_missing'])
+            ? $LANG_MAPS_1['server_geocode_key_missing']
+            : 'Server-side geocoding is enabled, but no dedicated Google Geocoding server API key is configured.';
+        $html .= '<p><strong>' . htmlspecialchars($warning, ENT_QUOTES, 'UTF-8') . '</strong></p>';
     }
 
     if ($collapsible) {
@@ -430,7 +525,9 @@ switch ($mode) {
         $display .= '<p class="maps-list-actions"><a class="maps-primary-action" href="' . $_CONF['site_admin_url'] . '/plugins/maps/map_edit.php">' . htmlspecialchars($LANG_MAPS_1['create_map'], ENT_QUOTES, 'UTF-8') . '</a></p>';
         $display .= MAPS_listmaps();
         $display .= MAPS_renderStatistics(false);
+        $display .= MAPS_adminPlatformConfiguration();
         $display .= MAPS_adminGoogleApiStatus();
+        $display .= MAPS_adminIntegrations();
         $display .= MAPS_adminDocumentation(true);
         $display .= MAPS_compatSiteFooter(0);
         break;
